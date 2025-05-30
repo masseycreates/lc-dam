@@ -13,7 +13,6 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Embedded CSS for fallback styling -->
     <style>
         * {
             margin: 0;
@@ -143,6 +142,10 @@
         
         .mb-6 {
             margin-bottom: 1.5rem;
+        }
+        
+        .mb-8 {
+            margin-bottom: 2rem;
         }
         
         .p-4 {
@@ -328,6 +331,24 @@
             50% { opacity: .5; }
         }
         
+        .status-success {
+            background-color: #f0fdf4;
+            color: #059669;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .status-error {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .status-warning {
+            background-color: #fefce8;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        
         @media (max-width: 768px) {
             .grid-cols-2 {
                 grid-template-columns: 1fr;
@@ -335,6 +356,10 @@
             
             .grid-cols-3 {
                 grid-template-columns: 1fr;
+            }
+            
+            .grid-cols-10 {
+                grid-template-columns: repeat(5, 1fr);
             }
             
             .text-4xl {
@@ -352,18 +377,18 @@
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div style="text-align: center; padding: 2rem;">
+            <div style="font-size: 2rem; margin-bottom: 1rem;">🎰</div>
+            <div>Loading Advanced Lottery System...</div>
+            <div style="margin-top: 1rem; font-size: 0.875rem; color: #6b7280;">
+                If this doesn't load, check the browser console for errors (F12)
+            </div>
+        </div>
+    </div>
     
     <script type="text/babel">
         const { useState, useEffect, useCallback, useMemo } = React;
-        
-        // Simple icon components
-        const Calculator = () => <span>🧮</span>;
-        const TrendingUp = () => <span>📈</span>;
-        const Target = () => <span>🎯</span>;
-        const DollarSign = () => <span>💰</span>;
-        const BarChart3 = () => <span>📊</span>;
-        const Brain = () => <span>🧠</span>;
 
         const AdvancedLotteryAnalysisSystem = () => {
             const [selectedNumbers, setSelectedNumbers] = useState([]);
@@ -379,6 +404,7 @@
             const [lastUpdated, setLastUpdated] = useState(new Date().toISOString().split('T')[0]);
             const [isUpdating, setIsUpdating] = useState(false);
             const [updateStatus, setUpdateStatus] = useState('');
+            const [apiHealthy, setApiHealthy] = useState(false);
 
             // State tax information
             const stateTaxInfo = {
@@ -389,60 +415,142 @@
                 'NJ': { name: 'New Jersey', rate: 10.75, withholding: 5.0 }
             };
 
-            // Real API implementation
+            // Fallback jackpot data
+            const getFallbackJackpotData = () => {
+                return {
+                    amount: 735000000,
+                    cashValue: 441000000,
+                    formatted: "$735M",
+                    cashFormatted: "$441M",
+                    source: "Estimated (API Unavailable)"
+                };
+            };
+
+            // Calculate next drawing date
+            const calculateNextDrawing = () => {
+                const now = new Date();
+                const et = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+                
+                const dayOfWeek = et.getDay();
+                const hour = et.getHours();
+                
+                let daysToAdd = 0;
+                
+                // Drawing days: Monday (1), Wednesday (3), Saturday (6)
+                if (dayOfWeek === 0) { // Sunday
+                    daysToAdd = 1; // Next Monday
+                } else if (dayOfWeek === 1) { // Monday
+                    daysToAdd = (hour >= 23) ? 2 : 0; // Wed if after drawing, today if before
+                } else if (dayOfWeek === 2) { // Tuesday
+                    daysToAdd = 1; // Next Wednesday
+                } else if (dayOfWeek === 3) { // Wednesday
+                    daysToAdd = (hour >= 23) ? 3 : 0; // Sat if after drawing, today if before
+                } else if (dayOfWeek === 4 || dayOfWeek === 5) { // Thu/Fri
+                    daysToAdd = 6 - dayOfWeek; // Next Saturday
+                } else if (dayOfWeek === 6) { // Saturday
+                    daysToAdd = (hour >= 23) ? 2 : 0; // Mon if after drawing, today if before
+                }
+                
+                const nextDraw = new Date(et);
+                nextDraw.setDate(et.getDate() + daysToAdd);
+                
+                return {
+                    date: nextDraw.toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric',
+                        timeZone: 'America/New_York'
+                    }),
+                    time: '10:59 PM ET'
+                };
+            };
+
+            // Enhanced API implementation with better error handling
             const fetchLatestPowerballData = async () => {
                 setIsUpdating(true);
-                setUpdateStatus('Fetching live jackpot data...');
+                setUpdateStatus('🔄 Fetching live jackpot data...');
                 
                 try {
-                    setUpdateStatus('Connecting to lottery data API...');
+                    console.log('Attempting to fetch from /api/powerball...');
+                    setUpdateStatus('🌐 Connecting to lottery data API...');
+                    
+                    // Try the API with proper error handling
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
                     
                     const response = await fetch('/api/powerball', {
                         method: 'GET',
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        },
+                        signal: controller.signal
                     });
                     
+                    clearTimeout(timeoutId);
+                    
                     if (!response.ok) {
-                        throw new Error(`API request failed: ${response.status}`);
+                        throw new Error(`API returned ${response.status}: ${response.statusText}`);
                     }
                     
                     const data = await response.json();
+                    console.log('API Response:', data);
                     
                     if (!data.success || !data.jackpot) {
-                        throw new Error(data.message || 'No jackpot data available');
+                        throw new Error(data.message || 'Invalid API response format');
                     }
                     
-                    const realJackpotData = {
+                    // Success - use real data
+                    setCurrentJackpot({
                         amount: data.jackpot.amount,
                         cashValue: data.jackpot.cashValue,
-                        source: data.source
-                    };
-                    
-                    setCurrentJackpot(realJackpotData);
+                        formatted: data.jackpot.formatted,
+                        cashFormatted: data.jackpot.cashFormatted,
+                        source: data.source || 'Official API'
+                    });
                     
                     if (data.nextDrawing) {
                         setNextDrawDate(`${data.nextDrawing.date} @ ${data.nextDrawing.time}`);
+                    } else {
+                        const nextDraw = calculateNextDrawing();
+                        setNextDrawDate(`${nextDraw.date} @ ${nextDraw.time}`);
                     }
                     
-                    setUpdateStatus(`✅ Live data: ${data.jackpot.formatted} from ${data.source}`);
-                    setLastUpdated(new Date().toISOString().split('T')[0]);
+                    setUpdateStatus(`✅ Live data from ${data.source}: ${data.jackpot.formatted}`);
+                    setApiHealthy(true);
                     
                 } catch (error) {
-                    console.error('Failed to fetch real lottery data:', error);
-                    setCurrentJackpot(null);
-                    setNextDrawDate('');
-                    setUpdateStatus("We can't see the live data at this time. Try again.");
+                    console.error('API Error:', error);
+                    
+                    // Fallback to estimated data
+                    const fallbackData = getFallbackJackpotData();
+                    setCurrentJackpot(fallbackData);
+                    
+                    const nextDraw = calculateNextDrawing();
+                    setNextDrawDate(`${nextDraw.date} @ ${nextDraw.time}`);
+                    
+                    setApiHealthy(false);
+                    
+                    if (error.name === 'AbortError') {
+                        setUpdateStatus('⚠️ API timeout - using estimated jackpot data');
+                    } else if (error.message.includes('404')) {
+                        setUpdateStatus('⚠️ API endpoint not found - using estimated data');
+                    } else if (error.message.includes('Failed to fetch')) {
+                        setUpdateStatus('⚠️ Network error - using estimated jackpot data');
+                    } else {
+                        setUpdateStatus(`⚠️ API error: ${error.message} - using estimated data`);
+                    }
                 }
                 
+                setLastUpdated(new Date().toISOString().split('T')[0]);
                 setIsUpdating(false);
             };
 
-            // Initialize data
+            // Initialize data on component mount
             useEffect(() => {
+                console.log('Component mounted, initializing...');
                 const initializeData = async () => {
-                    setCurrentJackpot(null);
-                    setNextDrawDate('');
-                    setUpdateStatus('Loading live jackpot data...');
+                    setUpdateStatus('🚀 Initializing lottery system...');
                     await fetchLatestPowerballData();
                 };
                 initializeData();
@@ -454,6 +562,34 @@
                 } else if (selectedNumbers.length < 5) {
                     setSelectedNumbers([...selectedNumbers, num].sort((a, b) => a - b));
                 }
+            };
+
+            const clearSelection = () => {
+                setSelectedNumbers([]);
+                setPowerball('');
+            };
+
+            const quickPick = () => {
+                // Generate 5 random numbers from 1-69
+                const numbers = [];
+                while (numbers.length < 5) {
+                    const num = Math.floor(Math.random() * 69) + 1;
+                    if (!numbers.includes(num)) {
+                        numbers.push(num);
+                    }
+                }
+                setSelectedNumbers(numbers.sort((a, b) => a - b));
+                
+                // Generate random powerball 1-26
+                setPowerball(Math.floor(Math.random() * 26) + 1);
+            };
+
+            const calculateExpectedValue = () => {
+                if (!currentJackpot) return 0;
+                const jackpotProb = 1 / 292201338;
+                const otherPrizes = 0.32; // Expected value from other prize tiers
+                const ticketCost = 2;
+                return (currentJackpot.amount * jackpotProb + otherPrizes) - ticketCost;
             };
 
             return (
@@ -469,16 +605,19 @@
                                     <div style={{opacity: 0.8, fontSize: '0.875rem', fontWeight: 500}}>Current Powerball Jackpot</div>
                                     <div className="text-3xl font-bold">
                                         {currentJackpot ? (
-                                            `$${(currentJackpot.amount / 1000000).toFixed(0)}M`
+                                            currentJackpot.formatted
                                         ) : (
                                             <span style={{opacity: 0.7, fontSize: '1.25rem'}}>Loading...</span>
                                         )}
                                     </div>
                                     <div style={{opacity: 0.7, fontSize: '0.75rem'}}>
                                         {currentJackpot ? (
-                                            <span>Source: Official Powerball • </span>
+                                            <>
+                                                <span>Cash Value: {currentJackpot.cashFormatted} • </span>
+                                                <span>Source: {currentJackpot.source} • </span>
+                                            </>
                                         ) : (
-                                            <span>Connecting to official data • </span>
+                                            <span>Connecting to data sources • </span>
                                         )}
                                         Next Drawing: {nextDrawDate || 'TBD'}
                                     </div>
@@ -490,14 +629,12 @@
                                     <div style={{fontSize: '0.875rem', marginBottom: '0.25rem'}}>Odds of Winning</div>
                                     <div style={{fontSize: '1.125rem', fontFamily: 'monospace'}}>1 : 292,201,338</div>
                                     <div style={{opacity: 0.7, fontSize: '0.75rem', marginTop: '0.25rem'}}>
-                                        {currentJackpot ? (
-                                            (() => {
-                                                const expectedValue = (currentJackpot.amount / 292201338 + 0.32) - 2;
-                                                return expectedValue > 0 ? `+$${expectedValue.toFixed(2)}` : `-$${Math.abs(expectedValue).toFixed(2)}`;
-                                            })() + ' Expected Value'
-                                        ) : (
-                                            'Expected Value: ---'
-                                        )}
+                                        {(() => {
+                                            const expectedValue = calculateExpectedValue();
+                                            return expectedValue > 0 ? 
+                                                `+$${expectedValue.toFixed(2)} Expected Value` : 
+                                                `-$${Math.abs(expectedValue).toFixed(2)} Expected Value`;
+                                        })()}
                                     </div>
                                 </div>
                             </div>
@@ -511,9 +648,9 @@
                                         width: '8px', 
                                         height: '8px', 
                                         borderRadius: '50%',
-                                        backgroundColor: currentJackpot ? '#34d399' : '#fb923c'
-                                    }} className={currentJackpot ? 'pulse' : ''}></div>
-                                    <span>{currentJackpot ? 'Live Data Connected' : 'Connecting to APIs...'}</span>
+                                        backgroundColor: apiHealthy ? '#34d399' : '#fb923c'
+                                    }} className={apiHealthy ? 'pulse' : ''}></div>
+                                    <span>{apiHealthy ? 'Live Data Connected' : 'Using Estimated Data'}</span>
                                 </div>
                                 <div>Ticket Price: $2.00</div>
                                 <div>Drawings: Mon, Wed, Sat @ 10:59 PM ET</div>
@@ -551,19 +688,30 @@
                                     disabled={isUpdating}
                                     className={`btn ${isUpdating ? 'btn-secondary' : 'btn-primary'}`}
                                 >
-                                    {isUpdating ? 'Updating...' : '🔄 Update Data'}
+                                    {isUpdating ? (
+                                        <>
+                                            <span className="loading-spinner" style={{marginRight: '0.5rem'}}></span>
+                                            Updating...
+                                        </>
+                                    ) : (
+                                        '🔄 Update Data'
+                                    )}
                                 </button>
                             </div>
                         </div>
+                        
+                        {/* Status Message */}
                         {updateStatus && (
                             <div style={{
                                 marginTop: '0.5rem',
-                                padding: '0.5rem',
-                                borderRadius: '4px',
-                                fontSize: '0.875rem',
-                                background: updateStatus.includes('Error') || updateStatus.includes('❌') ? '#fef2f2' : '#f0fdf4',
-                                color: updateStatus.includes('Error') || updateStatus.includes('❌') ? '#dc2626' : '#059669'
-                            }}>
+                                padding: '0.75rem',
+                                borderRadius: '6px',
+                                fontSize: '0.875rem'
+                            }} className={
+                                updateStatus.includes('✅') ? 'status-success' :
+                                updateStatus.includes('⚠️') || updateStatus.includes('❌') ? 'status-warning' :
+                                'status-success'
+                            }>
                                 {updateStatus}
                             </div>
                         )}
@@ -613,9 +761,19 @@
                             </div>
 
                             <div className="card bg-gray-50">
-                                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                                    🎯 Number Selection Interface
-                                </h2>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-2xl font-semibold text-gray-800">
+                                        🎯 Number Selection Interface
+                                    </h2>
+                                    <div className="flex gap-2">
+                                        <button onClick={quickPick} className="btn btn-purple">
+                                            🎲 Quick Pick
+                                        </button>
+                                        <button onClick={clearSelection} className="btn btn-secondary">
+                                            🗑️ Clear
+                                        </button>
+                                    </div>
+                                </div>
                                 
                                 <div className="mb-4">
                                     <h3 className="font-semibold text-gray-700 mb-2">Select 5 main numbers (1-69):</h3>
@@ -654,25 +812,218 @@
                                             <div style={{marginTop: '0.5rem', padding: '0.75rem', background: '#fefce8', borderRadius: '4px'}}>
                                                 <p className="font-semibold" style={{color: '#92400e'}}>Probability of exact match:</p>
                                                 <p style={{color: '#a16207'}}>1 in 292,201,338 (3.42e-7%)</p>
+                                                <p style={{color: '#a16207', marginTop: '0.25rem'}}>
+                                                    Expected value: {calculateExpectedValue() > 0 ? '+' : ''}${calculateExpectedValue().toFixed(2)}
+                                                </p>
                                             </div>
                                         )}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Prize Breakdown */}
+                            <div className="card bg-green-50">
+                                <h2 className="text-2xl font-semibold text-green-800 mb-4">
+                                    🏆 Prize Structure & Probabilities
+                                </h2>
+                                <div className="grid grid-cols-2 gap-4" style={{fontSize: '0.875rem'}}>
+                                    <div>
+                                        <h3 className="font-semibold text-green-700 mb-2">Prize Tiers:</h3>
+                                        <div style={{background: 'white', padding: '0.75rem', borderRadius: '4px'}}>
+                                            <div>5 + PB: ${currentJackpot ? currentJackpot.formatted : '$735M'} (1 in 292M)</div>
+                                            <div>5 + 0: $1,000,000 (1 in 11.7M)</div>
+                                            <div>4 + PB: $50,000 (1 in 913K)</div>
+                                            <div>4 + 0: $100 (1 in 36.5K)</div>
+                                            <div>3 + PB: $100 (1 in 14.5K)</div>
+                                            <div>3 + 0: $7 (1 in 580)</div>
+                                            <div>2 + PB: $7 (1 in 701)</div>
+                                            <div>1 + PB: $4 (1 in 92)</div>
+                                            <div>0 + PB: $4 (1 in 38)</div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-green-700 mb-2">Overall Statistics:</h3>
+                                        <div style={{background: 'white', padding: '0.75rem', borderRadius: '4px'}}>
+                                            <div>Overall odds of winning: 1 in 24.9</div>
+                                            <div>Power Play multiplier: 2x-10x</div>
+                                            <div>Average jackpot: ~$150M</div>
+                                            <div>Record jackpot: $2.04B (Nov 2022)</div>
+                                            <div>Cash option: ~60% of advertised</div>
+                                            <div>Federal tax rate: 24% (withheld)</div>
+                                            <div>Actual federal rate: Up to 37%</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Other tabs can be added here with similar styling */}
-                    {activeTab !== 'calculator' && (
+                    {/* Tax Analysis Tab */}
+                    {activeTab === 'taxes' && (
+                        <div className="card">
+                            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                                💰 Tax Analysis Calculator
+                            </h2>
+                            
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="font-semibold text-gray-700 mb-2 block">Jackpot Amount (Millions):</label>
+                                    <input
+                                        type="number"
+                                        value={jackpotAmount}
+                                        onChange={(e) => setJackpotAmount(Number(e.target.value))}
+                                        style={{width: '100%'}}
+                                        placeholder="100"
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label className="font-semibold text-gray-700 mb-2 block">State:</label>
+                                    <select 
+                                        value={selectedState} 
+                                        onChange={(e) => setSelectedState(e.target.value)}
+                                        style={{width: '100%'}}
+                                    >
+                                        {Object.entries(stateTaxInfo).map(([code, info]) => (
+                                            <option key={code} value={code}>{info.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="font-semibold text-gray-700 mb-2 block">Filing Status:</label>
+                                    <select 
+                                        value={filingStatus} 
+                                        onChange={(e) => setFilingStatus(e.target.value)}
+                                        style={{width: '100%'}}
+                                    >
+                                        <option value="single">Single</option>
+                                        <option value="married">Married Filing Jointly</option>
+                                        <option value="head">Head of Household</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label className="font-semibold text-gray-700 mb-2 block">Number of Tickets:</label>
+                                    <input
+                                        type="number"
+                                        value={numTickets}
+                                        onChange={(e) => setNumTickets(Number(e.target.value))}
+                                        style={{width: '100%'}}
+                                        min="1"
+                                        placeholder="1"
+                                    />
+                                </div>
+                            </div>
+                            
+                            {(() => {
+                                const grossWinnings = jackpotAmount * 1000000;
+                                const cashOption = grossWinnings * 0.6;
+                                const federalWithholding = cashOption * 0.24;
+                                const stateWithholding = cashOption * (stateTaxInfo[selectedState].withholding / 100);
+                                const actualFederalTax = cashOption * 0.37; // Top bracket
+                                const actualStateTax = cashOption * (stateTaxInfo[selectedState].rate / 100);
+                                const totalTaxes = actualFederalTax + actualStateTax;
+                                const netWinnings = cashOption - totalTaxes;
+                                const totalCost = numTickets * 2;
+                                const actualProfit = netWinnings - totalCost;
+                                
+                                return (
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <h3 className="font-semibold text-gray-800 mb-3">Tax Breakdown for {stateTaxInfo[selectedState].name}:</h3>
+                                        
+                                        <div className="grid grid-cols-2 gap-4" style={{fontSize: '0.875rem'}}>
+                                            <div>
+                                                <div className="mb-2"><strong>Gross Jackpot:</strong> ${grossWinnings.toLocaleString()}</div>
+                                                <div className="mb-2"><strong>Cash Option (60%):</strong> ${cashOption.toLocaleString()}</div>
+                                                <div className="mb-2"><strong>Federal Tax (37%):</strong> ${actualFederalTax.toLocaleString()}</div>
+                                                <div className="mb-2"><strong>State Tax ({stateTaxInfo[selectedState].rate}%):</strong> ${actualStateTax.toLocaleString()}</div>
+                                                <div className="mb-2"><strong>Total Taxes:</strong> ${totalTaxes.toLocaleString()}</div>
+                                            </div>
+                                            
+                                            <div>
+                                                <div className="mb-2"><strong>Net Winnings:</strong> ${netWinnings.toLocaleString()}</div>
+                                                <div className="mb-2"><strong>Ticket Cost:</strong> ${totalCost.toLocaleString()}</div>
+                                                <div className="mb-2"><strong>Actual Profit:</strong> ${actualProfit.toLocaleString()}</div>
+                                                <div className="mb-2"><strong>Effective Tax Rate:</strong> {((totalTaxes / cashOption) * 100).toFixed(1)}%</div>
+                                                <div className="mb-2"><strong>Take-Home Rate:</strong> {((netWinnings / grossWinnings) * 100).toFixed(1)}%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
+
+                    {/* Expected Value Tab */}
+                    {activeTab === 'expected' && (
+                        <div className="card">
+                            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                                📊 Expected Value Analysis
+                            </h2>
+                            
+                            {(() => {
+                                const currentEV = calculateExpectedValue();
+                                const breakEvenJackpot = (2 - 0.32) * 292201338; // Break-even point
+                                
+                                return (
+                                    <div>
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div className="bg-blue-50 p-4 rounded-lg">
+                                                <h3 className="font-semibold text-blue-700 mb-2">Current Expected Value</h3>
+                                                <div style={{fontSize: '2rem', fontWeight: 'bold', color: currentEV > 0 ? '#059669' : '#dc2626'}}>
+                                                    {currentEV > 0 ? '+' : ''}${currentEV.toFixed(2)}
+                                                </div>
+                                                <p style={{fontSize: '0.875rem', color: '#6b7280'}}>
+                                                    {currentEV > 0 ? 'Positive expected value!' : 'Negative expected value'}
+                                                </p>
+                                            </div>
+                                            
+                                            <div className="bg-green-50 p-4 rounded-lg">
+                                                <h3 className="font-semibold text-green-700 mb-2">Break-Even Jackpot</h3>
+                                                <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#059669'}}>
+                                                    ${Math.round(breakEvenJackpot / 1000000)}M
+                                                </div>
+                                                <p style={{fontSize: '0.875rem', color: '#6b7280'}}>
+                                                    Jackpot needed for positive EV
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                            <h3 className="font-semibold text-gray-700 mb-3">Expected Value Components:</h3>
+                                            <div style={{fontSize: '0.875rem'}}>
+                                                <div>Jackpot contribution: ${currentJackpot ? ((currentJackpot.amount / 292201338).toFixed(2)) : '2.52'}</div>
+                                                <div>Other prizes contribution: $0.32</div>
+                                                <div>Ticket cost: -$2.00</div>
+                                                <div><strong>Net expected value: ${currentEV.toFixed(2)}</strong></div>
+                                            </div>
+                                            
+                                            <div style={{marginTop: '1rem', padding: '0.75rem', background: 'white', borderRadius: '4px'}}>
+                                                <p style={{fontSize: '0.875rem', fontStyle: 'italic'}}>
+                                                    <strong>Note:</strong> Expected value assumes you can claim the full advertised jackpot. 
+                                                    In reality, you'd receive ~60% as cash option and pay significant taxes, 
+                                                    reducing the actual expected value considerably.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
+
+                    {/* Other placeholder tabs */}
+                    {(activeTab === 'optimization' || activeTab === 'montecarlo') && (
                         <div className="card text-center p-6">
                             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                                 {activeTab === 'optimization' && '🎯 Number Optimization'}
                                 {activeTab === 'montecarlo' && '📈 Monte Carlo Simulation'}
-                                {activeTab === 'taxes' && '💰 Tax Analysis'}
-                                {activeTab === 'expected' && '📊 Expected Value Analysis'}
                             </h2>
-                            <p className="text-gray-600">
-                                This feature is coming soon! The real lottery data integration is now working.
+                            <p className="text-gray-600 mb-4">
+                                Advanced analytics feature coming soon! The core calculator and tax analysis are fully functional.
                             </p>
                             <div style={{marginTop: '1rem'}}>
                                 <button 
@@ -680,16 +1031,67 @@
                                     className="btn btn-primary"
                                     disabled={isUpdating}
                                 >
-                                    {isUpdating ? 'Testing API...' : '🔄 Test Live Data API'}
+                                    {isUpdating ? 'Testing API...' : '🔄 Test Live Data Connection'}
                                 </button>
                             </div>
+                            {updateStatus && (
+                                <div style={{marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280'}}>
+                                    Status: {updateStatus}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
             );
         };
 
-        ReactDOM.render(<AdvancedLotteryAnalysisSystem />, document.getElementById('root'));
+        // Error boundary for better debugging
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+
+            static getDerivedStateFromError(error) {
+                return { hasError: true, error: error };
+            }
+
+            componentDidCatch(error, errorInfo) {
+                console.error('React Error:', error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div style={{padding: '2rem', textAlign: 'center'}}>
+                            <h2>Something went wrong!</h2>
+                            <details style={{marginTop: '1rem', textAlign: 'left'}}>
+                                <summary>Error Details</summary>
+                                <pre style={{background: '#f3f4f6', padding: '1rem', borderRadius: '4px', fontSize: '0.875rem'}}>
+                                    {this.state.error && this.state.error.toString()}
+                                </pre>
+                            </details>
+                            <button 
+                                onClick={() => window.location.reload()} 
+                                style={{marginTop: '1rem', padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'}}
+                            >
+                                Reload Page
+                            </button>
+                        </div>
+                    );
+                }
+
+                return this.props.children;
+            }
+        }
+
+        // Render with error boundary
+        ReactDOM.render(
+            <ErrorBoundary>
+                <AdvancedLotteryAnalysisSystem />
+            </ErrorBoundary>, 
+            document.getElementById('root')
+        );
     </script>
 </body>
 </html>
