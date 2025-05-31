@@ -614,8 +614,16 @@
                     
                     if (historicalResult && historicalResult.length > 0) {
                         setUpdateStatus(`✅ System ready with ${historicalResult.length} real drawings`);
+                        // Auto-generate AI combinations on startup
+                        setTimeout(() => {
+                            generateOptimizedNumbers();
+                        }, 1000);
                     } else {
                         setUpdateStatus('⚠️ System ready with estimated data');
+                        // Still generate combinations with estimated data
+                        setTimeout(() => {
+                            generateOptimizedNumbers();
+                        }, 1000);
                     }
                 };
                 initializeData();
