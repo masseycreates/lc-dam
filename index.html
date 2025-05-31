@@ -74,370 +74,6 @@
             background-color: #7c3aed;
         }
         
-        .grid {
-            display: grid;
-            gap: 1rem;
-        }
-        
-        .grid-cols-2 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .grid-cols-3 {
-            grid-template-columns: repeat(3, 1fr);
-        }
-        
-        .grid-cols-10 {
-            grid-template-columns: repeat(10, 1fr);
-        }
-        
-        .flex {
-            display: flex;
-        }
-        
-        .items-center {
-            align-items: center;
-        }
-        
-        .justify-between {
-            justify-content: space-between;
-        }
-        
-        .w-full {
-            width: 100%;
-        }
-        
-        .w-8 {
-            width: 2rem;
-        }
-        
-        .h-8 {
-            height: 2rem;
-        }
-        
-        .space-y-2 > * + * {
-            margin-top: 0.5rem;
-        }
-        
-        .space-y-3 > * + * {
-            margin-top: 0.75rem;
-        }
-        
-        .overflow-x-auto {
-            overflow-x: auto;
-        }
-        
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        
-        th, td {
-            padding: 0.5rem;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        th {
-            font-weight: 600;
-            background-color: #f9fafb;
-        }
-        
-        .hover\:bg-blue-700:hover {
-            background-color: #1d4ed8;
-        }
-        
-        .hover\:bg-gray-700:hover {
-            background-color: #374151;
-        }
-        
-        .transition-colors {
-            transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out;
-        }
-        
-        .gap-2 {
-            gap: 0.5rem;
-        }
-        
-        .gap-4 {
-            gap: 1rem;
-        }
-        
-        .gap-6 {
-            gap: 1.5rem;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .text-left {
-            text-align: left;
-        }
-        
-        .text-white {
-            color: white;
-        }
-        
-        .text-xs {
-            font-size: 0.75rem;
-        }
-        
-        .text-sm {
-            font-size: 0.875rem;
-        }
-        
-        .text-lg {
-            font-size: 1.125rem;
-        }
-        
-        .text-xl {
-            font-size: 1.25rem;
-        }
-        
-        .text-2xl {
-            font-size: 1.5rem;
-        }
-        
-        .text-3xl {
-            font-size: 1.875rem;
-        }
-        
-        .text-4xl {
-            font-size: 2.25rem;
-        }
-        
-        .font-medium {
-            font-weight: 500;
-        }
-        
-        .font-semibold {
-            font-weight: 600;
-        }
-        
-        .font-bold {
-            font-weight: 700;
-        }
-        
-        .mb-2 {
-            margin-bottom: 0.5rem;
-        }
-        
-        .mb-3 {
-            margin-bottom: 0.75rem;
-        }
-        
-        .mb-4 {
-            margin-bottom: 1rem;
-        }
-        
-        .mb-6 {
-            margin-bottom: 1.5rem;
-        }
-        
-        .mb-8 {
-            margin-bottom: 2rem;
-        }
-        
-        .mt-1 {
-            margin-top: 0.25rem;
-        }
-        
-        .mt-2 {
-            margin-top: 0.5rem;
-        }
-        
-        .mt-3 {
-            margin-top: 0.75rem;
-        }
-        
-        .mt-4 {
-            margin-top: 1rem;
-        }
-        
-        .p-3 {
-            padding: 0.75rem;
-        }
-        
-        .p-4 {
-            padding: 1rem;
-        }
-        
-        .p-6 {
-            padding: 1.5rem;
-        }
-        
-        .px-3 {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-        }
-        
-        .py-1 {
-            padding-top: 0.25rem;
-            padding-bottom: 0.25rem;
-        }
-        
-        .py-2 {
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-        }
-        
-        .pt-2 {
-            padding-top: 0.5rem;
-        }
-        
-        .rounded {
-            border-radius: 0.25rem;
-        }
-        
-        .rounded-lg {
-            border-radius: 0.5rem;
-        }
-        
-        .rounded-xl {
-            border-radius: 0.75rem;
-        }
-        
-        .rounded-full {
-            border-radius: 9999px;
-        }
-        
-        .border {
-            border: 1px solid #d1d5db;
-        }
-        
-        .border-t {
-            border-top: 1px solid #d1d5db;
-        }
-        
-        .border-b {
-            border-bottom: 1px solid #d1d5db;
-        }
-        
-        .border-gray-100 {
-            border-color: #f3f4f6;
-        }
-        
-        .border-gray-200 {
-            border-color: #e5e7eb;
-        }
-        
-        .border-yellow-200 {
-            border-color: #fde047;
-        }
-        
-        .border-green-200 {
-            border-color: #bbf7d0;
-        }
-        
-        .bg-white {
-            background-color: white;
-        }
-        
-        .bg-gray-50 {
-            background-color: #f9fafb;
-        }
-        
-        .bg-gray-100 {
-            background-color: #f3f4f6;
-        }
-        
-        .bg-gray-800 {
-            background-color: #1f2937;
-        }
-        
-        .bg-blue-50 {
-            background-color: #eff6ff;
-        }
-        
-        .bg-blue-600 {
-            background-color: #2563eb;
-        }
-        
-        .bg-green-50 {
-            background-color: #f0fdf4;
-        }
-        
-        .bg-green-600 {
-            background-color: #059669;
-        }
-        
-        .bg-yellow-50 {
-            background-color: #fefce8;
-        }
-        
-        .bg-purple-50 {
-            background-color: #faf5ff;
-        }
-        
-        .bg-purple-600 {
-            background-color: #9333ea;
-        }
-        
-        .bg-red-600 {
-            background-color: #dc2626;
-        }
-        
-        .text-purple-600 {
-            color: #9333ea;
-        }
-        
-        .text-green-600 {
-            color: #059669;
-        }
-        
-        .text-green-700 {
-            color: #047857;
-        }
-        
-        .text-green-800 {
-            color: #065f46;
-        }
-        
-        .text-blue-600 {
-            color: #2563eb;
-        }
-        
-        .text-blue-700 {
-            color: #1d4ed8;
-        }
-        
-        .text-blue-800 {
-            color: #1e40af;
-        }
-        
-        .text-yellow-600 {
-            color: #d97706;
-        }
-        
-        .text-yellow-800 {
-            color: #92400e;
-        }
-        
-        .text-purple-800 {
-            color: #6b21a8;
-        }
-        
-        .text-red-600 {
-            color: #dc2626;
-        }
-        
-        .text-gray-500 {
-            color: #6b7280;
-        }
-        
-        .text-gray-600 {
-            color: #4b5563;
-        }
-        
-        .text-gray-700 {
-            color: #374151;
-        }
-        
-        .text-gray-800 {
-            color: #1f2937;
-        }
-        
         .container {
             max-width: 1280px;
             margin: 0 auto;
@@ -493,33 +129,6 @@
             cursor: not-allowed;
         }
         
-        .sticky-top {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-        }
-        
-        .backdrop-blur {
-            backdrop-filter: blur(4px);
-        }
-        
-        .shadow-lg {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        
-        input, select {
-            padding: 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.25rem;
-            font-size: 0.875rem;
-        }
-        
-        input:focus, select:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-        
         .loading-spinner {
             display: inline-block;
             width: 1rem;
@@ -543,24 +152,6 @@
             50% { opacity: .5; }
         }
         
-        .status-success {
-            background-color: #f0fdf4;
-            color: #059669;
-            border: 1px solid #bbf7d0;
-        }
-        
-        .status-error {
-            background-color: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
-        }
-        
-        .status-warning {
-            background-color: #fefce8;
-            color: #d97706;
-            border: 1px solid #fde68a;
-        }
-        
         .number-display {
             background-color: #f3f4f6;
             padding: 0.25rem 0.75rem;
@@ -581,82 +172,73 @@
             font-weight: 600;
         }
         
-        .w-full {
-            width: 100%;
-        }
-        
-        .w-8 {
-            width: 2rem;
-        }
-        
-        .h-8 {
-            height: 2rem;
-        }
-        
-        .space-y-2 > * + * {
-            margin-top: 0.5rem;
-        }
-        
-        .space-y-3 > * + * {
-            margin-top: 0.75rem;
-        }
-        
-        .overflow-x-auto {
-            overflow-x: auto;
-        }
-        
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        
-        th, td {
+        input, select {
             padding: 0.5rem;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
         }
         
-        th {
-            font-weight: 600;
-            background-color: #f9fafb;
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
-        .hover\:bg-blue-700:hover {
-            background-color: #1d4ed8;
-        }
+        /* Tailwind-like utilities */
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        .w-full { width: 100%; }
+        .text-center { text-align: center; }
+        .text-sm { font-size: 0.875rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .text-4xl { font-size: 2.25rem; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .bg-white { background-color: white; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-blue-50 { background-color: #eff6ff; }
+        .bg-green-50 { background-color: #f0fdf4; }
+        .bg-yellow-50 { background-color: #fefce8; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-800 { color: #1f2937; }
+        .text-blue-800 { color: #1e40af; }
+        .text-green-600 { color: #059669; }
+        .text-green-700 { color: #047857; }
+        .text-green-800 { color: #065f46; }
+        .text-yellow-800 { color: #92400e; }
+        .text-red-600 { color: #dc2626; }
+        .border { border: 1px solid #d1d5db; }
+        .border-gray-200 { border-color: #e5e7eb; }
+        .border-yellow-200 { border-color: #fde047; }
+        .border-green-200 { border-color: #bbf7d0; }
         
-        .hover\:bg-gray-700:hover {
-            background-color: #374151;
-        }
-        
-        .transition-colors {
-            transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out;
-        }
+        .grid { display: grid; gap: 1rem; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-cols-10 { grid-template-columns: repeat(10, 1fr); }
         
         @media (max-width: 768px) {
-            .grid-cols-2 {
-                grid-template-columns: 1fr;
-            }
-            
-            .grid-cols-3 {
-                grid-template-columns: 1fr;
-            }
-            
-            .grid-cols-10 {
-                grid-template-columns: repeat(5, 1fr);
-            }
-            
-            .text-4xl {
-                font-size: 1.875rem;
-            }
-            
-            .text-3xl {
-                font-size: 1.5rem;
-            }
-            
-            .container {
-                padding: 1rem;
-            }
+            .grid-cols-2, .grid-cols-3 { grid-template-columns: 1fr; }
+            .grid-cols-10 { grid-template-columns: repeat(5, 1fr); }
+            .text-4xl { font-size: 1.875rem; }
+            .text-3xl { font-size: 1.5rem; }
+            .container { padding: 1rem; }
         }
     </style>
 </head>
@@ -681,27 +263,18 @@
             const [jackpotAmount, setJackpotAmount] = useState(100);
             const [selectedState, setSelectedState] = useState('FL');
             const [filingStatus, setFilingStatus] = useState('single');
-            const [numTickets, setNumTickets] = useState(1);
-            const [monteCarloRuns, setMonteCarloRuns] = useState(1000);
             const [currentJackpot, setCurrentJackpot] = useState(null);
             const [nextDrawDate, setNextDrawDate] = useState('');
             const [lastUpdated, setLastUpdated] = useState(new Date().toISOString().split('T')[0]);
             const [isUpdating, setIsUpdating] = useState(false);
             const [updateStatus, setUpdateStatus] = useState('');
-            const [apiHealthy, setApiHealthy] = useState(false);
             const [historicalData, setHistoricalData] = useState([]);
-            const [historicalStats, setHistoricalStats] = useState(null);
             const [dataSource, setDataSource] = useState('Loading...');
-            
-            // Optimization states
-            const [optimizationStrategy, setOptimizationStrategy] = useState('balanced');
-            const [numOptimizedSets, setNumOptimizedSets] = useState(3);
-            const [optimizedSets, setOptimizedSets] = useState([]);
-            const [isOptimizing, setIsOptimizing] = useState(false);
             
             // Monte Carlo states
             const [ticketsPerDraw, setTicketsPerDraw] = useState(10);
             const [yearsToSimulate, setYearsToSimulate] = useState(10);
+            const [monteCarloRuns, setMonteCarloRuns] = useState(1000);
             const [simulationResults, setSimulationResults] = useState(null);
             const [isSimulating, setIsSimulating] = useState(false);
             const [simulationProgress, setSimulationProgress] = useState(0);
@@ -744,7 +317,7 @@
                 };
             };
 
-            // Fetch historical data from your API
+            // Fetch historical data
             const fetchHistoricalData = async () => {
                 try {
                     console.log('🔄 Fetching real historical Powerball data...');
@@ -764,13 +337,8 @@
                     
                     if (data.success && data.drawings && data.drawings.length > 0) {
                         setHistoricalData(data.drawings);
-                        setHistoricalStats(data.statistics);
                         setDataSource(data.meta.source);
-                        
                         console.log(`✅ Loaded ${data.drawings.length} real drawings from ${data.meta.source}`);
-                        console.log('📊 Hot numbers:', data.statistics?.hotNumbers?.slice(0, 10) || 'Calculating...');
-                        console.log('🧊 Cold numbers:', data.statistics?.coldNumbers?.slice(0, 10) || 'Calculating...');
-                        
                         return data.drawings;
                     } else {
                         throw new Error('No historical data returned');
@@ -820,7 +388,6 @@
                         }
                         
                         setUpdateStatus(`✅ Live data from ${data.source}: ${data.jackpot.formatted}`);
-                        setApiHealthy(true);
                     } else {
                         throw new Error('Invalid API response');
                     }
@@ -839,7 +406,6 @@
                     
                     const nextDraw = calculateNextDrawing();
                     setNextDrawDate(`${nextDraw.date} @ ${nextDraw.time}`);
-                    setApiHealthy(false);
                     setUpdateStatus('⚠️ Using estimated jackpot data');
                 }
                 
@@ -847,114 +413,20 @@
                 setIsUpdating(false);
             };
 
-            // Initialize app with BOTH current jackpot AND historical data
+            // Initialize app
             useEffect(() => {
                 const initializeData = async () => {
                     setUpdateStatus('🚀 Initializing lottery system...');
                     
-                    // Fetch both current jackpot AND historical data
-                    const [jackpotResult, historicalResult] = await Promise.all([
+                    await Promise.all([
                         fetchLatestPowerballData(),
                         fetchHistoricalData()
                     ]);
                     
-                    if (historicalResult && historicalResult.length > 0) {
-                        setUpdateStatus(`✅ System ready with ${historicalResult.length} real drawings`);
-                    } else {
-                        setUpdateStatus('⚠️ System ready with estimated data');
-                    }
+                    setUpdateStatus('✅ System ready');
                 };
                 initializeData();
             }, []);
-
-            // Helper function to select random numbers from array
-            const selectRandomFromArray = (array, count) => {
-                const numbers = [];
-                const shuffled = [...array].sort(() => Math.random() - 0.5);
-                
-                for (let i = 0; i < Math.min(count, shuffled.length); i++) {
-                    numbers.push(shuffled[i]);
-                }
-                
-                // Fill remaining with truly random if needed
-                while (numbers.length < count) {
-                    const num = Math.floor(Math.random() * 69) + 1;
-                    if (!numbers.includes(num)) {
-                        numbers.push(num);
-                    }
-                }
-                
-                return numbers;
-            };
-
-            // Generate hot numbers from REAL historical data
-            const generateHotNumbers = () => {
-                if (historicalStats && historicalStats.hotNumbers) {
-                    console.log('🔥 Using real hot numbers from', historicalData.length, 'drawings');
-                    return selectRandomFromArray(historicalStats.hotNumbers.slice(0, 15), 4);
-                } 
-                
-                if (historicalData.length > 0) {
-                    // Calculate frequency from raw historical data
-                    const frequency = {};
-                    
-                    historicalData.forEach(drawing => {
-                        drawing.numbers.forEach(num => {
-                            frequency[num] = (frequency[num] || 0) + 1;
-                        });
-                    });
-                    
-                    const hotNumbers = Object.entries(frequency)
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 15)
-                        .map(([num]) => parseInt(num));
-                    
-                    console.log('🔥 Calculated hot numbers from', historicalData.length, 'drawings:', hotNumbers.slice(0, 10));
-                    return selectRandomFromArray(hotNumbers, 4);
-                }
-                
-                // Fallback to estimated hot numbers
-                const estimatedHot = [7, 12, 17, 23, 28, 32, 38, 41, 45, 51, 56, 61, 63, 67];
-                console.log('🔥 Using estimated hot numbers (no real data available)');
-                return selectRandomFromArray(estimatedHot, 4);
-            };
-
-            // Generate cold numbers from REAL historical data
-            const generateColdNumbers = () => {
-                if (historicalStats && historicalStats.coldNumbers) {
-                    console.log('🧊 Using real cold numbers from', historicalData.length, 'drawings');
-                    return selectRandomFromArray(historicalStats.coldNumbers.slice(0, 15), 4);
-                }
-                
-                if (historicalData.length > 0) {
-                    // Calculate frequency from raw historical data
-                    const frequency = {};
-                    
-                    // Initialize all possible numbers
-                    for (let i = 1; i <= 69; i++) {
-                        frequency[i] = 0;
-                    }
-                    
-                    historicalData.forEach(drawing => {
-                        drawing.numbers.forEach(num => {
-                            frequency[num]++;
-                        });
-                    });
-                    
-                    const coldNumbers = Object.entries(frequency)
-                        .sort((a, b) => a[1] - b[1])
-                        .slice(0, 15)
-                        .map(([num]) => parseInt(num));
-                    
-                    console.log('🧊 Calculated cold numbers from', historicalData.length, 'drawings:', coldNumbers.slice(0, 10));
-                    return selectRandomFromArray(coldNumbers, 4);
-                }
-                
-                // Fallback to estimated cold numbers
-                const estimatedCold = [3, 9, 14, 19, 25, 31, 36, 42, 48, 53, 58, 64, 68];
-                console.log('🧊 Using estimated cold numbers (no real data available)');
-                return selectRandomFromArray(estimatedCold, 4);
-            };
 
             const toggleNumber = (num) => {
                 if (selectedNumbers.includes(num)) {
@@ -989,60 +461,18 @@
                 return (currentJackpot.amount * jackpotProb + otherPrizes) - ticketCost;
             };
 
-            const generateBalancedNumbers = () => {
-                const numbers = [];
-                const ranges = [[1, 23], [24, 46], [47, 69]];
-                
-                ranges.forEach(([min, max]) => {
-                    let num;
-                    do {
-                        num = Math.floor(Math.random() * (max - min + 1)) + min;
-                    } while (numbers.includes(num));
-                    numbers.push(num);
-                });
-                
-                while (numbers.length < 5) {
-                    const num = Math.floor(Math.random() * 69) + 1;
-                    if (!numbers.includes(num)) {
-                        numbers.push(num);
-                    }
-                }
-                
-                return numbers;
-            };
-            
-            const generateMathematicalNumbers = () => {
-                const numbers = [];
-                const spacing = 69 / 6;
-                
-                for (let i = 0; i < 5; i++) {
-                    const base = Math.floor(spacing * (i + 1));
-                    const variance = Math.floor(Math.random() * 6) - 3;
-                    let num = Math.max(1, Math.min(69, base + variance));
-                    
-                    while (numbers.includes(num)) {
-                        num = Math.floor(Math.random() * 69) + 1;
-                    }
-                    numbers.push(num);
-                }
-                
-                return numbers;
-            };
-            
-            // Working Monte Carlo simulation function
+            // Monte Carlo simulation
             const runMonteCarloSimulation = useCallback(async () => {
                 setIsSimulating(true);
                 setSimulationProgress(0);
                 setSimulationResults(null);
                 
-                // Simulate in chunks to show progress
                 const totalTickets = ticketsPerDraw * yearsToSimulate * 156;
                 const totalCost = totalTickets * 2;
                 let totalWon = 0;
                 let jackpotWins = 0;
                 
                 for (let i = 0; i < monteCarloRuns; i++) {
-                    // Simulate one scenario
                     let scenarioWinnings = 0;
                     for (let ticket = 0; ticket < totalTickets; ticket++) {
                         const random = Math.random();
@@ -1063,7 +493,6 @@
                     }
                     totalWon += scenarioWinnings;
                     
-                    // Update progress
                     if (i % Math.max(1, Math.floor(monteCarloRuns / 100)) === 0) {
                         setSimulationProgress(Math.floor((i / monteCarloRuns) * 100));
                         await new Promise(resolve => setTimeout(resolve, 1));
@@ -1087,471 +516,15 @@
                 setIsSimulating(false);
             }, [ticketsPerDraw, yearsToSimulate, monteCarloRuns, currentJackpot]);
 
-            // Advanced scoring algorithm based on real historical data
-            const calculateCombinationScore = (numbers, powerball, historicalData, historicalStats) => {
-                if (!historicalData || historicalData.length === 0) {
-                    return Math.random() * 50 + 50; // Fallback random score
-                }
-                
-                let score = 0;
-                const weights = {
-                    frequency: 25,      // How often numbers appear
-                    spacing: 20,        // Mathematical distribution
-                    recent: 15,         // Recent appearance trends
-                    balance: 15,        // Range distribution
-                    uniqueness: 10,     // Avoiding common patterns
-                    powerball: 15       // Powerball optimization
-                };
-                
-                // 1. Frequency Analysis (25 points)
-                if (historicalStats) {
-                    const hotNumbers = historicalStats.hotNumbers || [];
-                    const coldNumbers = historicalStats.coldNumbers || [];
-                    
-                    let frequencyScore = 0;
-                    numbers.forEach(num => {
-                        if (hotNumbers.includes(num)) {
-                            frequencyScore += 5; // Bonus for hot numbers
-                        } else if (!coldNumbers.slice(0, 10).includes(num)) {
-                            frequencyScore += 3; // Moderate bonus for balanced numbers
-                        }
-                    });
-                    score += Math.min(frequencyScore, weights.frequency);
-                }
-                
-                // 2. Mathematical Spacing (20 points)
-                const sortedNumbers = [...numbers].sort((a, b) => a - b);
-                let spacingScore = 0;
-                for (let i = 1; i < sortedNumbers.length; i++) {
-                    const gap = sortedNumbers[i] - sortedNumbers[i-1];
-                    if (gap >= 3 && gap <= 15) { // Optimal spacing
-                        spacingScore += 4;
-                    } else if (gap >= 2 && gap <= 20) {
-                        spacingScore += 2;
-                    }
-                }
-                score += Math.min(spacingScore, weights.spacing);
-                
-                // 3. Recent Trends (15 points)
-                const recentDrawings = historicalData.slice(0, 20);
-                let recentScore = 0;
-                const recentNumbers = new Set();
-                recentDrawings.forEach(drawing => {
-                    drawing.numbers.forEach(num => recentNumbers.add(num));
-                });
-                
-                let recentMatches = 0;
-                numbers.forEach(num => {
-                    if (recentNumbers.has(num)) recentMatches++;
-                });
-                
-                // Optimal: 2-3 numbers from recent trends
-                if (recentMatches >= 2 && recentMatches <= 3) {
-                    recentScore = weights.recent;
-                } else if (recentMatches === 1 || recentMatches === 4) {
-                    recentScore = weights.recent * 0.7;
-                } else {
-                    recentScore = weights.recent * 0.3;
-                }
-                score += recentScore;
-                
-                // 4. Range Balance (15 points)
-                const ranges = {
-                    low: numbers.filter(n => n >= 1 && n <= 23).length,
-                    mid: numbers.filter(n => n >= 24 && n <= 46).length,
-                    high: numbers.filter(n => n >= 47 && n <= 69).length
-                };
-                
-                let balanceScore = 0;
-                if (ranges.low >= 1 && ranges.mid >= 1 && ranges.high >= 1) {
-                    balanceScore = weights.balance; // Perfect distribution
-                } else if (ranges.low >= 1 && ranges.high >= 1) {
-                    balanceScore = weights.balance * 0.8; // Good distribution
-                } else {
-                    balanceScore = weights.balance * 0.4; // Poor distribution
-                }
-                score += balanceScore;
-                
-                // 5. Uniqueness (10 points)
-                // Avoid common patterns like consecutive numbers or multiples
-                let uniquenessScore = weights.uniqueness;
-                
-                // Penalize consecutive numbers
-                let consecutiveCount = 0;
-                for (let i = 1; i < sortedNumbers.length; i++) {
-                    if (sortedNumbers[i] - sortedNumbers[i-1] === 1) {
-                        consecutiveCount++;
-                    }
-                }
-                if (consecutiveCount >= 3) uniquenessScore *= 0.3;
-                else if (consecutiveCount >= 2) uniquenessScore *= 0.7;
-                
-                // Penalize all even or all odd
-                const evenCount = numbers.filter(n => n % 2 === 0).length;
-                if (evenCount === 0 || evenCount === 5) uniquenessScore *= 0.5;
-                
-                score += uniquenessScore;
-                
-                // 6. Powerball Optimization (15 points)
-                let powerballScore = 0;
-                if (historicalStats && historicalStats.hotPowerballs) {
-                    if (historicalStats.hotPowerballs.includes(powerball)) {
-                        powerballScore = weights.powerball;
-                    } else if (!historicalStats.coldPowerballs.slice(0, 5).includes(powerball)) {
-                        powerballScore = weights.powerball * 0.7;
-                    } else {
-                        powerballScore = weights.powerball * 0.4;
-                    }
-                } else {
-                    powerballScore = weights.powerball * 0.6; // Neutral score if no data
-                }
-                score += powerballScore;
-                
-                return Math.min(score, 100); // Cap at 100
-            };
-
-            // Generate optimal Powerball based on strategy
-            const generateOptimalPowerball = (historicalStats, strategy) => {
-                if (!historicalStats) {
-                    return Math.floor(Math.random() * 26) + 1;
-                }
-                
-                switch (strategy) {
-                    case 'hot':
-                    case 'trend':
-                        if (historicalStats.hotPowerballs && historicalStats.hotPowerballs.length > 0) {
-                            return historicalStats.hotPowerballs[Math.floor(Math.random() * Math.min(5, historicalStats.hotPowerballs.length))];
-                        }
-                        break;
-                        
-                    case 'cold':
-                        if (historicalStats.coldPowerballs && historicalStats.coldPowerballs.length > 0) {
-                            return historicalStats.coldPowerballs[Math.floor(Math.random() * Math.min(5, historicalStats.coldPowerballs.length))];
-                        }
-                        break;
-                        
-                    case 'mathematical':
-                        // Mathematical approach: avoid extremes
-                        return Math.floor(Math.random() * 16) + 6; // Numbers 6-21
-                        
-                    case 'balanced':
-                    default:
-                        // Mix of hot and mathematical
-                        if (historicalStats.hotPowerballs && Math.random() > 0.5) {
-                            return historicalStats.hotPowerballs[Math.floor(Math.random() * Math.min(3, historicalStats.hotPowerballs.length))];
-                        }
-                        return Math.floor(Math.random() * 26) + 1;
-                }
-                
-                return Math.floor(Math.random() * 26) + 1;
-            };
-
-            // Enhanced AI Optimization using real 200+ historical drawings - FIXED VERSION
-            const generateOptimizedNumbers = useCallback(async () => {
-                setIsOptimizing(true);
-                setOptimizedSets([]);
-                
-                console.log('🎯 Generating AI-optimized combinations using', historicalData.length, 'real drawings...');
-                console.log('📊 Historical stats available:', !!historicalStats);
-                
-                await new Promise(resolve => setTimeout(resolve, 800));
-                
-                const strategies = [
-                    {
-                        id: 'frequency_master',
-                        name: 'Frequency Master',
-                        description: 'Leverages most frequently drawn numbers from real historical data',
-                        icon: '🔥',
-                        generate: () => {
-                            const numbers = [];
-                            if (historicalStats && historicalStats.hotNumbers && historicalStats.hotNumbers.length > 0) {
-                                console.log('🔥 Using hot numbers:', historicalStats.hotNumbers.slice(0, 5));
-                                // Take 3-4 from hottest numbers
-                                const hotPool = [...historicalStats.hotNumbers.slice(0, 12)];
-                                while (numbers.length < 4 && hotPool.length > 0) {
-                                    const randomIndex = Math.floor(Math.random() * hotPool.length);
-                                    const num = hotPool.splice(randomIndex, 1)[0];
-                                    if (!numbers.includes(num)) {
-                                        numbers.push(num);
-                                    }
-                                }
-                            } else {
-                                console.log('🔥 Using fallback hot numbers');
-                                const fallbackHot = [7, 12, 17, 23, 28, 32, 38, 41, 45];
-                                while (numbers.length < 4) {
-                                    const num = fallbackHot[Math.floor(Math.random() * fallbackHot.length)];
-                                    if (!numbers.includes(num)) {
-                                        numbers.push(num);
-                                    }
-                                }
-                            }
-                            // Fill remaining with balanced selection
-                            while (numbers.length < 5) {
-                                const num = Math.floor(Math.random() * 69) + 1;
-                                if (!numbers.includes(num)) {
-                                    numbers.push(num);
-                                }
-                            }
-                            return {
-                                numbers: numbers.sort((a, b) => a - b),
-                                powerball: generateOptimalPowerball(historicalStats, 'hot')
-                            };
-                        }
-                    },
-                    {
-                        id: 'balanced_hybrid',
-                        name: 'Balanced Hybrid',
-                        description: 'Optimal mix of hot, cold, and mathematically spaced numbers',
-                        icon: '⚖️',
-                        generate: () => {
-                            const numbers = [];
-                            
-                            // 2 hot numbers
-                            if (historicalStats && historicalStats.hotNumbers && historicalStats.hotNumbers.length > 0) {
-                                const hotPool = [...historicalStats.hotNumbers.slice(0, 15)];
-                                for (let i = 0; i < 2 && hotPool.length > 0; i++) {
-                                    const randomIndex = Math.floor(Math.random() * hotPool.length);
-                                    const num = hotPool.splice(randomIndex, 1)[0];
-                                    if (!numbers.includes(num)) {
-                                        numbers.push(num);
-                                    }
-                                }
-                            }
-                            
-                            // 1 cold number
-                            if (historicalStats && historicalStats.coldNumbers && historicalStats.coldNumbers.length > 0) {
-                                const coldPool = historicalStats.coldNumbers.slice(0, 10);
-                                const randomIndex = Math.floor(Math.random() * coldPool.length);
-                                const num = coldPool[randomIndex];
-                                if (!numbers.includes(num)) {
-                                    numbers.push(num);
-                                }
-                            }
-                            
-                            // Fill remaining with range-balanced numbers
-                            const ranges = [[24, 46], [47, 69]];
-                            ranges.forEach(([min, max]) => {
-                                if (numbers.length < 5) {
-                                    let attempts = 0;
-                                    while (attempts < 20) {
-                                        const num = Math.floor(Math.random() * (max - min + 1)) + min;
-                                        if (!numbers.includes(num)) {
-                                            numbers.push(num);
-                                            break;
-                                        }
-                                        attempts++;
-                                    }
-                                }
-                            });
-                            
-                            // Fill any remaining slots
-                            while (numbers.length < 5) {
-                                const num = Math.floor(Math.random() * 69) + 1;
-                                if (!numbers.includes(num)) {
-                                    numbers.push(num);
-                                }
-                            }
-                            
-                            return {
-                                numbers: numbers.sort((a, b) => a - b),
-                                powerball: generateOptimalPowerball(historicalStats, 'balanced')
-                            };
-                        }
-                    },
-                    {
-                        id: 'contrarian_edge',
-                        name: 'Contrarian Edge',
-                        description: 'Focuses on overdue numbers due for statistical reversion',
-                        icon: '🧊',
-                        generate: () => {
-                            const numbers = [];
-                            
-                            if (historicalStats && historicalStats.coldNumbers && historicalStats.coldNumbers.length > 0) {
-                                console.log('🧊 Using cold numbers:', historicalStats.coldNumbers.slice(0, 5));
-                                // Take 3 from coldest numbers (not 4 to avoid filling too many slots)
-                                const coldPool = [...historicalStats.coldNumbers.slice(0, 15)];
-                                while (numbers.length < 3 && coldPool.length > 0) {
-                                    const randomIndex = Math.floor(Math.random() * coldPool.length);
-                                    const num = coldPool.splice(randomIndex, 1)[0];
-                                    if (!numbers.includes(num)) {
-                                        numbers.push(num);
-                                    }
-                                }
-                            } else {
-                                console.log('🧊 Using fallback cold numbers');
-                                const fallbackCold = [3, 9, 14, 19, 25, 31, 36, 42, 48];
-                                while (numbers.length < 3) {
-                                    const num = fallbackCold[Math.floor(Math.random() * fallbackCold.length)];
-                                    if (!numbers.includes(num)) {
-                                        numbers.push(num);
-                                    }
-                                }
-                            }
-                            
-                            // Fill remaining slots with balanced numbers
-                            while (numbers.length < 5) {
-                                const num = Math.floor(Math.random() * 69) + 1;
-                                if (!numbers.includes(num)) {
-                                    numbers.push(num);
-                                }
-                            }
-                            
-                            return {
-                                numbers: numbers.sort((a, b) => a - b),
-                                powerball: generateOptimalPowerball(historicalStats, 'cold')
-                            };
-                        }
-                    },
-                    {
-                        id: 'mathematical_precision',
-                        name: 'Mathematical Precision',
-                        description: 'Algorithmically distributed numbers for optimal coverage',
-                        icon: '📐',
-                        generate: () => {
-                            const numbers = [];
-                            const spacing = 69 / 6;
-                            
-                            for (let i = 0; i < 5; i++) {
-                                const base = Math.floor(spacing * (i + 1));
-                                const variance = Math.floor(Math.random() * 8) - 4; // ±4 variance
-                                let num = Math.max(1, Math.min(69, base + variance));
-                                
-                                let attempts = 0;
-                                while (numbers.includes(num) && attempts < 20) {
-                                    num = Math.floor(Math.random() * 69) + 1;
-                                    attempts++;
-                                }
-                                numbers.push(num);
-                            }
-                            
-                            return {
-                                numbers: numbers.sort((a, b) => a - b),
-                                powerball: generateOptimalPowerball(historicalStats, 'mathematical')
-                            };
-                        }
-                    },
-                    {
-                        id: 'trend_momentum',
-                        name: 'Trend Momentum',
-                        description: 'Identifies emerging patterns from recent 30 drawings',
-                        icon: '📈',
-                        generate: () => {
-                            const numbers = [];
-                            
-                            if (historicalData && historicalData.length >= 10) {
-                                console.log('📈 Analyzing trends from', historicalData.length, 'drawings');
-                                // Analyze last 10 drawings for emerging patterns
-                                const recentNumbers = new Map();
-                                historicalData.slice(0, 10).forEach((drawing, index) => {
-                                    drawing.numbers.forEach(num => {
-                                        const weight = 10 - index; // More recent = higher weight
-                                        recentNumbers.set(num, (recentNumbers.get(num) || 0) + weight);
-                                    });
-                                });
-                                
-                                // Sort by weighted frequency
-                                const trendingNumbers = Array.from(recentNumbers.entries())
-                                    .sort((a, b) => b[1] - a[1])
-                                    .slice(0, 15)
-                                    .map(([num]) => num);
-                                
-                                // Take 3 trending numbers
-                                while (numbers.length < 3 && trendingNumbers.length > 0) {
-                                    const randomIndex = Math.floor(Math.random() * Math.min(8, trendingNumbers.length));
-                                    const num = trendingNumbers.splice(randomIndex, 1)[0];
-                                    if (!numbers.includes(num)) {
-                                        numbers.push(num);
-                                    }
-                                }
-                            } else {
-                                console.log('📈 Using fallback trend analysis');
-                            }
-                            
-                            // Fill remaining with balanced selection
-                            while (numbers.length < 5) {
-                                const num = Math.floor(Math.random() * 69) + 1;
-                                if (!numbers.includes(num)) {
-                                    numbers.push(num);
-                                }
-                            }
-                            
-                            return {
-                                numbers: numbers.sort((a, b) => a - b),
-                                powerball: generateOptimalPowerball(historicalStats, 'trend')
-                            };
-                        }
-                    }
-                ];
-                
-                const combinations = [];
-                
-                // Generate multiple combinations for each strategy and pick the best
-                for (const strategy of strategies.slice(0, 5)) { // Top 5 strategies
-                    let bestCombination = null;
-                    let bestScore = 0;
-                    
-                    // Generate 8 combinations per strategy and pick the highest scoring
-                    for (let i = 0; i < 8; i++) {
-                        const combo = strategy.generate();
-                        const score = calculateCombinationScore(combo.numbers, combo.powerball, historicalData, historicalStats);
-                        
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestCombination = {
-                                ...combo,
-                                score: score.toFixed(1),
-                                strategy: strategy.name,
-                                description: strategy.description,
-                                icon: strategy.icon,
-                                dataSource: historicalData.length > 0 ? `Real Data (${historicalData.length} drawings)` : 'Estimated',
-                                confidence: Math.min(95, Math.max(65, score + Math.random() * 8)).toFixed(1)
-                            };
-                        }
-                    }
-                    
-                    if (bestCombination) {
-                        combinations.push(bestCombination);
-                    }
-                }
-                
-                // Sort by score and add rankings
-                const rankedCombinations = combinations
-                    .sort((a, b) => parseFloat(b.score) - parseFloat(a.score))
-                    .map((combo, index) => ({
-                        ...combo,
-                        rank: index + 1
-                    }));
-                
-                console.log('✅ Generated', rankedCombinations.length, 'AI-optimized combinations');
-                console.log('🏆 Top combination score:', rankedCombinations[0]?.score, 'using', rankedCombinations[0]?.strategy);
-                
-                setOptimizedSets(rankedCombinations);
-                setIsOptimizing(false);
-            }, [historicalData, historicalStats]);
-
-            // Generate AI combinations when historical data is available
-            useEffect(() => {
-                if (historicalData.length > 0 && historicalStats && optimizedSets.length === 0) {
-                    console.log('📊 Historical data and stats loaded, generating optimized sets...');
-                    const timer = setTimeout(() => {
-                        generateOptimizedNumbers();
-                    }, 1000);
-                    return () => clearTimeout(timer);
-                }
-            }, [historicalData, historicalStats, generateOptimizedNumbers, optimizedSets.length]);
-
             // Historical Data Status Component
             const HistoricalDataStatus = () => {
                 if (historicalData.length === 0) {
                     return (
                         React.createElement('div', { 
-                            className: 'bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4' 
+                            className: 'bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4' 
                         },
                             React.createElement('div', { className: 'flex items-center gap-2' },
-                                React.createElement('span', { className: 'text-yellow-600' }, '⚠️'),
-                                React.createElement('span', { 
-                                    className: 'text-sm text-yellow-800' 
-                                }, 'Using estimated statistical data - historical API loading...')
+                                React.createElement('span', { className: 'text-yellow-800' }, '⚠️ Using estimated data - historical API loading...')
                             )
                         )
                     );
@@ -1559,18 +532,14 @@
                 
                 return (
                     React.createElement('div', { 
-                        className: 'bg-green-50 border border-green-200 rounded-lg p-3 mb-4' 
+                        className: 'bg-green-50 border border-green-200 rounded-lg p-4 mb-4' 
                     },
                         React.createElement('div', { className: 'flex items-center gap-2' },
-                            React.createElement('span', { className: 'text-green-600' }, '✅'),
-                            React.createElement('span', { 
-                                className: 'text-sm text-green-800' 
-                            }, 
-                                React.createElement('strong', null, `${historicalData.length} real drawings`),
-                                ' loaded for optimization calculations'
+                            React.createElement('span', { className: 'text-green-800' }, 
+                                `✅ ${historicalData.length} real drawings loaded for analysis`
                             )
                         ),
-                        React.createElement('div', { className: 'text-xs text-green-600 mt-1' },
+                        React.createElement('div', { className: 'text-sm text-green-600 mt-1' },
                             `Latest: ${historicalData[0]?.date || 'N/A'} | Source: ${dataSource}`
                         )
                     )
@@ -1580,14 +549,20 @@
             return React.createElement('div', { className: 'container' },
                 // Current Jackpot Display
                 React.createElement('div', { 
-                    className: 'sticky-top mb-6 gradient-bg rounded-xl p-6 shadow-lg' 
+                    className: 'mb-6 gradient-bg rounded-xl p-6' 
                 },
                     React.createElement('div', { 
-                        className: 'flex items-center justify-between text-white' 
+                        className: 'flex items-center justify-between', 
+                        style: { color: 'white' }
                     },
                         React.createElement('div', { className: 'flex items-center gap-4' },
                             React.createElement('div', { 
-                                style: { background: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '50%' } 
+                                style: { 
+                                    background: 'rgba(255,255,255,0.2)', 
+                                    padding: '12px', 
+                                    borderRadius: '50%',
+                                    fontSize: '1.5rem'
+                                } 
                             }, '💰'),
                             React.createElement('div', null,
                                 React.createElement('div', { 
@@ -1608,7 +583,11 @@
                         ),
                         React.createElement('div', { className: 'text-center' },
                             React.createElement('div', { 
-                                style: { background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '8px' } 
+                                style: { 
+                                    background: 'rgba(255,255,255,0.2)', 
+                                    padding: '1rem', 
+                                    borderRadius: '8px' 
+                                } 
                             },
                                 React.createElement('div', { 
                                     style: { fontSize: '0.875rem', marginBottom: '0.25rem' } 
@@ -1621,60 +600,17 @@
                                 }, (() => {
                                     const expectedValue = calculateExpectedValue();
                                     return expectedValue > 0 ? 
-                                        `Expected value: +${expectedValue.toFixed(2)}` : 
-                                        `Expected value: -${Math.abs(expectedValue).toFixed(2)}`;
+                                        `Expected value: +$${expectedValue.toFixed(2)}` : 
+                                        `Expected value: -$${Math.abs(expectedValue).toFixed(2)}`;
                                 })())
                             )
                         )
-                    ),
-                    // Quick Stats Bar with Historical Data Status
-                    React.createElement('div', { 
-                        style: { marginTop: '1rem', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0.75rem' }, 
-                        className: 'flex items-center justify-between' 
-                    },
-                        React.createElement('div', { 
-                            className: 'flex items-center gap-4', 
-                            style: { fontSize: '0.875rem', opacity: 0.8 } 
-                        },
-                            React.createElement('div', { className: 'flex items-center gap-2' },
-                                React.createElement('div', { 
-                                    style: {
-                                        width: '8px', 
-                                        height: '8px', 
-                                        borderRadius: '50%',
-                                        backgroundColor: historicalData.length > 0 ? '#34d399' : '#fb923c'
-                                    }, 
-                                    className: historicalData.length > 0 ? 'pulse' : '' 
-                                }),
-                                React.createElement('span', null, 
-                                    historicalData.length > 0 ? 
-                                        `${historicalData.length} Real Drawings` : 
-                                        'Estimated Data'
-                                )
-                            ),
-                            React.createElement('div', null, 'Ticket Price: $2.00'),
-                            React.createElement('div', null, 'Mon, Wed, Sat @ 10:59 PM ET')
-                        ),
-                        React.createElement('button', {
-                            onClick: () => {
-                                fetchLatestPowerballData();
-                                fetchHistoricalData();
-                            },
-                            disabled: isUpdating,
-                            className: 'btn',
-                            style: {
-                                background: isUpdating ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.2)',
-                                color: isUpdating ? 'rgba(255,255,255,0.5)' : 'white',
-                                cursor: isUpdating ? 'not-allowed' : 'pointer',
-                                fontSize: '0.75rem'
-                            }
-                        }, isUpdating ? '⟳' : '🔄', ' Update All')
                     )
                 ),
 
                 // Header
-                React.createElement('div', { className: 'mb-8' },
-                    React.createElement('h1', { className: 'text-4xl font-bold text-gray-800 mb-2 flex items-center gap-4' },
+                React.createElement('div', { className: 'mb-6' },
+                    React.createElement('h1', { className: 'text-4xl font-bold text-gray-800 mb-2' },
                         '🧠 Advanced Lottery Intelligence System'
                     ),
                     React.createElement('div', { className: 'flex items-center justify-between' },
@@ -1682,7 +618,7 @@
                             'Real-time data integration with advanced statistical analysis'
                         ),
                         React.createElement('div', { className: 'flex items-center gap-4' },
-                            React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280' } },
+                            React.createElement('div', { className: 'text-sm text-gray-600' },
                                 'Last updated: ', lastUpdated
                             ),
                             React.createElement('button', {
@@ -1710,22 +646,27 @@
                             marginTop: '0.5rem',
                             padding: '0.75rem',
                             borderRadius: '6px',
-                            fontSize: '0.875rem'
-                        },
-                        className: updateStatus.includes('✅') ? 'status-success' :
-                                  updateStatus.includes('⚠️') || updateStatus.includes('❌') ? 'status-warning' :
-                                  'status-success'
+                            fontSize: '0.875rem',
+                            backgroundColor: updateStatus.includes('✅') ? '#f0fdf4' :
+                                          updateStatus.includes('⚠️') ? '#fefce8' : '#f0fdf4',
+                            color: updateStatus.includes('✅') ? '#059669' :
+                                   updateStatus.includes('⚠️') ? '#d97706' : '#059669'
+                        }
                     }, updateStatus)
                 ),
 
-                // Enhanced Tabs
+                // Tabs
                 React.createElement('div', { 
-                    style: { background: '#f3f4f6', padding: '0.25rem', borderRadius: '8px', marginBottom: '1.5rem' }, 
+                    style: { 
+                        background: '#f3f4f6', 
+                        padding: '0.25rem', 
+                        borderRadius: '8px', 
+                        marginBottom: '1.5rem' 
+                    }, 
                     className: 'flex gap-1' 
                 },
                     [
                         { id: 'calculator', label: 'Basic Calculator', icon: '🧮' },
-                        { id: 'optimization', label: 'AI Optimization', icon: '🎯' },
                         { id: 'montecarlo', label: 'Monte Carlo', icon: '📈' },
                         { id: 'taxes', label: 'Tax Analysis', icon: '💰' },
                         { id: 'expected', label: 'Expected Value', icon: '📊' }
@@ -1740,31 +681,40 @@
                 ),
 
                 // Tab Content
-                activeTab === 'calculator' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
-                    // Historical Data Status
+                activeTab === 'calculator' && React.createElement('div', { className: 'grid gap-4' },
                     React.createElement(HistoricalDataStatus),
                     
                     React.createElement('div', { className: 'card bg-blue-50' },
                         React.createElement('h2', { className: 'text-2xl font-semibold text-blue-800 mb-4' },
                             '📊 Core Probability Mathematics'
                         ),
-                        React.createElement('div', { className: 'grid grid-cols-2 gap-4', style: { fontSize: '0.875rem' } },
+                        React.createElement('div', { className: 'grid grid-cols-2 gap-4 text-sm' },
                             React.createElement('div', null,
-                                React.createElement('h3', { className: 'font-semibold text-blue-700 mb-2' }, 'Combination Formula:'),
+                                React.createElement('h3', { className: 'font-semibold text-blue-800 mb-2' }, 'Combination Formula:'),
                                 React.createElement('code', { 
-                                    style: { background: 'white', padding: '0.5rem', borderRadius: '4px', display: 'block' } 
+                                    style: { 
+                                        background: 'white', 
+                                        padding: '0.5rem', 
+                                        borderRadius: '4px', 
+                                        display: 'block' 
+                                    } 
                                 }, 'C(69,5) = 69!/(5! × 64!) = 11,238,513')
                             ),
                             React.createElement('div', null,
-                                React.createElement('h3', { className: 'font-semibold text-blue-700 mb-2' }, 'Total Combinations:'),
+                                React.createElement('h3', { className: 'font-semibold text-blue-800 mb-2' }, 'Total Combinations:'),
                                 React.createElement('code', { 
-                                    style: { background: 'white', padding: '0.5rem', borderRadius: '4px', display: 'block' } 
+                                    style: { 
+                                        background: 'white', 
+                                        padding: '0.5rem', 
+                                        borderRadius: '4px', 
+                                        display: 'block' 
+                                    } 
                                 }, '11,238,513 × 26 = 292,201,338')
                             )
                         )
                     ),
 
-                    React.createElement('div', { className: 'card bg-gray-50' },
+                    React.createElement('div', { className: 'card' },
                         React.createElement('div', { className: 'flex items-center justify-between mb-4' },
                             React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800' },
                                 '🎯 Number Selection Interface'
@@ -1813,22 +763,24 @@
                                 React.createElement('h3', { className: 'font-semibold text-gray-700 mb-2' }, 
                                     'Your Selection:'
                                 ),
-                                React.createElement('p', { style: { fontSize: '1.125rem' } },
+                                React.createElement('p', { className: 'text-lg' },
                                     'Main: ', selectedNumbers.join(', ') || 'None selected', ' | Powerball: ', powerball || 'None'
                                 ),
                                 selectedNumbers.length === 5 && powerball && React.createElement('div', { 
-                                    style: { marginTop: '0.5rem', padding: '0.75rem', background: '#fefce8', borderRadius: '4px' } 
+                                    style: { 
+                                        marginTop: '0.5rem', 
+                                        padding: '0.75rem', 
+                                        background: '#fefce8', 
+                                        borderRadius: '4px' 
+                                    } 
                                 },
-                                    React.createElement('p', { className: 'font-semibold', style: { color: '#92400e' } },
-                                        'Probability of exact match:'
+                                    React.createElement('p', { className: 'font-semibold text-yellow-800' },
+                                        'Probability of exact match: 1 in 292,201,338 (3.42e-7%)'
                                     ),
-                                    React.createElement('p', { style: { color: '#a16207' } },
-                                        '1 in 292,201,338 (3.42e-7%)'
-                                    ),
-                                    React.createElement('p', { style: { color: '#a16207', marginTop: '0.25rem' } },
+                                    React.createElement('p', { className: 'text-yellow-800 mt-1' },
                                         (() => {
                                             const expectedValue = calculateExpectedValue();
-                                            return `Expected value: ${expectedValue > 0 ? '+' : ''}${expectedValue.toFixed(2)}`;
+                                            return `Expected value: ${expectedValue > 0 ? '+' : ''}$${expectedValue.toFixed(2)}`;
                                         })()
                                     )
                                 )
@@ -1837,124 +789,8 @@
                     )
                 ),
 
-                // AI Optimization Tab with REAL historical data
-                activeTab === 'optimization' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
-                    // Historical Data Status
-                    React.createElement(HistoricalDataStatus),
-                    
-                    React.createElement('div', { className: 'card' },
-                        React.createElement('div', { className: 'flex items-center justify-between mb-4' },
-                            React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800' },
-                                '🎯 AI Number Optimization'
-                            ),
-                            React.createElement('div', { className: 'flex gap-2' },
-                                React.createElement('select', {
-                                    value: optimizationStrategy,
-                                    onChange: (e) => setOptimizationStrategy(e.target.value),
-                                    style: { fontSize: '0.875rem' }
-                                },
-                                    React.createElement('option', { value: 'balanced' }, 'Balanced Strategy'),
-                                    React.createElement('option', { value: 'hot' }, 'Hot Numbers'),
-                                    React.createElement('option', { value: 'cold' }, 'Cold Numbers'),
-                                    React.createElement('option', { value: 'mathematical' }, 'Mathematical')
-                                ),
-                                React.createElement('input', {
-                                    type: 'number',
-                                    min: '1',
-                                    max: '10',
-                                    value: numOptimizedSets,
-                                    onChange: (e) => setNumOptimizedSets(parseInt(e.target.value)),
-                                    style: { width: '4rem', fontSize: '0.875rem' },
-                                    placeholder: 'Sets'
-                                }),
-                                React.createElement('button', {
-                                    onClick: generateOptimizedNumbers,
-                                    disabled: isOptimizing,
-                                    className: 'btn btn-purple'
-                                }, isOptimizing ? '🔄 Generating...' : '🚀 Generate')
-                            )
-                        ),
-                        React.createElement('p', { className: 'text-gray-600 mb-4' },
-                            historicalData.length > 0 ? 
-                                `Using ${historicalData.length} real drawings from ${dataSource} for statistical analysis` :
-                                'Using estimated statistical patterns (real data loading...)'
-                        ),
-                        
-                        optimizedSets.length > 0 && React.createElement('div', { className: 'grid gap-4' },
-                            optimizedSets.map((set, index) => 
-                                React.createElement('div', { 
-                                    key: index, 
-                                    className: 'bg-white rounded-lg p-4 border border-gray-200' 
-                                },
-                                    React.createElement('div', { className: 'flex items-center justify-between mb-3' },
-                                        React.createElement('div', { className: 'flex items-center gap-3' },
-                                            React.createElement('div', { 
-                                                className: 'w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm' 
-                                            }, index + 1),
-                                            React.createElement('div', null,
-                                                React.createElement('h4', { className: 'font-semibold text-gray-800' }, 
-                                                    set.strategy
-                                                ),
-                                                React.createElement('p', { className: 'text-sm text-gray-600' }, 
-                                                    `Optimization Score: ${set.score}/100`
-                                                )
-                                            )
-                                        )
-                                    ),
-                                    
-                                    React.createElement('div', { className: 'flex items-center gap-2 mb-3' },
-                                        React.createElement('span', { className: 'text-sm font-medium text-gray-700' }, 
-                                            'Numbers:'
-                                        ),
-                                        ...set.numbers.map(num => 
-                                            React.createElement('span', { 
-                                                key: num, 
-                                                className: 'number-display' 
-                                            }, num)
-                                        ),
-                                        React.createElement('span', { className: 'text-sm font-medium text-gray-700 ml-2' }, 
-                                            'PB:'
-                                        ),
-                                        React.createElement('span', { className: 'powerball-display' }, 
-                                            set.powerball
-                                        )
-                                    ),
-                                    
-                                    React.createElement('div', { className: 'flex items-center justify-between mt-3 pt-3 border-t border-gray-100' },
-                                        React.createElement('div', { 
-                                            style: { fontSize: '0.75rem' }, 
-                                            className: 'text-gray-500' 
-                                        }, 
-                                            `Expected Value: ${calculateExpectedValue().toFixed(2)} | Data: ${historicalData.length > 0 ? 'Real' : 'Estimated'}`
-                                        ),
-                                        React.createElement('div', { className: 'flex gap-2' },
-                                            React.createElement('button', {
-                                                onClick: () => {
-                                                    setSelectedNumbers(set.numbers);
-                                                    setPowerball(set.powerball.toString());
-                                                    setActiveTab('calculator');
-                                                },
-                                                style: { fontSize: '0.75rem' },
-                                                className: 'bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors'
-                                            }, '✓ Use Numbers'),
-                                            React.createElement('button', {
-                                                onClick: () => {
-                                                    const numbersText = `${set.numbers.join(', ')} | PB: ${set.powerball}`;
-                                                    navigator.clipboard.writeText(numbersText);
-                                                },
-                                                style: { fontSize: '0.75rem' },
-                                                className: 'bg-gray-800 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors'
-                                            }, '📋 Copy')
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ),
-
-                // Monte Carlo Simulation Tab
-                activeTab === 'montecarlo' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
+                // Monte Carlo Tab
+                activeTab === 'montecarlo' && React.createElement('div', { className: 'grid gap-4' },
                     React.createElement(HistoricalDataStatus),
                     
                     React.createElement('div', { className: 'card' },
@@ -2003,8 +839,7 @@
                                 },
                                     React.createElement('option', { value: 100 }, '100 (Fast)'),
                                     React.createElement('option', { value: 1000 }, '1,000 (Standard)'),
-                                    React.createElement('option', { value: 10000 }, '10,000 (Detailed)'),
-                                    React.createElement('option', { value: 100000 }, '100,000 (Thorough)')
+                                    React.createElement('option', { value: 10000 }, '10,000 (Detailed)')
                                 )
                             )
                         ),
@@ -2015,7 +850,7 @@
                             ),
                             React.createElement('div', { className: 'grid grid-cols-2 gap-4 text-sm text-blue-700' },
                                 React.createElement('div', null, `Total tickets: ${(ticketsPerDraw * yearsToSimulate * 156).toLocaleString()}`),
-                                React.createElement('div', null, `Total cost: ${(ticketsPerDraw * yearsToSimulate * 156 * 2).toLocaleString()}`),
+                                React.createElement('div', null, `Total cost: $${(ticketsPerDraw * yearsToSimulate * 156 * 2).toLocaleString()}`),
                                 React.createElement('div', null, `Drawings per year: 156 (3×/week)`),
                                 React.createElement('div', null, `Simulation accuracy: ${monteCarloRuns.toLocaleString()} scenarios`)
                             )
@@ -2061,11 +896,11 @@
                             React.createElement('div', { className: 'grid grid-cols-2 gap-4 text-sm' },
                                 React.createElement('div', { className: 'text-green-700' },
                                     React.createElement('strong', null, 'Average Winnings: '), 
-                                    `${simulationResults.averageWinnings.toLocaleString()}`
+                                    `$${simulationResults.averageWinnings.toLocaleString()}`
                                 ),
                                 React.createElement('div', { className: 'text-green-700' },
                                     React.createElement('strong', null, 'Net Result: '), 
-                                    `${simulationResults.netResult >= 0 ? '+' : ''}${simulationResults.netResult.toLocaleString()}`
+                                    `${simulationResults.netResult >= 0 ? '+' : ''}$${simulationResults.netResult.toLocaleString()}`
                                 ),
                                 React.createElement('div', { className: 'text-green-700' },
                                     React.createElement('strong', null, 'ROI: '), 
@@ -2081,7 +916,7 @@
                 ),
 
                 // Tax Analysis Tab
-                activeTab === 'taxes' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
+                activeTab === 'taxes' && React.createElement('div', { className: 'grid gap-4' },
                     React.createElement(HistoricalDataStatus),
                     
                     React.createElement('div', { className: 'card' },
@@ -2117,11 +952,8 @@
                                 },
                                     React.createElement('option', { value: 'FL' }, 'Florida (0%)'),
                                     React.createElement('option', { value: 'TX' }, 'Texas (0%)'),
-                                    React.createElement('option', { value: 'WA' }, 'Washington (0%)'),
                                     React.createElement('option', { value: 'CA' }, 'California (13.3%)'),
-                                    React.createElement('option', { value: 'NY' }, 'New York (10.9%)'),
-                                    React.createElement('option', { value: 'NJ' }, 'New Jersey (10.75%)'),
-                                    React.createElement('option', { value: 'PA' }, 'Pennsylvania (3.07%)')
+                                    React.createElement('option', { value: 'NY' }, 'New York (10.9%)')
                                 )
                             ),
                             React.createElement('div', null,
@@ -2134,25 +966,20 @@
                                     className: 'w-full'
                                 },
                                     React.createElement('option', { value: 'single' }, 'Single'),
-                                    React.createElement('option', { value: 'married' }, 'Married Filing Jointly'),
-                                    React.createElement('option', { value: 'marriedSeparate' }, 'Married Filing Separately'),
-                                    React.createElement('option', { value: 'headOfHousehold' }, 'Head of Household')
+                                    React.createElement('option', { value: 'married' }, 'Married Filing Jointly')
                                 )
                             )
                         ),
                         
                         (() => {
                             const grossWinnings = jackpotAmount * 1000000;
-                            const cashOption = grossWinnings * 0.6; // Typical cash option
+                            const cashOption = grossWinnings * 0.6;
                             
-                            // Federal tax calculation (2024 rates)
-                            const federalRate = 37; // Top bracket for large winnings
+                            const federalRate = 37;
                             const federalTax = cashOption * (federalRate / 100);
                             
-                            // State tax rates
                             const stateTaxRates = {
-                                'FL': 0, 'TX': 0, 'WA': 0,
-                                'CA': 13.3, 'NY': 10.9, 'NJ': 10.75, 'PA': 3.07
+                                'FL': 0, 'TX': 0, 'CA': 13.3, 'NY': 10.9
                             };
                             const stateTaxRate = stateTaxRates[selectedState] || 0;
                             const stateTax = cashOption * (stateTaxRate / 100);
@@ -2165,32 +992,32 @@
                                     'Tax Calculation Results:'
                                 ),
                                 React.createElement('div', { className: 'grid grid-cols-2 gap-6' },
-                                    React.createElement('div', { className: 'space-y-3' },
+                                    React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '0.75rem' } },
                                         React.createElement('div', { className: 'flex justify-between' },
                                             React.createElement('span', { className: 'text-green-700' }, 'Gross Jackpot:'),
-                                            React.createElement('span', { className: 'font-semibold' }, `${grossWinnings.toLocaleString()}`)
+                                            React.createElement('span', { className: 'font-semibold' }, `$${grossWinnings.toLocaleString()}`)
                                         ),
                                         React.createElement('div', { className: 'flex justify-between' },
                                             React.createElement('span', { className: 'text-green-700' }, 'Cash Option (60%):'),
-                                            React.createElement('span', { className: 'font-semibold' }, `${cashOption.toLocaleString()}`)
+                                            React.createElement('span', { className: 'font-semibold' }, `$${cashOption.toLocaleString()}`)
                                         ),
                                         React.createElement('div', { className: 'flex justify-between border-t pt-2' },
-                                            React.createElement('span', { className: 'text-green-700' }, `Federal Tax (${federalRate}%):'),
-                                            React.createElement('span', { className: 'font-semibold text-red-600' }, `-${federalTax.toLocaleString()}`)
+                                            React.createElement('span', { className: 'text-green-700' }, `Federal Tax (${federalRate}%):`),
+                                            React.createElement('span', { className: 'font-semibold text-red-600' }, `-$${federalTax.toLocaleString()}`)
                                         ),
                                         React.createElement('div', { className: 'flex justify-between' },
-                                            React.createElement('span', { className: 'text-green-700' }, `State Tax (${stateTaxRate}%):'),
-                                            React.createElement('span', { className: 'font-semibold text-red-600' }, `-${stateTax.toLocaleString()}`)
+                                            React.createElement('span', { className: 'text-green-700' }, `State Tax (${stateTaxRate}%):`),
+                                            React.createElement('span', { className: 'font-semibold text-red-600' }, `-$${stateTax.toLocaleString()}`)
                                         )
                                     ),
-                                    React.createElement('div', { className: 'space-y-3' },
+                                    React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '0.75rem' } },
                                         React.createElement('div', { className: 'flex justify-between text-lg border-t pt-2' },
                                             React.createElement('span', { className: 'text-green-700 font-semibold' }, 'Total Taxes:'),
-                                            React.createElement('span', { className: 'font-bold text-red-600' }, `-${totalTax.toLocaleString()}`)
+                                            React.createElement('span', { className: 'font-bold text-red-600' }, `-$${totalTax.toLocaleString()}`)
                                         ),
                                         React.createElement('div', { className: 'flex justify-between text-xl' },
                                             React.createElement('span', { className: 'text-green-700 font-bold' }, 'Net Winnings:'),
-                                            React.createElement('span', { className: 'font-bold text-green-600' }, `${netWinnings.toLocaleString()}`)
+                                            React.createElement('span', { className: 'font-bold text-green-600' }, `$${netWinnings.toLocaleString()}`)
                                         ),
                                         React.createElement('div', { className: 'text-sm text-green-600 mt-2' },
                                             `Effective tax rate: ${((totalTax / cashOption) * 100).toFixed(1)}%`
@@ -2203,7 +1030,7 @@
                 ),
 
                 // Expected Value Tab
-                activeTab === 'expected' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
+                activeTab === 'expected' && React.createElement('div', { className: 'grid gap-4' },
                     React.createElement(HistoricalDataStatus),
                     
                     React.createElement('div', { className: 'card' },
@@ -2224,18 +1051,18 @@
                                     const jackpotProb = 1 / 292201338;
                                     const secondPrize = 1000000 * (12 / 292201338);
                                     const thirdPrize = 50000 * (320 / 292201338);
-                                    const otherPrizes = 0.32; // Smaller prizes
+                                    const otherPrizes = 0.32;
                                     const ticketCost = 2;
                                     const expectedValue = (currentJackpotValue * jackpotProb) + secondPrize + thirdPrize + otherPrizes - ticketCost;
                                     
-                                    return React.createElement('div', { className: 'space-y-2 text-sm' },
+                                    return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '0.5rem' }, className: 'text-sm' },
                                         React.createElement('div', { className: 'flex justify-between' },
                                             React.createElement('span', null, 'Jackpot EV:'),
-                                            React.createElement('span', null, `${(currentJackpotValue * jackpotProb).toFixed(2)}`)
+                                            React.createElement('span', null, `$${(currentJackpotValue * jackpotProb).toFixed(2)}`)
                                         ),
                                         React.createElement('div', { className: 'flex justify-between' },
                                             React.createElement('span', null, 'Other prizes EV:'),
-                                            React.createElement('span', null, `${(secondPrize + thirdPrize + otherPrizes).toFixed(2)}`)
+                                            React.createElement('span', null, `$${(secondPrize + thirdPrize + otherPrizes).toFixed(2)}`)
                                         ),
                                         React.createElement('div', { className: 'flex justify-between' },
                                             React.createElement('span', null, 'Ticket cost:'),
@@ -2245,13 +1072,13 @@
                                             React.createElement('span', null, 'Net Expected Value:'),
                                             React.createElement('span', { 
                                                 className: expectedValue >= 0 ? 'text-green-600' : 'text-red-600' 
-                                            }, `${expectedValue >= 0 ? '+' : ''}${expectedValue.toFixed(2)}`)
+                                            }, `${expectedValue >= 0 ? '+' : ''}$${expectedValue.toFixed(2)}`)
                                         )
                                     );
                                 })()
                             ),
-                            React.createElement('div', { className: 'bg-purple-50 rounded-lg p-4' },
-                                React.createElement('h3', { className: 'font-semibold text-purple-800 mb-3' }, 
+                            React.createElement('div', { className: 'bg-yellow-50 rounded-lg p-4' },
+                                React.createElement('h3', { className: 'font-semibold text-yellow-800 mb-3' }, 
                                     'Break-Even Analysis'
                                 ),
                                 (() => {
@@ -2260,11 +1087,11 @@
                                     const ticketCost = 2;
                                     const breakEvenJackpot = (ticketCost - otherPrizesEV) / jackpotProb;
                                     
-                                    return React.createElement('div', { className: 'space-y-2 text-sm' },
+                                    return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '0.5rem' }, className: 'text-sm' },
                                         React.createElement('div', { className: 'flex justify-between' },
                                             React.createElement('span', null, 'Break-even jackpot:'),
                                             React.createElement('span', { className: 'font-semibold' }, 
-                                                `${Math.round(breakEvenJackpot / 1000000)}M`
+                                                `$${Math.round(breakEvenJackpot / 1000000)}M`
                                             )
                                         ),
                                         React.createElement('div', { className: 'flex justify-between' },
@@ -2283,41 +1110,6 @@
                                         )
                                     );
                                 })()
-                            )
-                        ),
-                        
-                        React.createElement('div', { className: 'bg-gray-50 rounded-lg p-4' },
-                            React.createElement('h3', { className: 'font-semibold text-gray-800 mb-3' }, 
-                                'Prize Structure & Probabilities'
-                            ),
-                            React.createElement('div', { className: 'overflow-x-auto' },
-                                React.createElement('table', { className: 'w-full text-sm' },
-                                    React.createElement('thead', null,
-                                        React.createElement('tr', { className: 'border-b' },
-                                            React.createElement('th', { className: 'text-left py-2' }, 'Prize'),
-                                            React.createElement('th', { className: 'text-left py-2' }, 'Odds'),
-                                            React.createElement('th', { className: 'text-left py-2' }, 'Probability'),
-                                            React.createElement('th', { className: 'text-left py-2' }, 'Expected Value')
-                                        )
-                                    ),
-                                    React.createElement('tbody', null,
-                                        [
-                                            { prize: 'Jackpot', odds: '1 : 292,201,338', prob: 1/292201338, ev: (currentJackpot ? currentJackpot.amount : 735000000) / 292201338 },
-                                            { prize: '$1,000,000', odds: '1 : 11,688,054', prob: 12/292201338, ev: 1000000 * 12 / 292201338 },
-                                            { prize: '$50,000', odds: '1 : 913,129', prob: 320/292201338, ev: 50000 * 320 / 292201338 },
-                                            { prize: '$100', odds: '1 : 36,525', prob: 8000/292201338, ev: 100 * 8000 / 292201338 },
-                                            { prize: '$7', odds: '1 : 579', prob: 504700/292201338, ev: 7 * 504700 / 292201338 },
-                                            { prize: '$4', odds: '1 : 92', prob: 3176880/292201338, ev: 4 * 3176880 / 292201338 }
-                                        ].map((row, i) => 
-                                            React.createElement('tr', { key: i, className: 'border-b' },
-                                                React.createElement('td', { className: 'py-2 font-medium' }, row.prize),
-                                                React.createElement('td', { className: 'py-2' }, row.odds),
-                                                React.createElement('td', { className: 'py-2' }, `${(row.prob * 100).toExponential(2)}%`),
-                                                React.createElement('td', { className: 'py-2' }, `${row.ev.toFixed(4)}`)
-                                            )
-                                        )
-                                    )
-                                )
                             )
                         )
                     )
