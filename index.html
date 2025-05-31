@@ -614,20 +614,28 @@
                     
                     if (historicalResult && historicalResult.length > 0) {
                         setUpdateStatus(`✅ System ready with ${historicalResult.length} real drawings`);
-                        // Auto-generate AI combinations on startup
-                        setTimeout(() => {
-                            generateOptimizedNumbers();
-                        }, 1000);
                     } else {
                         setUpdateStatus('⚠️ System ready with estimated data');
-                        // Still generate combinations with estimated data
-                        setTimeout(() => {
-                            generateOptimizedNumbers();
-                        }, 1000);
                     }
+                    
+                    // Auto-generate AI combinations after data is loaded
+                    setTimeout(() => {
+                        console.log('🚀 Auto-generating AI combinations with loaded data...');
+                        generateOptimizedNumbers();
+                    }, 1500);
                 };
                 initializeData();
             }, []);
+
+            // Also regenerate when historical data changes
+            useEffect(() => {
+                if (historicalData.length > 0 && optimizedSets.length === 0) {
+                    console.log('📊 Historical data loaded, generating optimized sets...');
+                    setTimeout(() => {
+                        generateOptimizedNumbers();
+                    }, 500);
+                }
+            }, [historicalData]);
 
             // Helper function to select random numbers from array
             const selectRandomFromArray = (array, count) => {
@@ -978,7 +986,7 @@
                         icon: '🔥',
                         generate: () => {
                             const numbers = [];
-                            if (historicalStats && historicalStats.hotNumbers) {
+                            if (historicalStats && historicalStats.hotNumbers && historicalStats.hotNumbers.length > 0) {
                                 // Take 3-4 from hottest numbers
                                 const hotPool = [...historicalStats.hotNumbers.slice(0, 12)];
                                 while (numbers.length < 4 && hotPool.length > 0) {
@@ -1011,7 +1019,7 @@
                             const numbers = [];
                             
                             // 2 hot numbers
-                            if (historicalStats && historicalStats.hotNumbers) {
+                            if (historicalStats && historicalStats.hotNumbers && historicalStats.hotNumbers.length > 0) {
                                 const hotPool = [...historicalStats.hotNumbers.slice(0, 15)];
                                 for (let i = 0; i < 2 && hotPool.length > 0; i++) {
                                     const randomIndex = Math.floor(Math.random() * hotPool.length);
@@ -1023,7 +1031,7 @@
                             }
                             
                             // 1 cold number
-                            if (historicalStats && historicalStats.coldNumbers) {
+                            if (historicalStats && historicalStats.coldNumbers && historicalStats.coldNumbers.length > 0) {
                                 const coldPool = historicalStats.coldNumbers.slice(0, 10);
                                 const randomIndex = Math.floor(Math.random() * coldPool.length);
                                 const num = coldPool[randomIndex];
@@ -1070,10 +1078,10 @@
                         generate: () => {
                             const numbers = [];
                             
-                            if (historicalStats && historicalStats.coldNumbers) {
-                                // Take 4 from coldest numbers
+                            if (historicalStats && historicalStats.coldNumbers && historicalStats.coldNumbers.length > 0) {
+                                // Take 3 from coldest numbers (not 4 to avoid filling too many slots)
                                 const coldPool = [...historicalStats.coldNumbers.slice(0, 15)];
-                                while (numbers.length < 4 && coldPool.length > 0) {
+                                while (numbers.length < 3 && coldPool.length > 0) {
                                     const randomIndex = Math.floor(Math.random() * coldPool.length);
                                     const num = coldPool.splice(randomIndex, 1)[0];
                                     if (!numbers.includes(num)) {
@@ -1082,12 +1090,13 @@
                                 }
                             }
                             
-                            // Add 1 balanced number
-                            let balanceNum;
-                            do {
-                                balanceNum = Math.floor(Math.random() * 69) + 1;
-                            } while (numbers.includes(balanceNum));
-                            numbers.push(balanceNum);
+                            // Fill remaining slots with balanced numbers
+                            while (numbers.length < 5) {
+                                const num = Math.floor(Math.random() * 69) + 1;
+                                if (!numbers.includes(num)) {
+                                    numbers.push(num);
+                                }
+                            }
                             
                             return {
                                 numbers: numbers.sort((a, b) => a - b),
