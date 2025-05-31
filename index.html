@@ -458,59 +458,6 @@
             const [isSimulating, setIsSimulating] = useState(false);
             const [simulationProgress, setSimulationProgress] = useState(0);
 
-            // State tax information
-            const stateTaxInfo = {
-                'AL': { name: 'Alabama', rate: 5.0, withholding: 5.0 },
-                'AZ': { name: 'Arizona', rate: 4.5, withholding: 5.0 },
-                'AR': { name: 'Arkansas', rate: 5.5, withholding: 7.0 },
-                'CA': { name: 'California', rate: 13.3, withholding: 7.25 },
-                'CO': { name: 'Colorado', rate: 4.4, withholding: 4.63 },
-                'CT': { name: 'Connecticut', rate: 6.99, withholding: 6.99 },
-                'DE': { name: 'Delaware', rate: 6.6, withholding: 6.6 },
-                'DC': { name: 'Washington D.C.', rate: 10.75, withholding: 8.5 },
-                'FL': { name: 'Florida', rate: 0, withholding: 0 },
-                'GA': { name: 'Georgia', rate: 5.75, withholding: 6.0 },
-                'ID': { name: 'Idaho', rate: 6.0, withholding: 6.0 },
-                'IL': { name: 'Illinois', rate: 4.95, withholding: 4.95 },
-                'IN': { name: 'Indiana', rate: 3.23, withholding: 3.4 },
-                'IA': { name: 'Iowa', rate: 8.53, withholding: 5.0 },
-                'KS': { name: 'Kansas', rate: 5.7, withholding: 5.0 },
-                'KY': { name: 'Kentucky', rate: 6.0, withholding: 6.0 },
-                'LA': { name: 'Louisiana', rate: 4.75, withholding: 4.75 },
-                'ME': { name: 'Maine', rate: 7.15, withholding: 5.0 },
-                'MD': { name: 'Maryland', rate: 8.75, withholding: 8.95 },
-                'MA': { name: 'Massachusetts', rate: 5.0, withholding: 5.0 },
-                'MI': { name: 'Michigan', rate: 4.25, withholding: 4.25 },
-                'MN': { name: 'Minnesota', rate: 9.85, withholding: 7.25 },
-                'MS': { name: 'Mississippi', rate: 5.0, withholding: 5.0 },
-                'MO': { name: 'Missouri', rate: 4.0, withholding: 4.0 },
-                'MT': { name: 'Montana', rate: 6.75, withholding: 6.75 },
-                'NE': { name: 'Nebraska', rate: 5.84, withholding: 5.0 },
-                'NH': { name: 'New Hampshire', rate: 0, withholding: 0 },
-                'NJ': { name: 'New Jersey', rate: 10.75, withholding: 5.0 },
-                'NM': { name: 'New Mexico', rate: 5.9, withholding: 6.0 },
-                'NY': { name: 'New York', rate: 10.9, withholding: 10.9, local: 3.876 },
-                'NC': { name: 'North Carolina', rate: 4.99, withholding: 5.25 },
-                'ND': { name: 'North Dakota', rate: 2.9, withholding: 2.9 },
-                'OH': { name: 'Ohio', rate: 3.99, withholding: 4.0 },
-                'OK': { name: 'Oklahoma', rate: 6.0, withholding: 5.0 },
-                'OR': { name: 'Oregon', rate: 9.9, withholding: 8.0 },
-                'PA': { name: 'Pennsylvania', rate: 3.07, withholding: 3.07 },
-                'PR': { name: 'Puerto Rico', rate: 20.0, withholding: 20.0 },
-                'RI': { name: 'Rhode Island', rate: 5.99, withholding: 5.99 },
-                'SC': { name: 'South Carolina', rate: 7.0, withholding: 7.0 },
-                'SD': { name: 'South Dakota', rate: 0, withholding: 0 },
-                'TN': { name: 'Tennessee', rate: 0, withholding: 0 },
-                'TX': { name: 'Texas', rate: 0, withholding: 0 },
-                'VI': { name: 'U.S. Virgin Islands', rate: 0, withholding: 0 },
-                'VT': { name: 'Vermont', rate: 6.0, withholding: 6.0 },
-                'VA': { name: 'Virginia', rate: 5.75, withholding: 4.0 },
-                'WA': { name: 'Washington', rate: 0, withholding: 0 },
-                'WV': { name: 'West Virginia', rate: 6.5, withholding: 6.5 },
-                'WI': { name: 'Wisconsin', rate: 7.65, withholding: 7.65 },
-                'WY': { name: 'Wyoming', rate: 0, withholding: 0 }
-            };
-
             // Calculate next drawing date
             const calculateNextDrawing = () => {
                 const now = new Date();
@@ -655,276 +602,6 @@
                 return (currentJackpot.amount * jackpotProb + otherPrizes) - ticketCost;
             };
 
-            // Number optimization
-            const generateOptimizedNumbers = async () => {
-                setIsOptimizing(true);
-                setOptimizedSets([]);
-                
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                const newSets = [];
-                
-                for (let i = 0; i < numOptimizedSets; i++) {
-                    let numbers = [];
-                    let powerball = 0;
-                    let strategy = optimizationStrategy;
-                    let score = 0;
-                    
-                    switch (optimizationStrategy) {
-                        case 'balanced':
-                            numbers = generateBalancedNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            score = 85 + Math.floor(Math.random() * 10);
-                            break;
-                        case 'hot':
-                            numbers = generateHotNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = 'Hot Numbers (Frequent)';
-                            score = 85 + Math.floor(Math.random() * 10);
-                            break;
-                        case 'cold':
-                            numbers = generateColdNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = 'Cold Numbers (Overdue)';
-                            score = 78 + Math.floor(Math.random() * 15);
-                            break;
-                        case 'mathematical':
-                            numbers = generateMathematicalNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = 'Mathematical Spacing';
-                            score = 80 + Math.floor(Math.random() * 15);
-                            break;
-                        default:
-                            numbers = generateRandomNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = 'Pure Random';
-                            score = 50 + Math.floor(Math.random() * 20);
-                    }
-                    
-                    newSets.push({
-                        numbers: numbers.sort((a, b) => a - b),
-                        powerball,
-                        strategy,
-                        score: score.toFixed(1)
-                    });
-                }
-                
-                setOptimizedSets(newSets);
-                setIsOptimizing(false);
-            };
-            
-            const generateBalancedNumbers = () => {
-                const numbers = [];
-                const ranges = [[1, 23], [24, 46], [47, 69]];
-                
-                ranges.forEach(([min, max]) => {
-                    let num;
-                    do {
-                        num = Math.floor(Math.random() * (max - min + 1)) + min;
-                    } while (numbers.includes(num));
-                    numbers.push(num);
-                });
-                
-                while (numbers.length < 5) {
-                    const num = Math.floor(Math.random() * 69) + 1;
-                    if (!numbers.includes(num)) {
-                        numbers.push(num);
-                    }
-                }
-                
-                return numbers;
-            };
-            
-            const generateHotNumbers = () => {
-                const hotNumbers = [7, 12, 17, 23, 28, 32, 38, 41, 45, 51, 56, 61, 63, 67];
-                const numbers = [];
-                
-                while (numbers.length < 4) {
-                    const num = hotNumbers[Math.floor(Math.random() * hotNumbers.length)];
-                    if (!numbers.includes(num)) {
-                        numbers.push(num);
-                    }
-                }
-                
-                let randomNum;
-                do {
-                    randomNum = Math.floor(Math.random() * 69) + 1;
-                } while (numbers.includes(randomNum));
-                numbers.push(randomNum);
-                
-                return numbers;
-            };
-            
-            const generateColdNumbers = () => {
-                const coldNumbers = [3, 9, 14, 19, 25, 31, 36, 42, 48, 53, 58, 64, 68];
-                const numbers = [];
-                
-                while (numbers.length < 4) {
-                    const num = coldNumbers[Math.floor(Math.random() * coldNumbers.length)];
-                    if (!numbers.includes(num)) {
-                        numbers.push(num);
-                    }
-                }
-                
-                let balanceNum;
-                do {
-                    balanceNum = Math.floor(Math.random() * 69) + 1;
-                } while (numbers.includes(balanceNum));
-                numbers.push(balanceNum);
-                
-                return numbers;
-            };
-            
-            const generateMathematicalNumbers = () => {
-                const numbers = [];
-                const spacing = 69 / 6;
-                
-                for (let i = 0; i < 5; i++) {
-                    const base = Math.floor(spacing * (i + 1));
-                    const variance = Math.floor(Math.random() * 6) - 3;
-                    let num = Math.max(1, Math.min(69, base + variance));
-                    
-                    while (numbers.includes(num)) {
-                        num = Math.floor(Math.random() * 69) + 1;
-                    }
-                    numbers.push(num);
-                }
-                
-                return numbers;
-            };
-            
-            const generateRandomNumbers = () => {
-                const numbers = [];
-                while (numbers.length < 5) {
-                    const num = Math.floor(Math.random() * 69) + 1;
-                    if (!numbers.includes(num)) {
-                        numbers.push(num);
-                    }
-                }
-                return numbers;
-            };
-
-            // Monte Carlo simulation
-            const runMonteCarloSimulation = async () => {
-                setIsSimulating(true);
-                setSimulationProgress(0);
-                setSimulationResults(null);
-                
-                const totalDrawings = yearsToSimulate * 156;
-                const totalTickets = totalDrawings * ticketsPerDraw;
-                const totalSpent = totalTickets * 2;
-                
-                let totalWon = 0;
-                let jackpotsWon = 0;
-                let majorPrizes = 0;
-                let totalWins = 0;
-                
-                const prizeBreakdown = {
-                    'Jackpot': 0,
-                    '$1M Prize': 0,
-                    '$50K Prize': 0,
-                    '$100 Prize': 0,
-                    '$7 Prize': 0,
-                    '$4 Prize': 0
-                };
-                
-                const batchSize = Math.max(1, Math.floor(monteCarloRuns / 100));
-                
-                for (let run = 0; run < monteCarloRuns; run++) {
-                    for (let ticket = 0; ticket < ticketsPerDraw; ticket++) {
-                        const result = simulateLotteryTicket();
-                        
-                        if (result.prize > 0) {
-                            totalWon += result.prize;
-                            totalWins++;
-                            
-                            if (result.tier === 'jackpot') {
-                                jackpotsWon++;
-                                prizeBreakdown['Jackpot']++;
-                            } else if (result.prize >= 50000) {
-                                majorPrizes++;
-                                if (result.prize === 1000000) {
-                                    prizeBreakdown['$1M Prize']++;
-                                } else {
-                                    prizeBreakdown['$50K Prize']++;
-                                }
-                            } else if (result.prize === 100) {
-                                prizeBreakdown['$100 Prize']++;
-                            } else if (result.prize === 7) {
-                                prizeBreakdown['$7 Prize']++;
-                            } else if (result.prize === 4) {
-                                prizeBreakdown['$4 Prize']++;
-                            }
-                        }
-                    }
-                    
-                    if (run % batchSize === 0) {
-                        const progress = Math.floor((run / monteCarloRuns) * 100);
-                        setSimulationProgress(progress);
-                        await new Promise(resolve => setTimeout(resolve, 1));
-                    }
-                }
-                
-                const netResult = totalWon - totalSpent;
-                const roi = ((totalWon - totalSpent) / totalSpent) * 100;
-                const winRate = (totalWins / (monteCarloRuns * ticketsPerDraw)) * 100;
-                
-                setSimulationResults({
-                    totalSpent,
-                    totalWon,
-                    netResult,
-                    roi,
-                    jackpotsWon,
-                    majorPrizes,
-                    totalWins,
-                    winRate,
-                    prizeBreakdown,
-                    totalTickets: monteCarloRuns * ticketsPerDraw
-                });
-                
-                setSimulationProgress(100);
-                setIsSimulating(false);
-            };
-            
-            const simulateLotteryTicket = () => {
-                const playerNumbers = [];
-                while (playerNumbers.length < 5) {
-                    const num = Math.floor(Math.random() * 69) + 1;
-                    if (!playerNumbers.includes(num)) {
-                        playerNumbers.push(num);
-                    }
-                }
-                const playerPowerball = Math.floor(Math.random() * 26) + 1;
-                
-                const winningNumbers = [];
-                while (winningNumbers.length < 5) {
-                    const num = Math.floor(Math.random() * 69) + 1;
-                    if (!winningNumbers.includes(num)) {
-                        winningNumbers.push(num);
-                    }
-                }
-                const winningPowerball = Math.floor(Math.random() * 26) + 1;
-                
-                const mainMatches = playerNumbers.filter(num => winningNumbers.includes(num)).length;
-                const powerballMatch = playerPowerball === winningPowerball;
-                
-                if (mainMatches === 5 && powerballMatch) {
-                    return { prize: currentJackpot ? currentJackpot.amount : 735000000, tier: 'jackpot' };
-                } else if (mainMatches === 5) {
-                    return { prize: 1000000, tier: 'second' };
-                } else if (mainMatches === 4 && powerballMatch) {
-                    return { prize: 50000, tier: 'third' };
-                } else if (mainMatches === 4 || (mainMatches === 3 && powerballMatch)) {
-                    return { prize: 100, tier: 'fourth' };
-                } else if ((mainMatches === 3) || (mainMatches === 2 && powerballMatch)) {
-                    return { prize: 7, tier: 'fifth' };
-                } else if ((mainMatches === 1 && powerballMatch) || powerballMatch) {
-                    return { prize: 4, tier: 'sixth' };
-                } else {
-                    return { prize: 0, tier: 'none' };
-                }
-            };
-
             return React.createElement('div', { className: 'container' },
                 // Current Jackpot Display
                 React.createElement('div', { 
@@ -969,8 +646,8 @@
                                 }, (() => {
                                     const expectedValue = calculateExpectedValue();
                                     return expectedValue > 0 ? 
-                                        `+${expectedValue.toFixed(2)} Expected Value` : 
-                                        `-${Math.abs(expectedValue).toFixed(2)} Expected Value`;
+                                        `+$${expectedValue.toFixed(2)} Expected Value` : 
+                                        `-$${Math.abs(expectedValue).toFixed(2)} Expected Value`;
                                 })())
                             )
                         )
@@ -1161,7 +838,11 @@
                                         '1 in 292,201,338 (3.42e-7%)'
                                     ),
                                     React.createElement('p', { style: { color: '#a16207', marginTop: '0.25rem' } },
-                                        'Expected value: ', calculateExpectedValue() > 0 ? '+' : '', ', calculateExpectedValue().toFixed(2)
+                                        'Expected value: ', 
+                                        (() => {
+                                            const expectedValue = calculateExpectedValue();
+                                            return expectedValue > 0 ? `+$${expectedValue.toFixed(2)}` : `-$${Math.abs(expectedValue).toFixed(2)}`;
+                                        })()
                                     )
                                 )
                             )
@@ -1296,7 +977,11 @@
                                             style: { fontSize: '0.75rem' }, 
                                             className: 'text-gray-500' 
                                         }, 
-                                            'Probability: 1 in 292,201,338 | Expected Value: , calculateExpectedValue().toFixed(2)
+                                            'Probability: 1 in 292,201,338 | Expected Value: ', 
+                                            (() => {
+                                                const expectedValue = calculateExpectedValue();
+                                                return expectedValue > 0 ? `+$${expectedValue.toFixed(2)}` : `-$${Math.abs(expectedValue).toFixed(2)}`;
+                                            })()
                                         ),
                                         React.createElement('div', { className: 'flex gap-2' },
                                             React.createElement('button', {
