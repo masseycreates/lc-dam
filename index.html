@@ -830,7 +830,7 @@
                                     placeholder: 'Sets'
                                 }),
                                 React.createElement('button', {
-                                    onClick: generateOptimizedNumbers,
+                                    onClick: () => generateOptimizedNumbers(),
                                     disabled: isOptimizing,
                                     className: 'btn btn-purple'
                                 }, isOptimizing ? 
