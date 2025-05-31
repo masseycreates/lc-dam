@@ -2030,7 +2030,7 @@
                             }, isSimulating ? 
                                 React.createElement('span', null,
                                     React.createElement('span', { className: 'loading-spinner', style: { marginRight: '0.5rem' } }),
-                                    `Running... ${simulationProgress}%`
+                                    'Running... ' + simulationProgress + '%'
                                 ) : 
                                 '🚀 Run Simulation'
                             ),
@@ -2045,7 +2045,7 @@
                             },
                                 React.createElement('div', { 
                                     style: { 
-                                        width: `${simulationProgress}%`, 
+                                        width: simulationProgress + '%', 
                                         height: '100%', 
                                         background: '#3b82f6',
                                         transition: 'width 0.3s ease'
