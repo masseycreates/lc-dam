@@ -1,5 +1,5 @@
-// api/powerball-history.js - Updated for 200+ Historical Drawings
-// This function fetches the last 200+ real Powerball drawings for statistical analysis
+// api/powerball-history.js - Updated for up to 500 Historical Drawings
+// This function fetches historical Powerball drawings with configurable limits
 
 export default async function handler(req, res) {
   // Enhanced CORS headers
@@ -24,8 +24,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('=== Powerball History API Request Started (200 drawings) ===');
+    // Get user-specified limit from query parameter (default to 200, max 500)
+    const requestedLimit = parseInt(req.query.limit) || 200;
+    const limit = Math.min(Math.max(requestedLimit, 50), 500); // Clamp between 50-500
+    
+    console.log(`=== Powerball History API Request Started (${limit} drawings) ===`);
     console.log('Timestamp:', new Date().toISOString());
+    console.log('Requested limit:', requestedLimit, 'Using limit:', limit);
     
     // Multiple data sources for historical data - UPDATED LIMITS
     const historicalSources = [
@@ -33,25 +38,29 @@ export default async function handler(req, res) {
         name: 'Powerball.net Archive',
         url: 'https://www.powerball.net/archive/2025',
         type: 'html',
-        extractor: extractFromPowerballNet
+        extractor: extractFromPowerballNet,
+        maxRecords: Math.min(limit * 1.5, 750) // Request extra to ensure we get enough
       },
       {
         name: 'NY State Lottery API',
-        url: 'https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=250', // INCREASED from 150
+        url: `https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=${Math.min(limit * 1.2, 600)}`,
         type: 'json',
-        extractor: extractFromNYStateAPI
+        extractor: extractFromNYStateAPI,
+        maxRecords: Math.min(limit * 1.2, 600)
       },
       {
         name: 'Texas Lottery Historical',
         url: 'https://www.texaslottery.com/export/sites/lottery/Games/Powerball/Winning_Numbers/',
         type: 'html',
-        extractor: extractFromTexasHistory
+        extractor: extractFromTexasHistory,
+        maxRecords: Math.min(limit * 1.5, 750)
       },
       {
         name: 'California Lottery Past Results',
         url: 'https://www.calottery.com/api/DrawGameResultsList/GetList?GameName=powerball',
         type: 'json',
-        extractor: extractFromCALotteryAPI
+        extractor: extractFromCALotteryAPI,
+        maxRecords: Math.min(limit * 1.2, 600)
       }
     ];
 
@@ -62,10 +71,10 @@ export default async function handler(req, res) {
     // Try each source sequentially
     for (const source of historicalSources) {
       try {
-        console.log(`Attempting to fetch historical data from ${source.name}...`);
+        console.log(`Attempting to fetch historical data from ${source.name} (target: ${source.maxRecords} records)...`);
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // INCREASED timeout for more data
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased timeout for larger datasets
         
         const response = await fetch(source.url, {
           headers: {
@@ -94,7 +103,7 @@ export default async function handler(req, res) {
         
         console.log(`${source.name} data received, processing...`);
         
-        const extractedData = source.extractor(data);
+        const extractedData = source.extractor(data, source.maxRecords);
         
         if (extractedData && extractedData.length > 0) {
           historicalData = extractedData;
@@ -110,7 +119,7 @@ export default async function handler(req, res) {
         console.log(`❌ ${source.name} failed:`, error.message);
         
         if (error.name === 'AbortError') {
-          console.log(`${source.name} timed out after 15 seconds`);
+          console.log(`${source.name} timed out after 20 seconds`);
         }
         continue;
       }
@@ -118,15 +127,15 @@ export default async function handler(req, res) {
 
     // If no real data found, return fallback historical data
     if (historicalData.length === 0) {
-      console.log('All historical sources failed, using fallback data');
-      historicalData = generateFallbackHistoricalData();
+      console.log(`All historical sources failed, using fallback data (${limit} records)`);
+      historicalData = generateFallbackHistoricalData(limit);
       sourceUsed = 'Fallback Historical Data';
     }
 
-    // Sort by date (most recent first) and limit to last 200 drawings - UPDATED
+    // Sort by date (most recent first) and limit to requested amount
     const sortedData = historicalData
       .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 200); // CHANGED from 100 to 200
+      .slice(0, limit);
 
     // Calculate frequency statistics
     const statistics = calculateFrequencyStats(sortedData);
@@ -137,6 +146,8 @@ export default async function handler(req, res) {
       statistics: statistics,
       meta: {
         totalDrawings: sortedData.length,
+        requestedLimit: requestedLimit,
+        actualLimit: limit,
         dateRange: {
           latest: sortedData[0]?.date || null,
           earliest: sortedData[sortedData.length - 1]?.date || null
@@ -178,8 +189,8 @@ export default async function handler(req, res) {
   }
 }
 
-// Extract from Powerball.net Archive (HTML parsing) - UPDATED LIMIT
-function extractFromPowerballNet(html) {
+// Extract from Powerball.net Archive (HTML parsing) - UPDATED WITH LIMIT PARAMETER
+function extractFromPowerballNet(html, maxRecords = 500) {
   try {
     const drawings = [];
     
@@ -188,7 +199,7 @@ function extractFromPowerballNet(html) {
     const drawingPattern = /(\w{3}\s+\d{1,2},?\s+\d{4})[^0-9]*(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})[^0-9]*(?:PB|Powerball)[^0-9]*(\d{1,2})/gi;
     
     let match;
-    while ((match = drawingPattern.exec(html)) !== null && drawings.length < 250) { // INCREASED from 150
+    while ((match = drawingPattern.exec(html)) !== null && drawings.length < maxRecords) {
       const [, dateStr, n1, n2, n3, n4, n5, pb] = match;
       
       // Parse date
@@ -208,7 +219,7 @@ function extractFromPowerballNet(html) {
       }
     }
     
-    console.log(`Powerball.net extracted ${drawings.length} drawings`);
+    console.log(`Powerball.net extracted ${drawings.length} drawings (max: ${maxRecords})`);
     return drawings;
     
   } catch (error) {
@@ -217,13 +228,15 @@ function extractFromPowerballNet(html) {
   }
 }
 
-// Extract from NY State API (JSON) - Already handles more data
-function extractFromNYStateAPI(data) {
+// Extract from NY State API (JSON) - UPDATED WITH LIMIT PARAMETER
+function extractFromNYStateAPI(data, maxRecords = 500) {
   try {
     const drawings = [];
     
     if (Array.isArray(data)) {
-      data.forEach(drawing => {
+      data.forEach((drawing, index) => {
+        if (drawings.length >= maxRecords) return;
+        
         try {
           // NY State format: draw_date, winning_numbers, multiplier
           const date = drawing.draw_date ? drawing.draw_date.split('T')[0] : null;
@@ -254,7 +267,7 @@ function extractFromNYStateAPI(data) {
       });
     }
     
-    console.log(`NY State API extracted ${drawings.length} drawings`);
+    console.log(`NY State API extracted ${drawings.length} drawings (max: ${maxRecords})`);
     return drawings;
     
   } catch (error) {
@@ -263,8 +276,8 @@ function extractFromNYStateAPI(data) {
   }
 }
 
-// Extract from Texas Lottery Historical (HTML) - UPDATED LIMIT
-function extractFromTexasHistory(html) {
+// Extract from Texas Lottery Historical (HTML) - UPDATED WITH LIMIT PARAMETER
+function extractFromTexasHistory(html, maxRecords = 500) {
   try {
     const drawings = [];
     
@@ -276,7 +289,7 @@ function extractFromTexasHistory(html) {
     
     patterns.forEach(pattern => {
       let match;
-      while ((match = pattern.exec(html)) !== null && drawings.length < 250) { // INCREASED from 150
+      while ((match = pattern.exec(html)) !== null && drawings.length < maxRecords) {
         const [, dateStr, n1, n2, n3, n4, n5, pb] = match;
         
         let date;
@@ -303,7 +316,7 @@ function extractFromTexasHistory(html) {
       }
     });
     
-    console.log(`Texas Lottery extracted ${drawings.length} drawings`);
+    console.log(`Texas Lottery extracted ${drawings.length} drawings (max: ${maxRecords})`);
     return drawings;
     
   } catch (error) {
@@ -312,13 +325,15 @@ function extractFromTexasHistory(html) {
   }
 }
 
-// Extract from California Lottery API (JSON) - Already handles more data
-function extractFromCALotteryAPI(data) {
+// Extract from California Lottery API (JSON) - UPDATED WITH LIMIT PARAMETER
+function extractFromCALotteryAPI(data, maxRecords = 500) {
   try {
     const drawings = [];
     
     if (data && data.DrawGameResults) {
-      data.DrawGameResults.forEach(drawing => {
+      data.DrawGameResults.forEach((drawing, index) => {
+        if (drawings.length >= maxRecords) return;
+        
         try {
           const date = drawing.DrawDate ? drawing.DrawDate.split('T')[0] : null;
           const numbers = drawing.WinningNumbers;
@@ -342,7 +357,7 @@ function extractFromCALotteryAPI(data) {
       });
     }
     
-    console.log(`California Lottery API extracted ${drawings.length} drawings`);
+    console.log(`California Lottery API extracted ${drawings.length} drawings (max: ${maxRecords})`);
     return drawings;
     
   } catch (error) {
@@ -379,11 +394,12 @@ function getRefererForSource(sourceName) {
   return referers[sourceName] || 'https://www.powerball.com/';
 }
 
-// Calculate frequency statistics for optimization
+// Calculate frequency statistics for optimization - UPDATED WITH BETTER SCALING
 function calculateFrequencyStats(drawings) {
   const numberFreq = {};
   const powerballFreq = {};
-  const recentDrawings = drawings.slice(0, 30); // Last 30 drawings for "hot" analysis - INCREASED
+  const totalDrawings = drawings.length;
+  const recentDrawings = drawings.slice(0, Math.min(50, Math.floor(totalDrawings * 0.3))); // Dynamic recent calculation
   
   // Initialize frequency counters
   for (let i = 1; i <= 69; i++) numberFreq[i] = { total: 0, recent: 0 };
@@ -391,7 +407,7 @@ function calculateFrequencyStats(drawings) {
   
   // Count frequencies
   drawings.forEach((drawing, index) => {
-    const isRecent = index < 30; // INCREASED from 20
+    const isRecent = index < recentDrawings.length;
     
     drawing.numbers.forEach(num => {
       numberFreq[num].total++;
@@ -402,25 +418,25 @@ function calculateFrequencyStats(drawings) {
     if (isRecent) powerballFreq[drawing.powerball].recent++;
   });
   
-  // Calculate hot and cold numbers
+  // Calculate hot and cold numbers with better scaling
   const hotNumbers = Object.entries(numberFreq)
     .sort((a, b) => (b[1].recent + b[1].total * 0.1) - (a[1].recent + a[1].total * 0.1))
-    .slice(0, 20)  // INCREASED from 15
+    .slice(0, 25)  // More numbers for larger datasets
     .map(([num]) => parseInt(num));
     
   const coldNumbers = Object.entries(numberFreq)
     .sort((a, b) => (a[1].recent + a[1].total * 0.1) - (b[1].recent + b[1].total * 0.1))
-    .slice(0, 20)  // INCREASED from 15
+    .slice(0, 25)  // More numbers for larger datasets
     .map(([num]) => parseInt(num));
     
   const hotPowerballs = Object.entries(powerballFreq)
     .sort((a, b) => (b[1].recent + b[1].total * 0.1) - (a[1].recent + a[1].total * 0.1))
-    .slice(0, 8)  // INCREASED from 5
+    .slice(0, 10)  // More powerballs for larger datasets
     .map(([num]) => parseInt(num));
     
   const coldPowerballs = Object.entries(powerballFreq)
     .sort((a, b) => (a[1].recent + a[1].total * 0.1) - (b[1].recent + b[1].total * 0.1))
-    .slice(0, 8)  // INCREASED from 5
+    .slice(0, 10)  // More powerballs for larger datasets
     .map(([num]) => parseInt(num));
   
   return {
@@ -430,28 +446,41 @@ function calculateFrequencyStats(drawings) {
     coldNumbers: coldNumbers,
     hotPowerballs: hotPowerballs,
     coldPowerballs: coldPowerballs,
-    totalDrawings: drawings.length,
+    totalDrawings: totalDrawings,
+    recentDrawings: recentDrawings.length,
     analysisDate: new Date().toISOString().split('T')[0]
   };
 }
 
-// Generate fallback historical data (realistic but simulated) - UPDATED TO 200
-function generateFallbackHistoricalData() {
+// Generate fallback historical data (realistic but simulated) - UPDATED WITH CONFIGURABLE SIZE
+function generateFallbackHistoricalData(requestedCount = 200) {
   const drawings = [];
   const today = new Date();
   
-  // Generate 200 realistic drawings going back in time - INCREASED from 100
-  for (let i = 0; i < 200; i++) {
+  // Generate realistic drawings going back in time
+  for (let i = 0; i < requestedCount; i++) {
     const date = new Date(today);
     
     // Subtract days (3 drawings per week, so roughly every 2.33 days)
     const daysBack = Math.floor(i * 2.33);
     date.setDate(today.getDate() - daysBack);
     
-    // Generate realistic numbers
+    // Generate realistic numbers with some patterns
     const numbers = [];
     while (numbers.length < 5) {
-      const num = Math.floor(Math.random() * 69) + 1;
+      // Add slight bias toward certain ranges for realism
+      let num;
+      if (Math.random() < 0.3) {
+        // 30% chance for lower numbers (1-23)
+        num = Math.floor(Math.random() * 23) + 1;
+      } else if (Math.random() < 0.6) {
+        // 30% chance for middle numbers (24-46)
+        num = Math.floor(Math.random() * 23) + 24;
+      } else {
+        // 40% chance for higher numbers (47-69)
+        num = Math.floor(Math.random() * 23) + 47;
+      }
+      
       if (!numbers.includes(num)) {
         numbers.push(num);
       }
@@ -469,5 +498,6 @@ function generateFallbackHistoricalData() {
     });
   }
   
+  console.log(`Generated ${drawings.length} fallback drawings`);
   return drawings;
 }
