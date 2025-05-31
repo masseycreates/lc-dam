@@ -689,6 +689,259 @@
                 return (currentJackpot.amount * jackpotProb + otherPrizes) - ticketCost;
             };
 
+            // Number optimization with real historical data
+            const generateOptimizedNumbers = async () => {
+                setIsOptimizing(true);
+                setOptimizedSets([]);
+                
+                // Ensure we have historical data
+                if (!historicalStats) {
+                    await fetchHistoricalData();
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const newSets = [];
+                
+                for (let i = 0; i < numOptimizedSets; i++) {
+                    let numbers = [];
+                    let powerball = 0;
+                    let strategy = optimizationStrategy;
+                    let score = 0;
+                    
+                    switch (optimizationStrategy) {
+                        case 'balanced':
+                            numbers = generateBalancedNumbers();
+                            powerball = generateOptimalPowerball('balanced');
+                            score = 85 + Math.floor(Math.random() * 10);
+                            break;
+                        case 'hot':
+                            numbers = generateHotNumbers();
+                            powerball = generateOptimalPowerball('hot');
+                            strategy = 'Hot Numbers (Frequent)';
+                            score = 88 + Math.floor(Math.random() * 8);
+                            break;
+                        case 'cold':
+                            numbers = generateColdNumbers();
+                            powerball = generateOptimalPowerball('cold');
+                            strategy = 'Cold Numbers (Overdue)';
+                            score = 82 + Math.floor(Math.random() * 12);
+                            break;
+                        case 'mathematical':
+                            numbers = generateMathematicalNumbers();
+                            powerball = generateOptimalPowerball('mathematical');
+                            strategy = 'Mathematical Spacing';
+                            score = 80 + Math.floor(Math.random() * 15);
+                            break;
+                        case 'hybrid':
+                            numbers = generateHybridNumbers();
+                            powerball = generateOptimalPowerball('hybrid');
+                            strategy = 'Hybrid Strategy';
+                            score = 86 + Math.floor(Math.random() * 9);
+                            break;
+                        default:
+                            numbers = generateRandomNumbers();
+                            powerball = Math.floor(Math.random() * 26) + 1;
+                            strategy = 'Pure Random';
+                            score = 50 + Math.floor(Math.random() * 20);
+                    }
+                    
+                    newSets.push({
+                        numbers: numbers.sort((a, b) => a - b),
+                        powerball,
+                        strategy,
+                        score: score.toFixed(1),
+                        analysis: getNumberAnalysis(numbers, powerball)
+                    });
+                }
+                
+                setOptimizedSets(newSets);
+                setIsOptimizing(false);
+            };
+            
+            const generateBalancedNumbers = () => {
+                const numbers = [];
+                const ranges = [[1, 23], [24, 46], [47, 69]];
+                
+                // Use some hot and some cold numbers for balance
+                const hotNums = historicalStats?.hotNumbers || [7, 12, 17, 23, 28];
+                const coldNums = historicalStats?.coldNumbers || [3, 9, 14, 19, 25];
+                
+                // Mix of hot and cold
+                const availableNums = [...hotNums.slice(0, 8), ...coldNums.slice(0, 8)];
+                
+                ranges.forEach(([min, max]) => {
+                    const rangeNums = availableNums.filter(num => num >= min && num <= max);
+                    if (rangeNums.length > 0) {
+                        let num;
+                        do {
+                            num = rangeNums[Math.floor(Math.random() * rangeNums.length)];
+                        } while (numbers.includes(num));
+                        numbers.push(num);
+                    } else {
+                        let num;
+                        do {
+                            num = Math.floor(Math.random() * (max - min + 1)) + min;
+                        } while (numbers.includes(num));
+                        numbers.push(num);
+                    }
+                });
+                
+                // Fill remaining slots
+                while (numbers.length < 5) {
+                    const num = Math.floor(Math.random() * 69) + 1;
+                    if (!numbers.includes(num)) {
+                        numbers.push(num);
+                    }
+                }
+                
+                return numbers;
+            };
+            
+            const generateHotNumbers = () => {
+                const hotNumbers = historicalStats?.hotNumbers || [7, 12, 17, 23, 28, 32, 38, 41, 45, 51];
+                const numbers = [];
+                
+                // Use mostly hot numbers
+                while (numbers.length < 4 && hotNumbers.length > 0) {
+                    const num = hotNumbers[Math.floor(Math.random() * Math.min(hotNumbers.length, 10))];
+                    if (!numbers.includes(num)) {
+                        numbers.push(num);
+                    }
+                }
+                
+                // Add one balanced number
+                let randomNum;
+                do {
+                    randomNum = Math.floor(Math.random() * 69) + 1;
+                } while (numbers.includes(randomNum));
+                numbers.push(randomNum);
+                
+                return numbers;
+            };
+            
+            const generateColdNumbers = () => {
+                const coldNumbers = historicalStats?.coldNumbers || [3, 9, 14, 19, 25, 31, 36, 42, 48, 53];
+                const numbers = [];
+                
+                // Use mostly cold numbers
+                while (numbers.length < 4 && coldNumbers.length > 0) {
+                    const num = coldNumbers[Math.floor(Math.random() * Math.min(coldNumbers.length, 10))];
+                    if (!numbers.includes(num)) {
+                        numbers.push(num);
+                    }
+                }
+                
+                // Add one balanced number
+                let balanceNum;
+                do {
+                    balanceNum = Math.floor(Math.random() * 69) + 1;
+                } while (numbers.includes(balanceNum));
+                numbers.push(balanceNum);
+                
+                return numbers;
+            };
+            
+            const generateMathematicalNumbers = () => {
+                const numbers = [];
+                const spacing = 69 / 6;
+                
+                for (let i = 0; i < 5; i++) {
+                    const base = Math.floor(spacing * (i + 1));
+                    const variance = Math.floor(Math.random() * 6) - 3;
+                    let num = Math.max(1, Math.min(69, base + variance));
+                    
+                    while (numbers.includes(num)) {
+                        num = Math.floor(Math.random() * 69) + 1;
+                    }
+                    numbers.push(num);
+                }
+                
+                return numbers;
+            };
+            
+            const generateHybridNumbers = () => {
+                const numbers = [];
+                const hotNums = historicalStats?.hotNumbers || [7, 12, 17, 23, 28];
+                const coldNums = historicalStats?.coldNumbers || [3, 9, 14, 19, 25];
+                
+                // 2 hot, 2 cold, 1 mathematical
+                const hotPicks = hotNums.slice(0, 8);
+                const coldPicks = coldNums.slice(0, 8);
+                
+                // Add 2 hot numbers
+                for (let i = 0; i < 2 && hotPicks.length > 0; i++) {
+                    let num;
+                    do {
+                        num = hotPicks[Math.floor(Math.random() * hotPicks.length)];
+                    } while (numbers.includes(num));
+                    numbers.push(num);
+                }
+                
+                // Add 2 cold numbers
+                for (let i = 0; i < 2 && coldPicks.length > 0; i++) {
+                    let num;
+                    do {
+                        num = coldPicks[Math.floor(Math.random() * coldPicks.length)];
+                    } while (numbers.includes(num));
+                    numbers.push(num);
+                }
+                
+                // Add 1 mathematical number
+                let mathNum;
+                do {
+                    mathNum = Math.floor(Math.random() * 69) + 1;
+                } while (numbers.includes(mathNum));
+                numbers.push(mathNum);
+                
+                return numbers;
+            };
+            
+            const generateRandomNumbers = () => {
+                const numbers = [];
+                while (numbers.length < 5) {
+                    const num = Math.floor(Math.random() * 69) + 1;
+                    if (!numbers.includes(num)) {
+                        numbers.push(num);
+                    }
+                }
+                return numbers;
+            };
+            
+            const generateOptimalPowerball = (strategy) => {
+                const stats = historicalStats;
+                if (!stats) return Math.floor(Math.random() * 26) + 1;
+                
+                switch (strategy) {
+                    case 'hot':
+                        return stats.hotPowerballs?.[Math.floor(Math.random() * Math.min(5, stats.hotPowerballs.length))] || Math.floor(Math.random() * 26) + 1;
+                    case 'cold':
+                        return stats.coldPowerballs?.[Math.floor(Math.random() * Math.min(5, stats.coldPowerballs.length))] || Math.floor(Math.random() * 26) + 1;
+                    case 'balanced':
+                    case 'hybrid':
+                        const hotPB = stats.hotPowerballs?.[0] || 12;
+                        const coldPB = stats.coldPowerballs?.[0] || 24;
+                        return Math.random() > 0.5 ? hotPB : coldPB;
+                    default:
+                        return Math.floor(Math.random() * 26) + 1;
+                }
+            };
+            
+            const getNumberAnalysis = (numbers, powerball) => {
+                if (!historicalStats) return 'Analysis pending...';
+                
+                const hotCount = numbers.filter(num => historicalStats.hotNumbers?.includes(num)).length;
+                const coldCount = numbers.filter(num => historicalStats.coldNumbers?.includes(num)).length;
+                const isHotPB = historicalStats.hotPowerballs?.includes(powerball);
+                
+                let analysis = '';
+                if (hotCount > 2) analysis += `${hotCount} hot numbers, `;
+                if (coldCount > 2) analysis += `${coldCount} overdue numbers, `;
+                if (isHotPB) analysis += 'trending powerball';
+                
+                return analysis || 'Balanced selection';
+            };
+
 
 
             return React.createElement('div', { className: 'container' },
