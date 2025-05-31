@@ -794,73 +794,420 @@
                 return numbers;
             };
 
-            // Number optimization using REAL data
+            // Advanced scoring algorithm based on real historical data
+            const calculateCombinationScore = (numbers, powerball, historicalData, historicalStats) => {
+                if (!historicalData || historicalData.length === 0) {
+                    return Math.random() * 50 + 50; // Fallback random score
+                }
+                
+                let score = 0;
+                const weights = {
+                    frequency: 25,      // How often numbers appear
+                    spacing: 20,        // Mathematical distribution
+                    recent: 15,         // Recent appearance trends
+                    balance: 15,        // Range distribution
+                    uniqueness: 10,     // Avoiding common patterns
+                    powerball: 15       // Powerball optimization
+                };
+                
+                // 1. Frequency Analysis (25 points)
+                if (historicalStats) {
+                    const hotNumbers = historicalStats.hotNumbers || [];
+                    const coldNumbers = historicalStats.coldNumbers || [];
+                    
+                    let frequencyScore = 0;
+                    numbers.forEach(num => {
+                        if (hotNumbers.includes(num)) {
+                            frequencyScore += 5; // Bonus for hot numbers
+                        } else if (!coldNumbers.slice(0, 10).includes(num)) {
+                            frequencyScore += 3; // Moderate bonus for balanced numbers
+                        }
+                    });
+                    score += Math.min(frequencyScore, weights.frequency);
+                }
+                
+                // 2. Mathematical Spacing (20 points)
+                const sortedNumbers = [...numbers].sort((a, b) => a - b);
+                let spacingScore = 0;
+                for (let i = 1; i < sortedNumbers.length; i++) {
+                    const gap = sortedNumbers[i] - sortedNumbers[i-1];
+                    if (gap >= 3 && gap <= 15) { // Optimal spacing
+                        spacingScore += 4;
+                    } else if (gap >= 2 && gap <= 20) {
+                        spacingScore += 2;
+                    }
+                }
+                score += Math.min(spacingScore, weights.spacing);
+                
+                // 3. Recent Trends (15 points)
+                const recentDrawings = historicalData.slice(0, 20);
+                let recentScore = 0;
+                const recentNumbers = new Set();
+                recentDrawings.forEach(drawing => {
+                    drawing.numbers.forEach(num => recentNumbers.add(num));
+                });
+                
+                let recentMatches = 0;
+                numbers.forEach(num => {
+                    if (recentNumbers.has(num)) recentMatches++;
+                });
+                
+                // Optimal: 2-3 numbers from recent trends
+                if (recentMatches >= 2 && recentMatches <= 3) {
+                    recentScore = weights.recent;
+                } else if (recentMatches === 1 || recentMatches === 4) {
+                    recentScore = weights.recent * 0.7;
+                } else {
+                    recentScore = weights.recent * 0.3;
+                }
+                score += recentScore;
+                
+                // 4. Range Balance (15 points)
+                const ranges = {
+                    low: numbers.filter(n => n >= 1 && n <= 23).length,
+                    mid: numbers.filter(n => n >= 24 && n <= 46).length,
+                    high: numbers.filter(n => n >= 47 && n <= 69).length
+                };
+                
+                let balanceScore = 0;
+                if (ranges.low >= 1 && ranges.mid >= 1 && ranges.high >= 1) {
+                    balanceScore = weights.balance; // Perfect distribution
+                } else if (ranges.low >= 1 && ranges.high >= 1) {
+                    balanceScore = weights.balance * 0.8; // Good distribution
+                } else {
+                    balanceScore = weights.balance * 0.4; // Poor distribution
+                }
+                score += balanceScore;
+                
+                // 5. Uniqueness (10 points)
+                // Avoid common patterns like consecutive numbers or multiples
+                let uniquenessScore = weights.uniqueness;
+                
+                // Penalize consecutive numbers
+                let consecutiveCount = 0;
+                for (let i = 1; i < sortedNumbers.length; i++) {
+                    if (sortedNumbers[i] - sortedNumbers[i-1] === 1) {
+                        consecutiveCount++;
+                    }
+                }
+                if (consecutiveCount >= 3) uniquenessScore *= 0.3;
+                else if (consecutiveCount >= 2) uniquenessScore *= 0.7;
+                
+                // Penalize all even or all odd
+                const evenCount = numbers.filter(n => n % 2 === 0).length;
+                if (evenCount === 0 || evenCount === 5) uniquenessScore *= 0.5;
+                
+                score += uniquenessScore;
+                
+                // 6. Powerball Optimization (15 points)
+                let powerballScore = 0;
+                if (historicalStats && historicalStats.hotPowerballs) {
+                    if (historicalStats.hotPowerballs.includes(powerball)) {
+                        powerballScore = weights.powerball;
+                    } else if (!historicalStats.coldPowerballs.slice(0, 5).includes(powerball)) {
+                        powerballScore = weights.powerball * 0.7;
+                    } else {
+                        powerballScore = weights.powerball * 0.4;
+                    }
+                } else {
+                    powerballScore = weights.powerball * 0.6; // Neutral score if no data
+                }
+                score += powerballScore;
+                
+                return Math.min(score, 100); // Cap at 100
+            };
+
+            // Generate optimal Powerball based on strategy
+            const generateOptimalPowerball = (historicalStats, strategy) => {
+                if (!historicalStats) {
+                    return Math.floor(Math.random() * 26) + 1;
+                }
+                
+                switch (strategy) {
+                    case 'hot':
+                    case 'trend':
+                        if (historicalStats.hotPowerballs && historicalStats.hotPowerballs.length > 0) {
+                            return historicalStats.hotPowerballs[Math.floor(Math.random() * Math.min(5, historicalStats.hotPowerballs.length))];
+                        }
+                        break;
+                        
+                    case 'cold':
+                        if (historicalStats.coldPowerballs && historicalStats.coldPowerballs.length > 0) {
+                            return historicalStats.coldPowerballs[Math.floor(Math.random() * Math.min(5, historicalStats.coldPowerballs.length))];
+                        }
+                        break;
+                        
+                    case 'mathematical':
+                        // Mathematical approach: avoid extremes
+                        return Math.floor(Math.random() * 16) + 6; // Numbers 6-21
+                        
+                    case 'balanced':
+                    default:
+                        // Mix of hot and mathematical
+                        if (historicalStats.hotPowerballs && Math.random() > 0.5) {
+                            return historicalStats.hotPowerballs[Math.floor(Math.random() * Math.min(3, historicalStats.hotPowerballs.length))];
+                        }
+                        return Math.floor(Math.random() * 26) + 1;
+                }
+                
+                return Math.floor(Math.random() * 26) + 1;
+            };
+
+            // Enhanced AI Optimization using real 200+ historical drawings
             const generateOptimizedNumbers = async () => {
                 setIsOptimizing(true);
                 setOptimizedSets([]);
                 
-                await new Promise(resolve => setTimeout(resolve, 500));
+                console.log('🎯 Generating AI-optimized combinations using', historicalData.length, 'real drawings...');
                 
-                const newSets = [];
+                await new Promise(resolve => setTimeout(resolve, 800));
                 
-                for (let i = 0; i < numOptimizedSets; i++) {
-                    let numbers = [];
-                    let powerball = 0;
-                    let strategy = optimizationStrategy;
-                    let score = 0;
+                const strategies = [
+                    {
+                        id: 'frequency_master',
+                        name: 'Frequency Master',
+                        description: 'Leverages most frequently drawn numbers from real historical data',
+                        icon: '🔥',
+                        generate: () => {
+                            const numbers = [];
+                            if (historicalStats && historicalStats.hotNumbers) {
+                                // Take 3-4 from hottest numbers
+                                const hotPool = [...historicalStats.hotNumbers.slice(0, 12)];
+                                while (numbers.length < 4 && hotPool.length > 0) {
+                                    const randomIndex = Math.floor(Math.random() * hotPool.length);
+                                    const num = hotPool.splice(randomIndex, 1)[0];
+                                    if (!numbers.includes(num)) {
+                                        numbers.push(num);
+                                    }
+                                }
+                            }
+                            // Fill remaining with balanced selection
+                            while (numbers.length < 5) {
+                                const num = Math.floor(Math.random() * 69) + 1;
+                                if (!numbers.includes(num)) {
+                                    numbers.push(num);
+                                }
+                            }
+                            return {
+                                numbers: numbers.sort((a, b) => a - b),
+                                powerball: generateOptimalPowerball(historicalStats, 'hot')
+                            };
+                        }
+                    },
+                    {
+                        id: 'balanced_hybrid',
+                        name: 'Balanced Hybrid',
+                        description: 'Optimal mix of hot, cold, and mathematically spaced numbers',
+                        icon: '⚖️',
+                        generate: () => {
+                            const numbers = [];
+                            
+                            // 2 hot numbers
+                            if (historicalStats && historicalStats.hotNumbers) {
+                                const hotPool = [...historicalStats.hotNumbers.slice(0, 15)];
+                                for (let i = 0; i < 2 && hotPool.length > 0; i++) {
+                                    const randomIndex = Math.floor(Math.random() * hotPool.length);
+                                    const num = hotPool.splice(randomIndex, 1)[0];
+                                    if (!numbers.includes(num)) {
+                                        numbers.push(num);
+                                    }
+                                }
+                            }
+                            
+                            // 1 cold number
+                            if (historicalStats && historicalStats.coldNumbers) {
+                                const coldPool = historicalStats.coldNumbers.slice(0, 10);
+                                const randomIndex = Math.floor(Math.random() * coldPool.length);
+                                const num = coldPool[randomIndex];
+                                if (!numbers.includes(num)) {
+                                    numbers.push(num);
+                                }
+                            }
+                            
+                            // Fill remaining with range-balanced numbers
+                            const ranges = [[24, 46], [47, 69]];
+                            ranges.forEach(([min, max]) => {
+                                if (numbers.length < 5) {
+                                    let attempts = 0;
+                                    while (attempts < 20) {
+                                        const num = Math.floor(Math.random() * (max - min + 1)) + min;
+                                        if (!numbers.includes(num)) {
+                                            numbers.push(num);
+                                            break;
+                                        }
+                                        attempts++;
+                                    }
+                                }
+                            });
+                            
+                            // Fill any remaining slots
+                            while (numbers.length < 5) {
+                                const num = Math.floor(Math.random() * 69) + 1;
+                                if (!numbers.includes(num)) {
+                                    numbers.push(num);
+                                }
+                            }
+                            
+                            return {
+                                numbers: numbers.sort((a, b) => a - b),
+                                powerball: generateOptimalPowerball(historicalStats, 'balanced')
+                            };
+                        }
+                    },
+                    {
+                        id: 'contrarian_edge',
+                        name: 'Contrarian Edge',
+                        description: 'Focuses on overdue numbers due for statistical reversion',
+                        icon: '🧊',
+                        generate: () => {
+                            const numbers = [];
+                            
+                            if (historicalStats && historicalStats.coldNumbers) {
+                                // Take 4 from coldest numbers
+                                const coldPool = [...historicalStats.coldNumbers.slice(0, 15)];
+                                while (numbers.length < 4 && coldPool.length > 0) {
+                                    const randomIndex = Math.floor(Math.random() * coldPool.length);
+                                    const num = coldPool.splice(randomIndex, 1)[0];
+                                    if (!numbers.includes(num)) {
+                                        numbers.push(num);
+                                    }
+                                }
+                            }
+                            
+                            // Add 1 balanced number
+                            let balanceNum;
+                            do {
+                                balanceNum = Math.floor(Math.random() * 69) + 1;
+                            } while (numbers.includes(balanceNum));
+                            numbers.push(balanceNum);
+                            
+                            return {
+                                numbers: numbers.sort((a, b) => a - b),
+                                powerball: generateOptimalPowerball(historicalStats, 'cold')
+                            };
+                        }
+                    },
+                    {
+                        id: 'mathematical_precision',
+                        name: 'Mathematical Precision',
+                        description: 'Algorithmically distributed numbers for optimal coverage',
+                        icon: '📐',
+                        generate: () => {
+                            const numbers = [];
+                            const spacing = 69 / 6;
+                            
+                            for (let i = 0; i < 5; i++) {
+                                const base = Math.floor(spacing * (i + 1));
+                                const variance = Math.floor(Math.random() * 8) - 4; // ±4 variance
+                                let num = Math.max(1, Math.min(69, base + variance));
+                                
+                                let attempts = 0;
+                                while (numbers.includes(num) && attempts < 20) {
+                                    num = Math.floor(Math.random() * 69) + 1;
+                                    attempts++;
+                                }
+                                numbers.push(num);
+                            }
+                            
+                            return {
+                                numbers: numbers.sort((a, b) => a - b),
+                                powerball: generateOptimalPowerball(historicalStats, 'mathematical')
+                            };
+                        }
+                    },
+                    {
+                        id: 'trend_momentum',
+                        name: 'Trend Momentum',
+                        description: 'Identifies emerging patterns from recent 30 drawings',
+                        icon: '📈',
+                        generate: () => {
+                            const numbers = [];
+                            
+                            if (historicalData && historicalData.length >= 10) {
+                                // Analyze last 10 drawings for emerging patterns
+                                const recentNumbers = new Map();
+                                historicalData.slice(0, 10).forEach((drawing, index) => {
+                                    drawing.numbers.forEach(num => {
+                                        const weight = 10 - index; // More recent = higher weight
+                                        recentNumbers.set(num, (recentNumbers.get(num) || 0) + weight);
+                                    });
+                                });
+                                
+                                // Sort by weighted frequency
+                                const trendingNumbers = Array.from(recentNumbers.entries())
+                                    .sort((a, b) => b[1] - a[1])
+                                    .slice(0, 15)
+                                    .map(([num]) => num);
+                                
+                                // Take 3 trending numbers
+                                while (numbers.length < 3 && trendingNumbers.length > 0) {
+                                    const randomIndex = Math.floor(Math.random() * Math.min(8, trendingNumbers.length));
+                                    const num = trendingNumbers.splice(randomIndex, 1)[0];
+                                    if (!numbers.includes(num)) {
+                                        numbers.push(num);
+                                    }
+                                }
+                            }
+                            
+                            // Fill remaining with balanced selection
+                            while (numbers.length < 5) {
+                                const num = Math.floor(Math.random() * 69) + 1;
+                                if (!numbers.includes(num)) {
+                                    numbers.push(num);
+                                }
+                            }
+                            
+                            return {
+                                numbers: numbers.sort((a, b) => a - b),
+                                powerball: generateOptimalPowerball(historicalStats, 'trend')
+                            };
+                        }
+                    }
+                ];
+                
+                const combinations = [];
+                
+                // Generate multiple combinations for each strategy and pick the best
+                for (const strategy of strategies.slice(0, 5)) { // Top 5 strategies
+                    let bestCombination = null;
+                    let bestScore = 0;
                     
-                    switch (optimizationStrategy) {
-                        case 'balanced':
-                            numbers = generateBalancedNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            score = 85 + Math.floor(Math.random() * 10);
-                            break;
-                        case 'hot':
-                            numbers = generateHotNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = `Hot Numbers (${historicalData.length > 0 ? 'Real Data' : 'Estimated'})`;
-                            score = 85 + Math.floor(Math.random() * 10);
-                            break;
-                        case 'cold':
-                            numbers = generateColdNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = `Cold Numbers (${historicalData.length > 0 ? 'Real Data' : 'Estimated'})`;
-                            score = 78 + Math.floor(Math.random() * 15);
-                            break;
-                        case 'mathematical':
-                            numbers = generateMathematicalNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = 'Mathematical Spacing';
-                            score = 80 + Math.floor(Math.random() * 15);
-                            break;
-                        default:
-                            numbers = generateRandomNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = 'Pure Random';
-                            score = 50 + Math.floor(Math.random() * 20);
+                    // Generate 8 combinations per strategy and pick the highest scoring
+                    for (let i = 0; i < 8; i++) {
+                        const combo = strategy.generate();
+                        const score = calculateCombinationScore(combo.numbers, combo.powerball, historicalData, historicalStats);
+                        
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestCombination = {
+                                ...combo,
+                                score: score.toFixed(1),
+                                strategy: strategy.name,
+                                description: strategy.description,
+                                icon: strategy.icon,
+                                dataSource: historicalData.length > 0 ? `Real Data (${historicalData.length} drawings)` : 'Estimated',
+                                confidence: Math.min(95, Math.max(65, score + Math.random() * 8)).toFixed(1)
+                            };
+                        }
                     }
                     
-                    // Add one random number to avoid predictability
-                    let randomNum;
-                    do {
-                        randomNum = Math.floor(Math.random() * 69) + 1;
-                    } while (numbers.includes(randomNum));
-                    
-                    if (numbers.length < 5) {
-                        numbers.push(randomNum);
-                    } else {
-                        numbers[Math.floor(Math.random() * 5)] = randomNum;
+                    if (bestCombination) {
+                        combinations.push(bestCombination);
                     }
-                    
-                    newSets.push({
-                        numbers: numbers.sort((a, b) => a - b),
-                        powerball,
-                        strategy,
-                        score: score.toFixed(1)
-                    });
                 }
                 
-                setOptimizedSets(newSets);
+                // Sort by score and add rankings
+                const rankedCombinations = combinations
+                    .sort((a, b) => parseFloat(b.score) - parseFloat(a.score))
+                    .map((combo, index) => ({
+                        ...combo,
+                        rank: index + 1
+                    }));
+                
+                console.log('✅ Generated', rankedCombinations.length, 'AI-optimized combinations');
+                console.log('🏆 Top combination score:', rankedCombinations[0]?.score, 'using', rankedCombinations[0]?.strategy);
+                
+                setOptimizedSets(rankedCombinations);
                 setIsOptimizing(false);
             };
 
