@@ -426,7 +426,7 @@
     </div>
     
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useCallback } = React;
 
         function AdvancedLotteryAnalysisSystem() {
             const [selectedNumbers, setSelectedNumbers] = useState([]);
@@ -617,25 +617,20 @@
                     } else {
                         setUpdateStatus('⚠️ System ready with estimated data');
                     }
-                    
-                    // Auto-generate AI combinations after data is loaded
-                    setTimeout(() => {
-                        console.log('🚀 Auto-generating AI combinations with loaded data...');
-                        generateOptimizedNumbers();
-                    }, 1500);
                 };
                 initializeData();
             }, []);
 
-            // Also regenerate when historical data changes
+            // Generate AI combinations when historical data is available
             useEffect(() => {
-                if (historicalData.length > 0 && optimizedSets.length === 0) {
-                    console.log('📊 Historical data loaded, generating optimized sets...');
-                    setTimeout(() => {
+                if (historicalData.length > 0 && historicalStats && optimizedSets.length === 0) {
+                    console.log('📊 Historical data and stats loaded, generating optimized sets...');
+                    const timer = setTimeout(() => {
                         generateOptimizedNumbers();
-                    }, 500);
+                    }, 1000);
+                    return () => clearTimeout(timer);
                 }
-            }, [historicalData]);
+            }, [historicalData, historicalStats, generateOptimizedNumbers, optimizedSets.length]);
 
             // Helper function to select random numbers from array
             const selectRandomFromArray = (array, count) => {
@@ -799,16 +794,65 @@
                 return numbers;
             };
             
-            const generateRandomNumbers = () => {
-                const numbers = [];
-                while (numbers.length < 5) {
-                    const num = Math.floor(Math.random() * 69) + 1;
-                    if (!numbers.includes(num)) {
-                        numbers.push(num);
+            // Working Monte Carlo simulation function
+            const runMonteCarloSimulation = useCallback(async () => {
+                setIsSimulating(true);
+                setSimulationProgress(0);
+                
+                // Simulate in chunks to show progress
+                const totalTickets = ticketsPerDraw * yearsToSimulate * 156;
+                const totalCost = totalTickets * 2;
+                let totalWon = 0;
+                let wins = 0;
+                
+                for (let i = 0; i < monteCarloRuns; i++) {
+                    // Simulate one scenario
+                    let scenarioWinnings = 0;
+                    for (let ticket = 0; ticket < totalTickets; ticket++) {
+                        const random = Math.random();
+                        if (random < 1/292201338) {
+                            scenarioWinnings += (currentJackpot ? currentJackpot.amount : 735000000);
+                            wins++;
+                        } else if (random < 12/292201338) {
+                            scenarioWinnings += 1000000;
+                            wins++;
+                        } else if (random < 320/292201338) {
+                            scenarioWinnings += 50000;
+                            wins++;
+                        } else if (random < 12103/292201338) {
+                            scenarioWinnings += 100;
+                            wins++;
+                        } else if (random < 70000/292201338) {
+                            scenarioWinnings += 7;
+                            wins++;
+                        } else if (random < 270000/292201338) {
+                            scenarioWinnings += 4;
+                            wins++;
+                        }
+                    }
+                    totalWon += scenarioWinnings;
+                    
+                    // Update progress
+                    if (i % Math.max(1, Math.floor(monteCarloRuns / 100)) === 0) {
+                        setSimulationProgress(Math.floor((i / monteCarloRuns) * 100));
+                        await new Promise(resolve => setTimeout(resolve, 1));
                     }
                 }
-                return numbers;
-            };
+                
+                const averageWinnings = totalWon / monteCarloRuns;
+                const netResult = averageWinnings - totalCost;
+                const roi = ((averageWinnings - totalCost) / totalCost) * 100;
+                
+                setSimulationProgress(100);
+                setIsSimulating(false);
+                
+                alert(`Monte Carlo Results (${monteCarloRuns.toLocaleString()} simulations):
+Total Cost: ${totalCost.toLocaleString()}
+Average Winnings: ${Math.round(averageWinnings).toLocaleString()}
+Net Result: ${netResult >= 0 ? '+' : ''}${Math.round(netResult).toLocaleString()}
+ROI: ${roi.toFixed(2)}%
+Jackpots Won: ${(wins / monteCarloRuns * 100).toFixed(4)}% of simulations`);
+            }, [ticketsPerDraw, yearsToSimulate, monteCarloRuns, currentJackpot]);
 
             // Advanced scoring algorithm based on real historical data
             const calculateCombinationScore = (numbers, powerball, historicalData, historicalStats) => {
@@ -969,12 +1013,13 @@
                 return Math.floor(Math.random() * 26) + 1;
             };
 
-            // Enhanced AI Optimization using real 200+ historical drawings
-            const generateOptimizedNumbers = async () => {
+            // Enhanced AI Optimization using real 200+ historical drawings - FIXED VERSION
+            const generateOptimizedNumbers = useCallback(async () => {
                 setIsOptimizing(true);
                 setOptimizedSets([]);
                 
                 console.log('🎯 Generating AI-optimized combinations using', historicalData.length, 'real drawings...');
+                console.log('📊 Historical stats available:', !!historicalStats);
                 
                 await new Promise(resolve => setTimeout(resolve, 800));
                 
@@ -987,11 +1032,21 @@
                         generate: () => {
                             const numbers = [];
                             if (historicalStats && historicalStats.hotNumbers && historicalStats.hotNumbers.length > 0) {
+                                console.log('🔥 Using hot numbers:', historicalStats.hotNumbers.slice(0, 5));
                                 // Take 3-4 from hottest numbers
                                 const hotPool = [...historicalStats.hotNumbers.slice(0, 12)];
                                 while (numbers.length < 4 && hotPool.length > 0) {
                                     const randomIndex = Math.floor(Math.random() * hotPool.length);
                                     const num = hotPool.splice(randomIndex, 1)[0];
+                                    if (!numbers.includes(num)) {
+                                        numbers.push(num);
+                                    }
+                                }
+                            } else {
+                                console.log('🔥 Using fallback hot numbers');
+                                const fallbackHot = [7, 12, 17, 23, 28, 32, 38, 41, 45];
+                                while (numbers.length < 4) {
+                                    const num = fallbackHot[Math.floor(Math.random() * fallbackHot.length)];
                                     if (!numbers.includes(num)) {
                                         numbers.push(num);
                                     }
@@ -1079,11 +1134,21 @@
                             const numbers = [];
                             
                             if (historicalStats && historicalStats.coldNumbers && historicalStats.coldNumbers.length > 0) {
+                                console.log('🧊 Using cold numbers:', historicalStats.coldNumbers.slice(0, 5));
                                 // Take 3 from coldest numbers (not 4 to avoid filling too many slots)
                                 const coldPool = [...historicalStats.coldNumbers.slice(0, 15)];
                                 while (numbers.length < 3 && coldPool.length > 0) {
                                     const randomIndex = Math.floor(Math.random() * coldPool.length);
                                     const num = coldPool.splice(randomIndex, 1)[0];
+                                    if (!numbers.includes(num)) {
+                                        numbers.push(num);
+                                    }
+                                }
+                            } else {
+                                console.log('🧊 Using fallback cold numbers');
+                                const fallbackCold = [3, 9, 14, 19, 25, 31, 36, 42, 48];
+                                while (numbers.length < 3) {
+                                    const num = fallbackCold[Math.floor(Math.random() * fallbackCold.length)];
                                     if (!numbers.includes(num)) {
                                         numbers.push(num);
                                     }
@@ -1141,6 +1206,7 @@
                             const numbers = [];
                             
                             if (historicalData && historicalData.length >= 10) {
+                                console.log('📈 Analyzing trends from', historicalData.length, 'drawings');
                                 // Analyze last 10 drawings for emerging patterns
                                 const recentNumbers = new Map();
                                 historicalData.slice(0, 10).forEach((drawing, index) => {
@@ -1164,6 +1230,8 @@
                                         numbers.push(num);
                                     }
                                 }
+                            } else {
+                                console.log('📈 Using fallback trend analysis');
                             }
                             
                             // Fill remaining with balanced selection
@@ -1226,7 +1294,7 @@
                 
                 setOptimizedSets(rankedCombinations);
                 setIsOptimizing(false);
-            };
+            }, [historicalData, historicalStats]);
 
             // Historical Data Status Component
             const HistoricalDataStatus = () => {
