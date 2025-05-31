@@ -1277,8 +1277,7 @@
                     [
                         { id: 'calculator', label: 'Basic Calculator', icon: '🧮' },
                         { id: 'optimization', label: 'Number Optimization', icon: '🎯' },
-                        { id: 'taxes', label: 'Tax Analysis', icon: '💰' },
-                        { id: 'expected', label: 'Expected Value', icon: '📊' }
+                        { id: 'taxes', label: 'Tax Analysis', icon: '💰' }
                     ].map(tab => 
                         React.createElement('button', {
                             key: tab.id,
@@ -1923,15 +1922,7 @@
                     )
                 ),
 
-                // Expected Value Tab
-                activeTab === 'expected' && React.createElement('div', { className: 'card text-center p-6' },
-                    React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' },
-                        '📊 Expected Value Analysis'
-                    ),
-                    React.createElement('p', { className: 'text-gray-600 mb-4' },
-                        'Feature coming soon! The tax calculator and number optimization are fully functional.'
-                    )
-                )
+             
             );
         }
 
