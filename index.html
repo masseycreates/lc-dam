@@ -1109,8 +1109,11 @@
                                 },
                                     React.createElement('option', { value: 'FL' }, 'Florida (0%)'),
                                     React.createElement('option', { value: 'TX' }, 'Texas (0%)'),
+                                    React.createElement('option', { value: 'GA' }, 'Georgia (5.75%)'),
                                     React.createElement('option', { value: 'CA' }, 'California (13.3%)'),
-                                    React.createElement('option', { value: 'NY' }, 'New York (10.9%)')
+                                    React.createElement('option', { value: 'NY' }, 'New York (10.9%)'),
+                                    React.createElement('option', { value: 'NJ' }, 'New Jersey (10.75%)'),
+                                    React.createElement('option', { value: 'PA' }, 'Pennsylvania (3.07%)')
                                 )
                             ),
                             React.createElement('div', null,
@@ -1123,7 +1126,9 @@
                                     className: 'w-full'
                                 },
                                     React.createElement('option', { value: 'single' }, 'Single'),
-                                    React.createElement('option', { value: 'married' }, 'Married Filing Jointly')
+                                    React.createElement('option', { value: 'married' }, 'Married Filing Jointly'),
+                                    React.createElement('option', { value: 'marriedSeparate' }, 'Married Filing Separately'),
+                                    React.createElement('option', { value: 'headOfHousehold' }, 'Head of Household')
                                 )
                             )
                         ),
@@ -1136,7 +1141,7 @@
                             const federalTax = cashOption * (federalRate / 100);
                             
                             const stateTaxRates = {
-                                'FL': 0, 'TX': 0, 'CA': 13.3, 'NY': 10.9
+                                'FL': 0, 'TX': 0, 'GA': 5.75, 'CA': 13.3, 'NY': 10.9, 'NJ': 10.75, 'PA': 3.07
                             };
                             const stateTaxRate = stateTaxRates[selectedState] || 0;
                             const stateTax = cashOption * (stateTaxRate / 100);
