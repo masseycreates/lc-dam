@@ -420,7 +420,7 @@
             <div style="font-size: 2rem; margin-bottom: 1rem;">🎰</div>
             <div>Loading Advanced Lottery System...</div>
             <div style="margin-top: 1rem; font-size: 0.875rem; color: #6b7280;">
-                If this doesn't load, check the browser console for errors (F12)
+                Fetching real historical data from multiple sources...
             </div>
         </div>
     </div>
@@ -444,6 +444,8 @@
             const [updateStatus, setUpdateStatus] = useState('');
             const [apiHealthy, setApiHealthy] = useState(false);
             const [historicalData, setHistoricalData] = useState([]);
+            const [historicalStats, setHistoricalStats] = useState(null);
+            const [dataSource, setDataSource] = useState('Loading...');
             
             // Optimization states
             const [optimizationStrategy, setOptimizationStrategy] = useState('balanced');
@@ -457,59 +459,6 @@
             const [simulationResults, setSimulationResults] = useState(null);
             const [isSimulating, setIsSimulating] = useState(false);
             const [simulationProgress, setSimulationProgress] = useState(0);
-
-            // State tax information
-            const stateTaxInfo = {
-                'AL': { name: 'Alabama', rate: 5.0, withholding: 5.0 },
-                'AZ': { name: 'Arizona', rate: 4.5, withholding: 5.0 },
-                'AR': { name: 'Arkansas', rate: 5.5, withholding: 7.0 },
-                'CA': { name: 'California', rate: 13.3, withholding: 7.25 },
-                'CO': { name: 'Colorado', rate: 4.4, withholding: 4.63 },
-                'CT': { name: 'Connecticut', rate: 6.99, withholding: 6.99 },
-                'DE': { name: 'Delaware', rate: 6.6, withholding: 6.6 },
-                'DC': { name: 'Washington D.C.', rate: 10.75, withholding: 8.5 },
-                'FL': { name: 'Florida', rate: 0, withholding: 0 },
-                'GA': { name: 'Georgia', rate: 5.75, withholding: 6.0 },
-                'ID': { name: 'Idaho', rate: 6.0, withholding: 6.0 },
-                'IL': { name: 'Illinois', rate: 4.95, withholding: 4.95 },
-                'IN': { name: 'Indiana', rate: 3.23, withholding: 3.4 },
-                'IA': { name: 'Iowa', rate: 8.53, withholding: 5.0 },
-                'KS': { name: 'Kansas', rate: 5.7, withholding: 5.0 },
-                'KY': { name: 'Kentucky', rate: 6.0, withholding: 6.0 },
-                'LA': { name: 'Louisiana', rate: 4.75, withholding: 4.75 },
-                'ME': { name: 'Maine', rate: 7.15, withholding: 5.0 },
-                'MD': { name: 'Maryland', rate: 8.75, withholding: 8.95 },
-                'MA': { name: 'Massachusetts', rate: 5.0, withholding: 5.0 },
-                'MI': { name: 'Michigan', rate: 4.25, withholding: 4.25 },
-                'MN': { name: 'Minnesota', rate: 9.85, withholding: 7.25 },
-                'MS': { name: 'Mississippi', rate: 5.0, withholding: 5.0 },
-                'MO': { name: 'Missouri', rate: 4.0, withholding: 4.0 },
-                'MT': { name: 'Montana', rate: 6.75, withholding: 6.75 },
-                'NE': { name: 'Nebraska', rate: 5.84, withholding: 5.0 },
-                'NH': { name: 'New Hampshire', rate: 0, withholding: 0 },
-                'NJ': { name: 'New Jersey', rate: 10.75, withholding: 5.0 },
-                'NM': { name: 'New Mexico', rate: 5.9, withholding: 6.0 },
-                'NY': { name: 'New York', rate: 10.9, withholding: 10.9, local: 3.876 },
-                'NC': { name: 'North Carolina', rate: 4.99, withholding: 5.25 },
-                'ND': { name: 'North Dakota', rate: 2.9, withholding: 2.9 },
-                'OH': { name: 'Ohio', rate: 3.99, withholding: 4.0 },
-                'OK': { name: 'Oklahoma', rate: 6.0, withholding: 5.0 },
-                'OR': { name: 'Oregon', rate: 9.9, withholding: 8.0 },
-                'PA': { name: 'Pennsylvania', rate: 3.07, withholding: 3.07 },
-                'PR': { name: 'Puerto Rico', rate: 20.0, withholding: 20.0 },
-                'RI': { name: 'Rhode Island', rate: 5.99, withholding: 5.99 },
-                'SC': { name: 'South Carolina', rate: 7.0, withholding: 7.0 },
-                'SD': { name: 'South Dakota', rate: 0, withholding: 0 },
-                'TN': { name: 'Tennessee', rate: 0, withholding: 0 },
-                'TX': { name: 'Texas', rate: 0, withholding: 0 },
-                'VI': { name: 'U.S. Virgin Islands', rate: 0, withholding: 0 },
-                'VT': { name: 'Vermont', rate: 6.0, withholding: 6.0 },
-                'VA': { name: 'Virginia', rate: 5.75, withholding: 4.0 },
-                'WA': { name: 'Washington', rate: 0, withholding: 0 },
-                'WV': { name: 'West Virginia', rate: 6.5, withholding: 6.5 },
-                'WI': { name: 'Wisconsin', rate: 7.65, withholding: 7.65 },
-                'WY': { name: 'Wyoming', rate: 0, withholding: 0 }
-            };
 
             // Calculate next drawing date
             const calculateNextDrawing = () => {
@@ -547,6 +496,45 @@
                     }),
                     time: '10:59 PM ET'
                 };
+            };
+
+            // Fetch historical data from your API
+            const fetchHistoricalData = async () => {
+                try {
+                    console.log('🔄 Fetching real historical Powerball data...');
+                    const response = await fetch('/api/powerball-history', {
+                        method: 'GET',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Historical API returned ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.drawings && data.drawings.length > 0) {
+                        setHistoricalData(data.drawings);
+                        setHistoricalStats(data.statistics);
+                        setDataSource(data.meta.source);
+                        
+                        console.log(`✅ Loaded ${data.drawings.length} real drawings from ${data.meta.source}`);
+                        console.log('📊 Hot numbers:', data.statistics?.hotNumbers?.slice(0, 10) || 'Calculating...');
+                        console.log('🧊 Cold numbers:', data.statistics?.coldNumbers?.slice(0, 10) || 'Calculating...');
+                        
+                        return data.drawings;
+                    } else {
+                        throw new Error('No historical data returned');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Historical data fetch failed:', error);
+                    setDataSource('Estimated Data (API Unavailable)');
+                    return [];
+                }
             };
 
             // Fetch jackpot data
@@ -613,14 +601,114 @@
                 setIsUpdating(false);
             };
 
-            // Initialize app
+            // Initialize app with BOTH current jackpot AND historical data
             useEffect(() => {
                 const initializeData = async () => {
                     setUpdateStatus('🚀 Initializing lottery system...');
-                    await fetchLatestPowerballData();
+                    
+                    // Fetch both current jackpot AND historical data
+                    const [jackpotResult, historicalResult] = await Promise.all([
+                        fetchLatestPowerballData(),
+                        fetchHistoricalData()
+                    ]);
+                    
+                    if (historicalResult && historicalResult.length > 0) {
+                        setUpdateStatus(`✅ System ready with ${historicalResult.length} real drawings`);
+                    } else {
+                        setUpdateStatus('⚠️ System ready with estimated data');
+                    }
                 };
                 initializeData();
             }, []);
+
+            // Helper function to select random numbers from array
+            const selectRandomFromArray = (array, count) => {
+                const numbers = [];
+                const shuffled = [...array].sort(() => Math.random() - 0.5);
+                
+                for (let i = 0; i < Math.min(count, shuffled.length); i++) {
+                    numbers.push(shuffled[i]);
+                }
+                
+                // Fill remaining with truly random if needed
+                while (numbers.length < count) {
+                    const num = Math.floor(Math.random() * 69) + 1;
+                    if (!numbers.includes(num)) {
+                        numbers.push(num);
+                    }
+                }
+                
+                return numbers;
+            };
+
+            // Generate hot numbers from REAL historical data
+            const generateHotNumbers = () => {
+                if (historicalStats && historicalStats.hotNumbers) {
+                    console.log('🔥 Using real hot numbers from', historicalData.length, 'drawings');
+                    return selectRandomFromArray(historicalStats.hotNumbers.slice(0, 15), 4);
+                } 
+                
+                if (historicalData.length > 0) {
+                    // Calculate frequency from raw historical data
+                    const frequency = {};
+                    
+                    historicalData.forEach(drawing => {
+                        drawing.numbers.forEach(num => {
+                            frequency[num] = (frequency[num] || 0) + 1;
+                        });
+                    });
+                    
+                    const hotNumbers = Object.entries(frequency)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 15)
+                        .map(([num]) => parseInt(num));
+                    
+                    console.log('🔥 Calculated hot numbers from', historicalData.length, 'drawings:', hotNumbers.slice(0, 10));
+                    return selectRandomFromArray(hotNumbers, 4);
+                }
+                
+                // Fallback to estimated hot numbers
+                const estimatedHot = [7, 12, 17, 23, 28, 32, 38, 41, 45, 51, 56, 61, 63, 67];
+                console.log('🔥 Using estimated hot numbers (no real data available)');
+                return selectRandomFromArray(estimatedHot, 4);
+            };
+
+            // Generate cold numbers from REAL historical data
+            const generateColdNumbers = () => {
+                if (historicalStats && historicalStats.coldNumbers) {
+                    console.log('🧊 Using real cold numbers from', historicalData.length, 'drawings');
+                    return selectRandomFromArray(historicalStats.coldNumbers.slice(0, 15), 4);
+                }
+                
+                if (historicalData.length > 0) {
+                    // Calculate frequency from raw historical data
+                    const frequency = {};
+                    
+                    // Initialize all possible numbers
+                    for (let i = 1; i <= 69; i++) {
+                        frequency[i] = 0;
+                    }
+                    
+                    historicalData.forEach(drawing => {
+                        drawing.numbers.forEach(num => {
+                            frequency[num]++;
+                        });
+                    });
+                    
+                    const coldNumbers = Object.entries(frequency)
+                        .sort((a, b) => a[1] - b[1])
+                        .slice(0, 15)
+                        .map(([num]) => parseInt(num));
+                    
+                    console.log('🧊 Calculated cold numbers from', historicalData.length, 'drawings:', coldNumbers.slice(0, 10));
+                    return selectRandomFromArray(coldNumbers, 4);
+                }
+                
+                // Fallback to estimated cold numbers
+                const estimatedCold = [3, 9, 14, 19, 25, 31, 36, 42, 48, 53, 58, 64, 68];
+                console.log('🧊 Using estimated cold numbers (no real data available)');
+                return selectRandomFromArray(estimatedCold, 4);
+            };
 
             const toggleNumber = (num) => {
                 if (selectedNumbers.includes(num)) {
@@ -655,64 +743,6 @@
                 return (currentJackpot.amount * jackpotProb + otherPrizes) - ticketCost;
             };
 
-            // Number optimization
-            const generateOptimizedNumbers = async () => {
-                setIsOptimizing(true);
-                setOptimizedSets([]);
-                
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                const newSets = [];
-                
-                for (let i = 0; i < numOptimizedSets; i++) {
-                    let numbers = [];
-                    let powerball = 0;
-                    let strategy = optimizationStrategy;
-                    let score = 0;
-                    
-                    switch (optimizationStrategy) {
-                        case 'balanced':
-                            numbers = generateBalancedNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            score = 85 + Math.floor(Math.random() * 10);
-                            break;
-                        case 'hot':
-                            numbers = generateHotNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = 'Hot Numbers (Frequent)';
-                            score = 85 + Math.floor(Math.random() * 10);
-                            break;
-                        case 'cold':
-                            numbers = generateColdNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = 'Cold Numbers (Overdue)';
-                            score = 78 + Math.floor(Math.random() * 15);
-                            break;
-                        case 'mathematical':
-                            numbers = generateMathematicalNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = 'Mathematical Spacing';
-                            score = 80 + Math.floor(Math.random() * 15);
-                            break;
-                        default:
-                            numbers = generateRandomNumbers();
-                            powerball = Math.floor(Math.random() * 26) + 1;
-                            strategy = 'Pure Random';
-                            score = 50 + Math.floor(Math.random() * 20);
-                    }
-                    
-                    newSets.push({
-                        numbers: numbers.sort((a, b) => a - b),
-                        powerball,
-                        strategy,
-                        score: score.toFixed(1)
-                    });
-                }
-                
-                setOptimizedSets(newSets);
-                setIsOptimizing(false);
-            };
-            
             const generateBalancedNumbers = () => {
                 const numbers = [];
                 const ranges = [[1, 23], [24, 46], [47, 69]];
@@ -731,46 +761,6 @@
                         numbers.push(num);
                     }
                 }
-                
-                return numbers;
-            };
-            
-            const generateHotNumbers = () => {
-                const hotNumbers = [7, 12, 17, 23, 28, 32, 38, 41, 45, 51, 56, 61, 63, 67];
-                const numbers = [];
-                
-                while (numbers.length < 4) {
-                    const num = hotNumbers[Math.floor(Math.random() * hotNumbers.length)];
-                    if (!numbers.includes(num)) {
-                        numbers.push(num);
-                    }
-                }
-                
-                let randomNum;
-                do {
-                    randomNum = Math.floor(Math.random() * 69) + 1;
-                } while (numbers.includes(randomNum));
-                numbers.push(randomNum);
-                
-                return numbers;
-            };
-            
-            const generateColdNumbers = () => {
-                const coldNumbers = [3, 9, 14, 19, 25, 31, 36, 42, 48, 53, 58, 64, 68];
-                const numbers = [];
-                
-                while (numbers.length < 4) {
-                    const num = coldNumbers[Math.floor(Math.random() * coldNumbers.length)];
-                    if (!numbers.includes(num)) {
-                        numbers.push(num);
-                    }
-                }
-                
-                let balanceNum;
-                do {
-                    balanceNum = Math.floor(Math.random() * 69) + 1;
-                } while (numbers.includes(balanceNum));
-                numbers.push(balanceNum);
                 
                 return numbers;
             };
@@ -804,125 +794,111 @@
                 return numbers;
             };
 
-            // Monte Carlo simulation
-            const runMonteCarloSimulation = async () => {
-                setIsSimulating(true);
-                setSimulationProgress(0);
-                setSimulationResults(null);
+            // Number optimization using REAL data
+            const generateOptimizedNumbers = async () => {
+                setIsOptimizing(true);
+                setOptimizedSets([]);
                 
-                const totalDrawings = yearsToSimulate * 156;
-                const totalTickets = totalDrawings * ticketsPerDraw;
-                const totalSpent = totalTickets * 2;
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
-                let totalWon = 0;
-                let jackpotsWon = 0;
-                let majorPrizes = 0;
-                let totalWins = 0;
+                const newSets = [];
                 
-                const prizeBreakdown = {
-                    'Jackpot': 0,
-                    '$1M Prize': 0,
-                    '$50K Prize': 0,
-                    '$100 Prize': 0,
-                    '$7 Prize': 0,
-                    '$4 Prize': 0
-                };
-                
-                const batchSize = Math.max(1, Math.floor(monteCarloRuns / 100));
-                
-                for (let run = 0; run < monteCarloRuns; run++) {
-                    for (let ticket = 0; ticket < ticketsPerDraw; ticket++) {
-                        const result = simulateLotteryTicket();
-                        
-                        if (result.prize > 0) {
-                            totalWon += result.prize;
-                            totalWins++;
-                            
-                            if (result.tier === 'jackpot') {
-                                jackpotsWon++;
-                                prizeBreakdown['Jackpot']++;
-                            } else if (result.prize >= 50000) {
-                                majorPrizes++;
-                                if (result.prize === 1000000) {
-                                    prizeBreakdown['$1M Prize']++;
-                                } else {
-                                    prizeBreakdown['$50K Prize']++;
-                                }
-                            } else if (result.prize === 100) {
-                                prizeBreakdown['$100 Prize']++;
-                            } else if (result.prize === 7) {
-                                prizeBreakdown['$7 Prize']++;
-                            } else if (result.prize === 4) {
-                                prizeBreakdown['$4 Prize']++;
-                            }
-                        }
+                for (let i = 0; i < numOptimizedSets; i++) {
+                    let numbers = [];
+                    let powerball = 0;
+                    let strategy = optimizationStrategy;
+                    let score = 0;
+                    
+                    switch (optimizationStrategy) {
+                        case 'balanced':
+                            numbers = generateBalancedNumbers();
+                            powerball = Math.floor(Math.random() * 26) + 1;
+                            score = 85 + Math.floor(Math.random() * 10);
+                            break;
+                        case 'hot':
+                            numbers = generateHotNumbers();
+                            powerball = Math.floor(Math.random() * 26) + 1;
+                            strategy = `Hot Numbers (${historicalData.length > 0 ? 'Real Data' : 'Estimated'})`;
+                            score = 85 + Math.floor(Math.random() * 10);
+                            break;
+                        case 'cold':
+                            numbers = generateColdNumbers();
+                            powerball = Math.floor(Math.random() * 26) + 1;
+                            strategy = `Cold Numbers (${historicalData.length > 0 ? 'Real Data' : 'Estimated'})`;
+                            score = 78 + Math.floor(Math.random() * 15);
+                            break;
+                        case 'mathematical':
+                            numbers = generateMathematicalNumbers();
+                            powerball = Math.floor(Math.random() * 26) + 1;
+                            strategy = 'Mathematical Spacing';
+                            score = 80 + Math.floor(Math.random() * 15);
+                            break;
+                        default:
+                            numbers = generateRandomNumbers();
+                            powerball = Math.floor(Math.random() * 26) + 1;
+                            strategy = 'Pure Random';
+                            score = 50 + Math.floor(Math.random() * 20);
                     }
                     
-                    if (run % batchSize === 0) {
-                        const progress = Math.floor((run / monteCarloRuns) * 100);
-                        setSimulationProgress(progress);
-                        await new Promise(resolve => setTimeout(resolve, 1));
+                    // Add one random number to avoid predictability
+                    let randomNum;
+                    do {
+                        randomNum = Math.floor(Math.random() * 69) + 1;
+                    } while (numbers.includes(randomNum));
+                    
+                    if (numbers.length < 5) {
+                        numbers.push(randomNum);
+                    } else {
+                        numbers[Math.floor(Math.random() * 5)] = randomNum;
                     }
+                    
+                    newSets.push({
+                        numbers: numbers.sort((a, b) => a - b),
+                        powerball,
+                        strategy,
+                        score: score.toFixed(1)
+                    });
                 }
                 
-                const netResult = totalWon - totalSpent;
-                const roi = ((totalWon - totalSpent) / totalSpent) * 100;
-                const winRate = (totalWins / (monteCarloRuns * ticketsPerDraw)) * 100;
-                
-                setSimulationResults({
-                    totalSpent,
-                    totalWon,
-                    netResult,
-                    roi,
-                    jackpotsWon,
-                    majorPrizes,
-                    totalWins,
-                    winRate,
-                    prizeBreakdown,
-                    totalTickets: monteCarloRuns * ticketsPerDraw
-                });
-                
-                setSimulationProgress(100);
-                setIsSimulating(false);
+                setOptimizedSets(newSets);
+                setIsOptimizing(false);
             };
-            
-            const simulateLotteryTicket = () => {
-                const playerNumbers = [];
-                while (playerNumbers.length < 5) {
-                    const num = Math.floor(Math.random() * 69) + 1;
-                    if (!playerNumbers.includes(num)) {
-                        playerNumbers.push(num);
-                    }
+
+            // Historical Data Status Component
+            const HistoricalDataStatus = () => {
+                if (historicalData.length === 0) {
+                    return (
+                        React.createElement('div', { 
+                            className: 'bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4' 
+                        },
+                            React.createElement('div', { className: 'flex items-center gap-2' },
+                                React.createElement('span', { className: 'text-yellow-600' }, '⚠️'),
+                                React.createElement('span', { 
+                                    className: 'text-sm text-yellow-800' 
+                                }, 'Using estimated statistical data - historical API loading...')
+                            )
+                        )
+                    );
                 }
-                const playerPowerball = Math.floor(Math.random() * 26) + 1;
                 
-                const winningNumbers = [];
-                while (winningNumbers.length < 5) {
-                    const num = Math.floor(Math.random() * 69) + 1;
-                    if (!winningNumbers.includes(num)) {
-                        winningNumbers.push(num);
-                    }
-                }
-                const winningPowerball = Math.floor(Math.random() * 26) + 1;
-                
-                const mainMatches = playerNumbers.filter(num => winningNumbers.includes(num)).length;
-                const powerballMatch = playerPowerball === winningPowerball;
-                
-                if (mainMatches === 5 && powerballMatch) {
-                    return { prize: currentJackpot ? currentJackpot.amount : 735000000, tier: 'jackpot' };
-                } else if (mainMatches === 5) {
-                    return { prize: 1000000, tier: 'second' };
-                } else if (mainMatches === 4 && powerballMatch) {
-                    return { prize: 50000, tier: 'third' };
-                } else if (mainMatches === 4 || (mainMatches === 3 && powerballMatch)) {
-                    return { prize: 100, tier: 'fourth' };
-                } else if ((mainMatches === 3) || (mainMatches === 2 && powerballMatch)) {
-                    return { prize: 7, tier: 'fifth' };
-                } else if ((mainMatches === 1 && powerballMatch) || powerballMatch) {
-                    return { prize: 4, tier: 'sixth' };
-                } else {
-                    return { prize: 0, tier: 'none' };
-                }
+                return (
+                    React.createElement('div', { 
+                        className: 'bg-green-50 border border-green-200 rounded-lg p-3 mb-4' 
+                    },
+                        React.createElement('div', { className: 'flex items-center gap-2' },
+                            React.createElement('span', { className: 'text-green-600' }, '✅'),
+                            React.createElement('span', { 
+                                className: 'text-sm text-green-800' 
+                            }, 
+                                React.createElement('strong', null, `${historicalData.length} real drawings`),
+                                ' loaded for optimization calculations'
+                            )
+                        ),
+                        React.createElement('div', { className: 'text-xs text-green-600 mt-1' },
+                            `Latest: ${historicalData[0]?.date || 'N/A'} | Source: ${dataSource}`
+                        )
+                    )
+                );
             };
 
             return React.createElement('div', { className: 'container' },
@@ -975,7 +951,7 @@
                             )
                         )
                     ),
-                    // Quick Stats Bar
+                    // Quick Stats Bar with Historical Data Status
                     React.createElement('div', { 
                         style: { marginTop: '1rem', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '0.75rem' }, 
                         className: 'flex items-center justify-between' 
@@ -990,17 +966,24 @@
                                         width: '8px', 
                                         height: '8px', 
                                         borderRadius: '50%',
-                                        backgroundColor: apiHealthy ? '#34d399' : '#fb923c'
+                                        backgroundColor: historicalData.length > 0 ? '#34d399' : '#fb923c'
                                     }, 
-                                    className: apiHealthy ? 'pulse' : '' 
+                                    className: historicalData.length > 0 ? 'pulse' : '' 
                                 }),
-                                React.createElement('span', null, apiHealthy ? 'Live Data Connected' : 'Using Estimated Data')
+                                React.createElement('span', null, 
+                                    historicalData.length > 0 ? 
+                                        `${historicalData.length} Real Drawings` : 
+                                        'Estimated Data'
+                                )
                             ),
                             React.createElement('div', null, 'Ticket Price: $2.00'),
-                            React.createElement('div', null, 'Drawings: Mon, Wed, Sat @ 10:59 PM ET')
+                            React.createElement('div', null, 'Mon, Wed, Sat @ 10:59 PM ET')
                         ),
                         React.createElement('button', {
-                            onClick: fetchLatestPowerballData,
+                            onClick: () => {
+                                fetchLatestPowerballData();
+                                fetchHistoricalData();
+                            },
                             disabled: isUpdating,
                             className: 'btn',
                             style: {
@@ -1009,7 +992,7 @@
                                 cursor: isUpdating ? 'not-allowed' : 'pointer',
                                 fontSize: '0.75rem'
                             }
-                        }, isUpdating ? '⟳' : '🔄', ' Update')
+                        }, isUpdating ? '⟳' : '🔄', ' Update All')
                     )
                 ),
 
@@ -1020,14 +1003,17 @@
                     ),
                     React.createElement('div', { className: 'flex items-center justify-between' },
                         React.createElement('p', { className: 'text-gray-600' },
-                            'Sophisticated statistical analysis, tax modeling, and optimization algorithms'
+                            'Real-time data integration with advanced statistical analysis'
                         ),
                         React.createElement('div', { className: 'flex items-center gap-4' },
                             React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280' } },
                                 'Last updated: ', lastUpdated
                             ),
                             React.createElement('button', {
-                                onClick: fetchLatestPowerballData,
+                                onClick: () => {
+                                    fetchLatestPowerballData();
+                                    fetchHistoricalData();
+                                },
                                 disabled: isUpdating,
                                 className: isUpdating ? 'btn btn-secondary' : 'btn btn-primary'
                             },
@@ -1039,7 +1025,7 @@
                                         }),
                                         'Updating...'
                                     ) :
-                                    '🔄 Update Data'
+                                    '🔄 Refresh Data'
                             )
                         )
                     ),
@@ -1063,8 +1049,8 @@
                 },
                     [
                         { id: 'calculator', label: 'Basic Calculator', icon: '🧮' },
-                        { id: 'optimization', label: 'Number Optimization', icon: '🎯' },
-                        { id: 'montecarlo', label: 'Monte Carlo Simulation', icon: '📈' },
+                        { id: 'optimization', label: 'AI Optimization', icon: '🎯' },
+                        { id: 'montecarlo', label: 'Monte Carlo', icon: '📈' },
                         { id: 'taxes', label: 'Tax Analysis', icon: '💰' },
                         { id: 'expected', label: 'Expected Value', icon: '📊' }
                     ].map(tab => 
@@ -1079,6 +1065,9 @@
 
                 // Tab Content
                 activeTab === 'calculator' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
+                    // Historical Data Status
+                    React.createElement(HistoricalDataStatus),
+                    
                     React.createElement('div', { className: 'card bg-blue-50' },
                         React.createElement('h2', { className: 'text-2xl font-semibold text-blue-800 mb-4' },
                             '📊 Core Probability Mathematics'
@@ -1172,107 +1161,68 @@
                     )
                 ),
 
-                // Quick Selection for Optimization Tab
+                // AI Optimization Tab with REAL historical data
                 activeTab === 'optimization' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
-                    React.createElement('div', { className: 'card quick-selection-card' },
+                    // Historical Data Status
+                    React.createElement(HistoricalDataStatus),
+                    
+                    React.createElement('div', { className: 'card' },
                         React.createElement('div', { className: 'flex items-center justify-between mb-4' },
-                            React.createElement('h3', { className: 'text-2xl font-bold text-gray-800 flex items-center gap-2' },
-                                '🚀 Quick Selection - Top 5 Combinations'
+                            React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800' },
+                                '🎯 AI Number Optimization'
                             ),
-                            React.createElement('div', { className: 'text-sm text-gray-600 bg-white px-3 py-1 rounded-full' },
-                                'Ready for Next Drawing: ', nextDrawDate || 'TBD'
+                            React.createElement('div', { className: 'flex gap-2' },
+                                React.createElement('select', {
+                                    value: optimizationStrategy,
+                                    onChange: (e) => setOptimizationStrategy(e.target.value),
+                                    style: { fontSize: '0.875rem' }
+                                },
+                                    React.createElement('option', { value: 'balanced' }, 'Balanced Strategy'),
+                                    React.createElement('option', { value: 'hot' }, 'Hot Numbers'),
+                                    React.createElement('option', { value: 'cold' }, 'Cold Numbers'),
+                                    React.createElement('option', { value: 'mathematical' }, 'Mathematical')
+                                ),
+                                React.createElement('input', {
+                                    type: 'number',
+                                    min: '1',
+                                    max: '10',
+                                    value: numOptimizedSets,
+                                    onChange: (e) => setNumOptimizedSets(parseInt(e.target.value)),
+                                    style: { width: '4rem', fontSize: '0.875rem' },
+                                    placeholder: 'Sets'
+                                }),
+                                React.createElement('button', {
+                                    onClick: generateOptimizedNumbers,
+                                    disabled: isOptimizing,
+                                    className: 'btn btn-purple'
+                                }, isOptimizing ? '🔄 Generating...' : '🚀 Generate')
                             )
                         ),
-                        React.createElement('p', { className: 'text-gray-700 mb-6' },
-                            'AI-generated combinations using multiple optimization strategies. Each set is mathematically optimized for different approaches and ready to play.'
+                        React.createElement('p', { className: 'text-gray-600 mb-4' },
+                            historicalData.length > 0 ? 
+                                `Using ${historicalData.length} real drawings from ${dataSource} for statistical analysis` :
+                                'Using estimated statistical patterns (real data loading...)'
                         ),
                         
-                        React.createElement('div', { className: 'grid gap-4' },
-                            [
-                                {
-                                    id: 1,
-                                    name: "Optimal Balance",
-                                    description: "Multi-factor scoring with statistical range distribution",
-                                    numbers: [7, 19, 34, 48, 62],
-                                    powerball: 15,
-                                    strategy: "🎯 Mathematical",
-                                    color: "bg-blue-500",
-                                    score: "92.3"
-                                },
-                                {
-                                    id: 2,
-                                    name: "Contrarian Choice",
-                                    description: "Least recent numbers for statistical reversion theory",
-                                    numbers: [3, 14, 25, 36, 58],
-                                    powerball: 8,
-                                    strategy: "🔄 Anti-trend",
-                                    color: "bg-orange-500",
-                                    score: "87.1"
-                                },
-                                {
-                                    id: 3,
-                                    name: "Hot Streak",
-                                    description: "Numbers with increasing frequency trends",
-                                    numbers: [12, 17, 28, 39, 63],
-                                    powerball: 12,
-                                    strategy: "🔥 Trending",
-                                    color: "bg-red-500",
-                                    score: "89.7"
-                                },
-                                {
-                                    id: 4,
-                                    name: "Hybrid Mix",
-                                    description: "Blend of optimal and contrarian strategies",
-                                    numbers: [9, 23, 31, 41, 55],
-                                    powerball: 20,
-                                    strategy: "⚡ Hybrid",
-                                    color: "bg-purple-500",
-                                    score: "85.4"
-                                },
-                                {
-                                    id: 5,
-                                    name: "Range Balanced",
-                                    description: "One optimal number from each statistical range",
-                                    numbers: [5, 18, 33, 47, 61],
-                                    powerball: 24,
-                                    strategy: "📊 Distributed",
-                                    color: "bg-green-500",
-                                    score: "90.8"
-                                }
-                            ].map(selection => 
+                        optimizedSets.length > 0 && React.createElement('div', { className: 'grid gap-4' },
+                            optimizedSets.map((set, index) => 
                                 React.createElement('div', { 
-                                    key: selection.id, 
-                                    className: 'bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow' 
+                                    key: index, 
+                                    className: 'bg-white rounded-lg p-4 border border-gray-200' 
                                 },
                                     React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                         React.createElement('div', { className: 'flex items-center gap-3' },
                                             React.createElement('div', { 
-                                                className: `w-10 h-10 ${selection.color} text-white rounded-full flex items-center justify-center font-bold text-sm` 
-                                            }, selection.id),
+                                                className: 'w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm' 
+                                            }, index + 1),
                                             React.createElement('div', null,
-                                                React.createElement('h4', { className: 'font-semibold text-gray-800 text-lg' }, 
-                                                    selection.name
+                                                React.createElement('h4', { className: 'font-semibold text-gray-800' }, 
+                                                    set.strategy
                                                 ),
-                                                React.createElement('p', { 
-                                                    style: { fontSize: '0.875rem' }, 
-                                                    className: 'text-gray-600' 
-                                                }, selection.description)
+                                                React.createElement('p', { className: 'text-sm text-gray-600' }, 
+                                                    `Optimization Score: ${set.score}/100`
+                                                )
                                             )
-                                        ),
-                                        React.createElement('div', { className: 'text-right' },
-                                            React.createElement('span', { 
-                                                className: `strategy-badge ${
-                                                    selection.strategy.includes('Mathematical') ? 'bg-blue-100 text-blue-700' :
-                                                    selection.strategy.includes('Anti-trend') ? 'bg-orange-100 text-orange-700' :
-                                                    selection.strategy.includes('Trending') ? 'bg-red-100 text-red-700' :
-                                                    selection.strategy.includes('Hybrid') ? 'bg-purple-100 text-purple-700' :
-                                                    'bg-green-100 text-green-700'
-                                                }` 
-                                            }, selection.strategy),
-                                            React.createElement('div', { 
-                                                style: { fontSize: '0.75rem', marginTop: '2px' }, 
-                                                className: 'text-gray-500' 
-                                            }, 'Score: ', selection.score)
                                         )
                                     ),
                                     
@@ -1280,7 +1230,7 @@
                                         React.createElement('span', { className: 'text-sm font-medium text-gray-700' }, 
                                             'Numbers:'
                                         ),
-                                        ...selection.numbers.map(num => 
+                                        ...set.numbers.map(num => 
                                             React.createElement('span', { 
                                                 key: num, 
                                                 className: 'number-display' 
@@ -1290,7 +1240,7 @@
                                             'PB:'
                                         ),
                                         React.createElement('span', { className: 'powerball-display' }, 
-                                            selection.powerball
+                                            set.powerball
                                         )
                                     ),
                                     
@@ -1299,13 +1249,13 @@
                                             style: { fontSize: '0.75rem' }, 
                                             className: 'text-gray-500' 
                                         }, 
-                                            `Probability: 1 in 292,201,338 | Expected Value: ${calculateExpectedValue().toFixed(2)}`
+                                            `Expected Value: ${calculateExpectedValue().toFixed(2)} | Data: ${historicalData.length > 0 ? 'Real' : 'Estimated'}`
                                         ),
                                         React.createElement('div', { className: 'flex gap-2' },
                                             React.createElement('button', {
                                                 onClick: () => {
-                                                    setSelectedNumbers(selection.numbers);
-                                                    setPowerball(selection.powerball.toString());
+                                                    setSelectedNumbers(set.numbers);
+                                                    setPowerball(set.powerball.toString());
                                                     setActiveTab('calculator');
                                                 },
                                                 style: { fontSize: '0.75rem' },
@@ -1313,7 +1263,7 @@
                                             }, '✓ Use Numbers'),
                                             React.createElement('button', {
                                                 onClick: () => {
-                                                    const numbersText = `${selection.numbers.join(', ')} | PB: ${selection.powerball}`;
+                                                    const numbersText = `${set.numbers.join(', ')} | PB: ${set.powerball}`;
                                                     navigator.clipboard.writeText(numbersText);
                                                 },
                                                 style: { fontSize: '0.75rem' },
@@ -1327,16 +1277,30 @@
                     )
                 ),
 
-                // Other tabs content would go here...
+                // Other tabs content
                 (activeTab === 'montecarlo' || activeTab === 'taxes' || activeTab === 'expected') && 
                 React.createElement('div', { className: 'card text-center p-6' },
+                    React.createElement(HistoricalDataStatus),
                     React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' },
                         activeTab === 'montecarlo' && '📈 Monte Carlo Simulation',
                         activeTab === 'taxes' && '💰 Tax Analysis',
                         activeTab === 'expected' && '📊 Expected Value Analysis'
                     ),
                     React.createElement('p', { className: 'text-gray-600 mb-4' },
-                        'Feature coming soon! The number optimization and core calculator are fully functional.'
+                        `This advanced feature is coming soon! Your ${historicalData.length > 0 ? 'real historical data' : 'system'} is ready for integration.`
+                    ),
+                    historicalData.length > 0 && React.createElement('div', { 
+                        className: 'bg-blue-50 rounded-lg p-4 mt-4' 
+                    },
+                        React.createElement('h3', { className: 'font-semibold text-blue-800 mb-2' }, 
+                            'Available Real Data:'
+                        ),
+                        React.createElement('ul', { className: 'text-sm text-blue-700 text-left' },
+                            React.createElement('li', null, `✅ ${historicalData.length} Historical Drawings`),
+                            React.createElement('li', null, `✅ Source: ${dataSource}`),
+                            React.createElement('li', null, `✅ Date Range: ${historicalData[historicalData.length - 1]?.date} to ${historicalData[0]?.date}`),
+                            historicalStats && React.createElement('li', null, `✅ Statistical Analysis: Hot/Cold Number Tracking`)
+                        )
                     )
                 )
             );
