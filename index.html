@@ -686,6 +686,48 @@
                 };
             };
 
+            // Fetch historical data for optimization with configurable limit
+            const fetchHistoricalData = async () => {
+                setIsLoadingHistory(true);
+                try {
+                    // Try to fetch from API with the user's specified limit
+                    const response = await fetch(`/api/powerball-history?limit=${historicalRecordsLimit}`, {
+                        method: 'GET',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Historical API returned ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.statistics) {
+                        // Limit the data to user's preference if API returns more
+                        const limitedStats = {
+                            ...data.statistics,
+                            totalDrawings: Math.min(data.statistics.totalDrawings, historicalRecordsLimit),
+                            dataSource: data.meta?.source || 'Live API'
+                        };
+                        
+                        setHistoricalStats(limitedStats);
+                        setHistoricalData((data.drawings || []).slice(0, historicalRecordsLimit));
+                        console.log('Historical data loaded:', data.meta);
+                    } else {
+                        throw new Error('Invalid historical data response');
+                    }
+                    
+                } catch (error) {
+                    console.error('Historical Data Error:', error);
+                    // Use fallback data with user's specified limit
+                    setHistoricalStats(generateFallbackStats(historicalRecordsLimit));
+                }
+                setIsLoadingHistory(false);
+            };
+
             const fetchLatestPowerballData = async () => {
                 setIsUpdating(true);
                 setUpdateStatus('🔄 Fetching live jackpot data...');
@@ -748,6 +790,13 @@
                 setLastUpdated(new Date().toISOString().split('T')[0]);
                 setIsUpdating(false);
             };
+
+            // Reload historical data when limit changes
+            useEffect(() => {
+                if (historicalStats) {
+                    fetchHistoricalData();
+                }
+            }, [historicalRecordsLimit]);
 
             // Initialize app
             useEffect(() => {
