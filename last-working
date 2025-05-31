@@ -487,6 +487,7 @@
             const [isOptimizing, setIsOptimizing] = useState(false);
             const [historicalStats, setHistoricalStats] = useState(null);
             const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+            const [historicalRecordsLimit, setHistoricalRecordsLimit] = useState(150);
             
             // Tax calculation states
             const [taxWinnings, setTaxWinnings] = useState('');
@@ -632,22 +633,22 @@
                 });
             };
 
-            // Generate fallback statistical data
-            const generateFallbackStats = () => {
+            // Generate fallback statistical data with configurable size
+            const generateFallbackStats = (recordCount = historicalRecordsLimit) => {
                 const numberFreq = {};
                 const powerballFreq = {};
                 
                 // Initialize with random but realistic frequencies
                 for (let i = 1; i <= 69; i++) {
                     numberFreq[i] = { 
-                        total: Math.floor(Math.random() * 40) + 10, 
-                        recent: Math.floor(Math.random() * 8) + 1 
+                        total: Math.floor(Math.random() * Math.min(40, recordCount * 0.3)) + 5, 
+                        recent: Math.floor(Math.random() * Math.min(8, recordCount * 0.05)) + 1 
                     };
                 }
                 for (let i = 1; i <= 26; i++) {
                     powerballFreq[i] = { 
-                        total: Math.floor(Math.random() * 20) + 5, 
-                        recent: Math.floor(Math.random() * 4) + 1 
+                        total: Math.floor(Math.random() * Math.min(20, recordCount * 0.15)) + 3, 
+                        recent: Math.floor(Math.random() * Math.min(4, recordCount * 0.03)) + 1 
                     };
                 }
                 
@@ -679,9 +680,52 @@
                     coldNumbers,
                     hotPowerballs,
                     coldPowerballs,
-                    totalDrawings: 150,
-                    analysisDate: new Date().toISOString().split('T')[0]
+                    totalDrawings: recordCount,
+                    analysisDate: new Date().toISOString().split('T')[0],
+                    dataSource: 'Simulated Historical Data'
                 };
+            };
+
+            // Fetch historical data for optimization with configurable limit
+            const fetchHistoricalData = async () => {
+                setIsLoadingHistory(true);
+                try {
+                    // Try to fetch from API with the user's specified limit
+                    const response = await fetch(`/api/powerball-history?limit=${historicalRecordsLimit}`, {
+                        method: 'GET',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Historical API returned ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.statistics) {
+                        // Limit the data to user's preference if API returns more
+                        const limitedStats = {
+                            ...data.statistics,
+                            totalDrawings: Math.min(data.statistics.totalDrawings, historicalRecordsLimit),
+                            dataSource: data.meta?.source || 'Live API'
+                        };
+                        
+                        setHistoricalStats(limitedStats);
+                        setHistoricalData((data.drawings || []).slice(0, historicalRecordsLimit));
+                        console.log('Historical data loaded:', data.meta);
+                    } else {
+                        throw new Error('Invalid historical data response');
+                    }
+                    
+                } catch (error) {
+                    console.error('Historical Data Error:', error);
+                    // Use fallback data with user's specified limit
+                    setHistoricalStats(generateFallbackStats(historicalRecordsLimit));
+                }
+                setIsLoadingHistory(false);
             };
 
             const fetchLatestPowerballData = async () => {
@@ -747,12 +791,19 @@
                 setIsUpdating(false);
             };
 
+            // Reload historical data when limit changes
+            useEffect(() => {
+                if (historicalStats) {
+                    fetchHistoricalData();
+                }
+            }, [historicalRecordsLimit]);
+
             // Initialize app
             useEffect(() => {
                 const initializeData = async () => {
                     setUpdateStatus('🚀 Initializing lottery system...');
                     await fetchLatestPowerballData();
-                    setHistoricalStats(generateFallbackStats());
+                    setHistoricalStats(generateFallbackStats(historicalRecordsLimit));
                 };
                 initializeData();
             }, []);
@@ -1251,7 +1302,7 @@
                             )
                         ),
                         React.createElement('p', { className: 'text-gray-700 mb-4' },
-                            `AI-generated combinations using multiple optimization strategies. Based on analysis of ${historicalStats ? historicalStats.totalDrawings : 150} historical Powerball drawings. Each set is mathematically optimized for different approaches and ready to play.`
+                            `AI-generated combinations using multiple optimization strategies. Based on analysis of ${historicalStats ? historicalStats.totalDrawings : historicalRecordsLimit} historical Powerball drawings. Each set is mathematically optimized for different approaches and ready to play.`
                         ),
                         
                         // 3-COLUMN GRID FOR QUICK SELECTIONS
@@ -1370,7 +1421,7 @@
                                             style: { fontSize: '0.625rem' }, 
                                             className: 'text-gray-500' 
                                         }, 
-                                            `${historicalStats ? historicalStats.totalDrawings : 150} drawings analyzed`
+                                            `${historicalStats ? historicalStats.totalDrawings : historicalRecordsLimit} drawings analyzed`
                                         ),
                                         React.createElement('div', { className: 'flex gap-1' },
                                             React.createElement('button', {
@@ -1399,41 +1450,85 @@
 
                     // 3-COLUMN LAYOUT FOR THE REST OF THE TOOLS
                     React.createElement('div', { className: 'grid grid-cols-3 gap-4' },
-                        // Column 1: Statistical Overview Card
-                        historicalStats && React.createElement('div', { className: 'card bg-green-50' },
-                            React.createElement('h3', { className: 'text-lg font-semibold text-green-800 mb-3' },
-                                '📊 Statistical Analysis'
-                            ),
-                            React.createElement('div', { style: { fontSize: '0.75rem' } },
-                                React.createElement('div', { className: 'mb-3' },
-                                    React.createElement('h4', { className: 'font-semibold text-green-700 mb-1' }, 
-                                        `Hot Numbers:`
-                                    ),
-                                    React.createElement('div', { className: 'flex flex-wrap gap-1' },
-                                        historicalStats.hotNumbers?.slice(0, 8).map(num => 
-                                            React.createElement('span', { 
-                                                key: num, 
-                                                className: 'bg-red-100 text-red-700 px-1 py-0.5 rounded text-xs font-semibold' 
-                                            }, num)
-                                        )
-                                    )
+                        // Column 1: Statistical Overview Card with Settings
+                        React.createElement('div', { className: 'space-y-4' },
+                            // Historical Data Settings Card
+                            React.createElement('div', { className: 'card bg-blue-50' },
+                                React.createElement('h3', { className: 'text-lg font-semibold text-blue-800 mb-3' },
+                                    '⚙️ Analysis Settings'
                                 ),
-                                React.createElement('div', null,
-                                    React.createElement('h4', { className: 'font-semibold text-green-700 mb-1' }, 
-                                        'Cold Numbers:'
-                                    ),
-                                    React.createElement('div', { className: 'flex flex-wrap gap-1' },
-                                        historicalStats.coldNumbers?.slice(0, 8).map(num => 
-                                            React.createElement('span', { 
-                                                key: num, 
-                                                className: 'bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-xs font-semibold' 
-                                            }, num)
+                                React.createElement('div', { className: 'space-y-3' },
+                                    React.createElement('div', null,
+                                        React.createElement('label', { className: 'block text-xs font-medium text-blue-700 mb-1' },
+                                            'Historical Records to Analyze:'
+                                        ),
+                                        React.createElement('select', {
+                                            value: historicalRecordsLimit,
+                                            onChange: (e) => setHistoricalRecordsLimit(parseInt(e.target.value)),
+                                            className: 'w-full text-xs'
+                                        },
+                                            React.createElement('option', { value: 50 }, '50 Recent Drawings'),
+                                            React.createElement('option', { value: 100 }, '100 Recent Drawings'),
+                                            React.createElement('option', { value: 150 }, '150 Recent Drawings'),
+                                            React.createElement('option', { value: 200 }, '200 Recent Drawings'),
+                                            React.createElement('option', { value: 300 }, '300 Recent Drawings'),
+                                            React.createElement('option', { value: 500 }, '500 Recent Drawings')
                                         )
+                                    ),
+                                    React.createElement('div', { className: 'text-xs text-blue-600' },
+                                        'More records = better trend analysis',
+                                        React.createElement('br', null),
+                                        'Fewer records = more recent bias'
+                                    ),
+                                    React.createElement('button', {
+                                        onClick: fetchHistoricalData,
+                                        disabled: isLoadingHistory,
+                                        className: isLoadingHistory ? 'btn btn-secondary w-full' : 'btn btn-primary w-full',
+                                        style: { fontSize: '0.75rem' }
+                                    },
+                                        isLoadingHistory ? 'Updating...' : '🔄 Update Analysis'
                                     )
                                 )
                             ),
-                            React.createElement('div', { className: 'mt-3 pt-3 border-t border-green-200 text-xs text-green-700' },
-                                `${historicalStats.totalDrawings} drawings analyzed`
+
+                            // Statistical Analysis Card
+                            historicalStats && React.createElement('div', { className: 'card bg-green-50' },
+                                React.createElement('h3', { className: 'text-lg font-semibold text-green-800 mb-3' },
+                                    '📊 Statistical Analysis'
+                                ),
+                                React.createElement('div', { style: { fontSize: '0.75rem' } },
+                                    React.createElement('div', { className: 'mb-3' },
+                                        React.createElement('h4', { className: 'font-semibold text-green-700 mb-1' }, 
+                                            `Hot Numbers:`
+                                        ),
+                                        React.createElement('div', { className: 'flex flex-wrap gap-1' },
+                                            historicalStats.hotNumbers?.slice(0, 8).map(num => 
+                                                React.createElement('span', { 
+                                                    key: num, 
+                                                    className: 'bg-red-100 text-red-700 px-1 py-0.5 rounded text-xs font-semibold' 
+                                                }, num)
+                                            )
+                                        )
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('h4', { className: 'font-semibold text-green-700 mb-1' }, 
+                                            'Cold Numbers:'
+                                        ),
+                                        React.createElement('div', { className: 'flex flex-wrap gap-1' },
+                                            historicalStats.coldNumbers?.slice(0, 8).map(num => 
+                                                React.createElement('span', { 
+                                                    key: num, 
+                                                    className: 'bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-xs font-semibold' 
+                                                }, num)
+                                            )
+                                        )
+                                    )
+                                ),
+                                React.createElement('div', { className: 'mt-3 pt-3 border-t border-green-200 text-xs text-green-700' },
+                                    `${historicalStats.totalDrawings} drawings analyzed`,
+                                    React.createElement('br', null),
+                                    `Source: ${historicalStats.dataSource || 'Historical API'}`
+                                )
                             )
                         ),
                         
