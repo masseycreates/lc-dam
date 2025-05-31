@@ -969,8 +969,8 @@
                                 }, (() => {
                                     const expectedValue = calculateExpectedValue();
                                     return expectedValue > 0 ? 
-                                        `+${expectedValue.toFixed(2)} Expected Value` : 
-                                        `-${Math.abs(expectedValue).toFixed(2)} Expected Value`;
+                                        `Expected value: +${expectedValue.toFixed(2)}` : 
+                                        `Expected value: -${Math.abs(expectedValue).toFixed(2)}`;
                                 })())
                             )
                         )
@@ -1161,7 +1161,10 @@
                                         '1 in 292,201,338 (3.42e-7%)'
                                     ),
                                     React.createElement('p', { style: { color: '#a16207', marginTop: '0.25rem' } },
-                                        'Expected value: ', calculateExpectedValue() > 0 ? '+' : '', ', calculateExpectedValue().toFixed(2)
+                                        (() => {
+                                            const expectedValue = calculateExpectedValue();
+                                            return `Expected value: ${expectedValue > 0 ? '+' : ''}${expectedValue.toFixed(2)}`;
+                                        })()
                                     )
                                 )
                             )
@@ -1296,7 +1299,7 @@
                                             style: { fontSize: '0.75rem' }, 
                                             className: 'text-gray-500' 
                                         }, 
-                                            'Probability: 1 in 292,201,338 | Expected Value: , calculateExpectedValue().toFixed(2)
+                                            `Probability: 1 in 292,201,338 | Expected Value: ${calculateExpectedValue().toFixed(2)}`
                                         ),
                                         React.createElement('div', { className: 'flex gap-2' },
                                             React.createElement('button', {
