@@ -737,32 +737,32 @@
                         case 1: // Statistical Balance
                             numbers = generateBalancedNumbers();
                             powerball = generateOptimalPowerball('balanced');
-                            score = (88 + Math.random() * 8).toFixed(1);
+                            score = (91 + Math.random() * 8).toFixed(1); // 91-99
                             break;
                         case 2: // Contrarian Analysis
                             numbers = generateColdNumbers();
                             powerball = generateOptimalPowerball('cold');
-                            score = (82 + Math.random() * 12).toFixed(1);
+                            score = (90 + Math.random() * 9).toFixed(1); // 90-99
                             break;
                         case 3: // Hot Trend Following
                             numbers = generateHotNumbers();
                             powerball = generateOptimalPowerball('hot');
-                            score = (85 + Math.random() * 10).toFixed(1);
+                            score = (92 + Math.random() * 7).toFixed(1); // 92-99
                             break;
                         case 4: // Hybrid Strategy
                             numbers = generateHybridNumbers();
                             powerball = generateOptimalPowerball('hybrid');
-                            score = (84 + Math.random() * 11).toFixed(1);
+                            score = (90 + Math.random() * 9).toFixed(1); // 90-99
                             break;
                         case 5: // Range Distribution
                             numbers = generateMathematicalNumbers();
                             powerball = generateOptimalPowerball('mathematical');
-                            score = (80 + Math.random() * 15).toFixed(1);
+                            score = (93 + Math.random() * 6).toFixed(1); // 93-99
                             break;
                         default:
                             numbers = generateRandomNumbers();
                             powerball = Math.floor(Math.random() * 26) + 1;
-                            score = (75 + Math.random() * 15).toFixed(1);
+                            score = (90 + Math.random() * 9).toFixed(1); // 90-99
                     }
                     
                     return {
@@ -1422,7 +1422,7 @@
                                     powerball: 8,
                                     strategy: "🔄 Anti-trend",
                                     color: "bg-orange-500",
-                                    score: "87.1"
+                                    score: "94.1"
                                 },
                                 {
                                     id: 3,
@@ -1432,7 +1432,7 @@
                                     powerball: 12,
                                     strategy: "🔥 Trending",
                                     color: "bg-red-500",
-                                    score: "89.7"
+                                    score: "91.7"
                                 },
                                 {
                                     id: 4,
@@ -1442,7 +1442,7 @@
                                     powerball: 20,
                                     strategy: "⚡ Hybrid",
                                     color: "bg-purple-500",
-                                    score: "85.4"
+                                    score: "93.4"
                                 },
                                 {
                                     id: 5,
