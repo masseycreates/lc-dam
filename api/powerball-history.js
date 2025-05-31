@@ -1,5 +1,5 @@
-// api/powerball-history.js - Fetch Real Historical Powerball Data
-// This function fetches the last 100+ real Powerball drawings for statistical analysis
+// api/powerball-history.js - Updated for 200+ Historical Drawings
+// This function fetches the last 200+ real Powerball drawings for statistical analysis
 
 export default async function handler(req, res) {
   // Enhanced CORS headers
@@ -24,10 +24,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('=== Powerball History API Request Started ===');
+    console.log('=== Powerball History API Request Started (200 drawings) ===');
     console.log('Timestamp:', new Date().toISOString());
     
-    // Multiple data sources for historical data
+    // Multiple data sources for historical data - UPDATED LIMITS
     const historicalSources = [
       {
         name: 'Powerball.net Archive',
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
       },
       {
         name: 'NY State Lottery API',
-        url: 'https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=150',
+        url: 'https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=250', // INCREASED from 150
         type: 'json',
         extractor: extractFromNYStateAPI
       },
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
         console.log(`Attempting to fetch historical data from ${source.name}...`);
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // INCREASED timeout for more data
         
         const response = await fetch(source.url, {
           headers: {
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
         console.log(`❌ ${source.name} failed:`, error.message);
         
         if (error.name === 'AbortError') {
-          console.log(`${source.name} timed out after 12 seconds`);
+          console.log(`${source.name} timed out after 15 seconds`);
         }
         continue;
       }
@@ -123,10 +123,10 @@ export default async function handler(req, res) {
       sourceUsed = 'Fallback Historical Data';
     }
 
-    // Sort by date (most recent first) and limit to last 100 drawings
+    // Sort by date (most recent first) and limit to last 200 drawings - UPDATED
     const sortedData = historicalData
       .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 100);
+      .slice(0, 200); // CHANGED from 100 to 200
 
     // Calculate frequency statistics
     const statistics = calculateFrequencyStats(sortedData);
@@ -178,7 +178,7 @@ export default async function handler(req, res) {
   }
 }
 
-// Extract from Powerball.net Archive (HTML parsing)
+// Extract from Powerball.net Archive (HTML parsing) - UPDATED LIMIT
 function extractFromPowerballNet(html) {
   try {
     const drawings = [];
@@ -188,7 +188,7 @@ function extractFromPowerballNet(html) {
     const drawingPattern = /(\w{3}\s+\d{1,2},?\s+\d{4})[^0-9]*(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})[^0-9]*(?:PB|Powerball)[^0-9]*(\d{1,2})/gi;
     
     let match;
-    while ((match = drawingPattern.exec(html)) !== null && drawings.length < 150) {
+    while ((match = drawingPattern.exec(html)) !== null && drawings.length < 250) { // INCREASED from 150
       const [, dateStr, n1, n2, n3, n4, n5, pb] = match;
       
       // Parse date
@@ -217,7 +217,7 @@ function extractFromPowerballNet(html) {
   }
 }
 
-// Extract from NY State API (JSON)
+// Extract from NY State API (JSON) - Already handles more data
 function extractFromNYStateAPI(data) {
   try {
     const drawings = [];
@@ -263,7 +263,7 @@ function extractFromNYStateAPI(data) {
   }
 }
 
-// Extract from Texas Lottery Historical (HTML)
+// Extract from Texas Lottery Historical (HTML) - UPDATED LIMIT
 function extractFromTexasHistory(html) {
   try {
     const drawings = [];
@@ -276,7 +276,7 @@ function extractFromTexasHistory(html) {
     
     patterns.forEach(pattern => {
       let match;
-      while ((match = pattern.exec(html)) !== null && drawings.length < 150) {
+      while ((match = pattern.exec(html)) !== null && drawings.length < 250) { // INCREASED from 150
         const [, dateStr, n1, n2, n3, n4, n5, pb] = match;
         
         let date;
@@ -312,7 +312,7 @@ function extractFromTexasHistory(html) {
   }
 }
 
-// Extract from California Lottery API (JSON)
+// Extract from California Lottery API (JSON) - Already handles more data
 function extractFromCALotteryAPI(data) {
   try {
     const drawings = [];
@@ -383,7 +383,7 @@ function getRefererForSource(sourceName) {
 function calculateFrequencyStats(drawings) {
   const numberFreq = {};
   const powerballFreq = {};
-  const recentDrawings = drawings.slice(0, 20); // Last 20 drawings for "hot" analysis
+  const recentDrawings = drawings.slice(0, 30); // Last 30 drawings for "hot" analysis - INCREASED
   
   // Initialize frequency counters
   for (let i = 1; i <= 69; i++) numberFreq[i] = { total: 0, recent: 0 };
@@ -391,7 +391,7 @@ function calculateFrequencyStats(drawings) {
   
   // Count frequencies
   drawings.forEach((drawing, index) => {
-    const isRecent = index < 20;
+    const isRecent = index < 30; // INCREASED from 20
     
     drawing.numbers.forEach(num => {
       numberFreq[num].total++;
@@ -405,22 +405,22 @@ function calculateFrequencyStats(drawings) {
   // Calculate hot and cold numbers
   const hotNumbers = Object.entries(numberFreq)
     .sort((a, b) => (b[1].recent + b[1].total * 0.1) - (a[1].recent + a[1].total * 0.1))
-    .slice(0, 15)
+    .slice(0, 20)  // INCREASED from 15
     .map(([num]) => parseInt(num));
     
   const coldNumbers = Object.entries(numberFreq)
     .sort((a, b) => (a[1].recent + a[1].total * 0.1) - (b[1].recent + b[1].total * 0.1))
-    .slice(0, 15)
+    .slice(0, 20)  // INCREASED from 15
     .map(([num]) => parseInt(num));
     
   const hotPowerballs = Object.entries(powerballFreq)
     .sort((a, b) => (b[1].recent + b[1].total * 0.1) - (a[1].recent + a[1].total * 0.1))
-    .slice(0, 5)
+    .slice(0, 8)  // INCREASED from 5
     .map(([num]) => parseInt(num));
     
   const coldPowerballs = Object.entries(powerballFreq)
     .sort((a, b) => (a[1].recent + a[1].total * 0.1) - (b[1].recent + b[1].total * 0.1))
-    .slice(0, 5)
+    .slice(0, 8)  // INCREASED from 5
     .map(([num]) => parseInt(num));
   
   return {
@@ -435,13 +435,13 @@ function calculateFrequencyStats(drawings) {
   };
 }
 
-// Generate fallback historical data (realistic but simulated)
+// Generate fallback historical data (realistic but simulated) - UPDATED TO 200
 function generateFallbackHistoricalData() {
   const drawings = [];
   const today = new Date();
   
-  // Generate 100 realistic drawings going back in time
-  for (let i = 0; i < 100; i++) {
+  // Generate 200 realistic drawings going back in time - INCREASED from 100
+  for (let i = 0; i < 200; i++) {
     const date = new Date(today);
     
     // Subtract days (3 drawings per week, so roughly every 2.33 days)
