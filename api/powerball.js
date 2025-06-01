@@ -1,4 +1,4 @@
-// api/powerball.js - Accurate data only, no estimates
+// api/powerball.js - Updated with working data sources for 2025
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,35 +22,42 @@ export default async function handler(req, res) {
     console.log('=== Powerball API Request Started ===');
     console.log('Timestamp:', new Date().toISOString());
     
-    // Reliable data sources - using official APIs and RSS feeds
+    // Updated reliable data sources for 2025
     const dataSources = [
       {
-        name: 'Official Powerball RSS Feed',
-        url: 'https://www.powerball.com/api/v1/estimates/powerball',
+        name: 'New York State Open Data API',
+        url: 'https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=5&$where=draw_date%20%3E%20%272025-01-01%27',
         type: 'json',
-        extractor: extractFromOfficialAPI,
+        extractor: extractFromNYStateAPI,
+        timeout: 12000
+      },
+      {
+        name: 'Magayo Lottery API',
+        url: 'https://www.magayo.com/api/jackpot.php?api_key=hXJDjsp8I6RY&game=us_powerball',
+        type: 'json',
+        extractor: extractFromMagayoAPI,
         timeout: 10000
       },
       {
-        name: 'Multi-State Lottery Association',
-        url: 'https://www.musl.com/PowerBall',
+        name: 'Texas Lottery Data',
+        url: 'https://www.txlottery.org/export/sites/lottery/Games/Powerball/Winning_Numbers/',
         type: 'html',
-        extractor: extractFromMUSLHTML,
-        timeout: 8000
+        extractor: extractFromTexasLotteryHTML,
+        timeout: 10000
       },
       {
-        name: 'Lottery USA API',
-        url: 'https://www.lotteryusa.com/powerball/api/latest',
-        type: 'json',
-        extractor: extractFromLotteryUSA,
-        timeout: 8000
+        name: 'Florida Lottery Web Data',
+        url: 'https://floridalottery.com/games/draw-games/powerball',
+        type: 'html',
+        extractor: extractFromFloridaLotteryHTML,
+        timeout: 10000
       },
       {
-        name: 'NY Lottery Open Data',
-        url: 'https://data.ny.gov/resource/5xaw-6ayf.json?$limit=1&$order=draw_date DESC',
-        type: 'json',
-        extractor: extractFromNYOpenData,
-        timeout: 8000
+        name: 'California Lottery Data',
+        url: 'https://www.calottery.com/en/draw-games/powerball',
+        type: 'html',
+        extractor: extractFromCaliforniaLotteryHTML,
+        timeout: 10000
       }
     ];
 
@@ -69,12 +76,14 @@ export default async function handler(req, res) {
         const response = await fetch(source.url, {
           method: 'GET',
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; LotteryCalculator/1.0)',
-            'Accept': source.type === 'json' ? 'application/json' : 'text/html,application/xhtml+xml',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': source.type === 'json' ? 'application/json' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache',
-            'Referer': 'https://www.powerball.com/'
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
           },
           signal: controller.signal
         });
@@ -180,35 +189,68 @@ export default async function handler(req, res) {
   }
 }
 
-// Data extraction functions for different sources
-function extractFromOfficialAPI(data) {
+// NEW: Extract from NY State API (most reliable source)
+function extractFromNYStateAPI(data) {
   try {
-    if (data && data.estimatedJackpot) {
-      const amount = parseFloat(data.estimatedJackpot) * 1000000;
-      const cashValue = data.estimatedCashValue ? 
-        parseFloat(data.estimatedCashValue) * 1000000 : 
-        Math.round(amount * 0.6);
+    if (Array.isArray(data) && data.length > 0) {
+      // Get the most recent drawing
+      const latest = data[0];
       
-      return {
-        amount: amount,
-        cashValue: cashValue,
-        formatted: `$${Math.round(amount / 1000000)}M`,
-        cashFormatted: `$${Math.round(cashValue / 1000000)}M`
-      };
+      // Extract jackpot amount from the most recent entry
+      if (latest.jackpot) {
+        const amount = parseFloat(latest.jackpot);
+        if (amount >= 20000000 && amount <= 5000000000) {
+          const cashValue = latest.cash_value ? 
+            parseFloat(latest.cash_value) : 
+            Math.round(amount * 0.6);
+          
+          return {
+            amount: amount,
+            cashValue: cashValue,
+            formatted: `$${Math.round(amount / 1000000)}M`,
+            cashFormatted: `$${Math.round(cashValue / 1000000)}M`,
+            drawDate: latest.draw_date,
+            winningNumbers: latest.winning_numbers
+          };
+        }
+      }
     }
   } catch (error) {
-    console.log('Official API extraction failed:', error.message);
+    console.log('NY State API extraction failed:', error.message);
   }
   return null;
 }
 
-function extractFromMUSLHTML(html) {
+// NEW: Extract from Magayo API (free tier available)
+function extractFromMagayoAPI(data) {
   try {
-    // Look for jackpot patterns in MUSL HTML
+    if (data && data.status === 'success' && data.jackpot) {
+      const jackpotStr = data.jackpot.replace(/[^\d.]/g, ''); // Remove currency symbols
+      const amount = parseFloat(jackpotStr) * 1000000; // Convert millions to dollars
+      
+      if (amount >= 20000000 && amount <= 5000000000) {
+        return {
+          amount: amount,
+          cashValue: Math.round(amount * 0.6), // Estimate cash value
+          formatted: `$${Math.round(amount / 1000000)}M`,
+          cashFormatted: `$${Math.round(amount * 0.6 / 1000000)}M`
+        };
+      }
+    }
+  } catch (error) {
+    console.log('Magayo API extraction failed:', error.message);
+  }
+  return null;
+}
+
+// NEW: Extract from Texas Lottery HTML
+function extractFromTexasLotteryHTML(html) {
+  try {
+    // Look for jackpot patterns in Texas HTML
     const patterns = [
-      /Estimated\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
-      /Current\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
-      /\$([0-9,]+(?:\.[0-9]+)?)\s*Million\s*Jackpot/gi
+      /Current\s+Est\.\s+Annuitized\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
+      /Est\.\s+Annuitized\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
+      /\$([0-9,]+(?:\.[0-9]+)?)\s*Million[^$]*Jackpot/gi
     ];
 
     for (const pattern of patterns) {
@@ -217,7 +259,7 @@ function extractFromMUSLHTML(html) {
         const amountStr = match[1] || match[0].match(/\$([0-9,]+(?:\.[0-9]+)?)/)[1];
         const amount = parseFloat(amountStr.replace(/,/g, '')) * 1000000;
         
-        if (amount >= 20000000 && amount <= 3000000000) {
+        if (amount >= 20000000 && amount <= 5000000000) {
           return {
             amount: amount,
             cashValue: Math.round(amount * 0.6),
@@ -228,68 +270,86 @@ function extractFromMUSLHTML(html) {
       }
     }
   } catch (error) {
-    console.log('MUSL HTML extraction failed:', error.message);
+    console.log('Texas Lottery HTML extraction failed:', error.message);
   }
   return null;
 }
 
-function extractFromLotteryUSA(data) {
+// NEW: Extract from Florida Lottery HTML
+function extractFromFloridaLotteryHTML(html) {
   try {
-    if (data && data.jackpot) {
-      let amount = parseFloat(data.jackpot.amount || data.jackpot);
-      
-      // Handle different formats
-      if (amount < 1000000 && amount > 10) {
-        amount = amount * 1000000; // Convert millions to dollars
-      }
-      
-      if (amount >= 20000000 && amount <= 3000000000) {
-        return {
-          amount: amount,
-          cashValue: data.cashValue || Math.round(amount * 0.6),
-          formatted: `$${Math.round(amount / 1000000)}M`,
-          cashFormatted: `$${Math.round((data.cashValue || amount * 0.6) / 1000000)}M`
-        };
-      }
-    }
-  } catch (error) {
-    console.log('LotteryUSA extraction failed:', error.message);
-  }
-  return null;
-}
+    // Multiple patterns for Florida lottery
+    const patterns = [
+      /Estimated\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
+      /Current\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
+      /\$([0-9,]+(?:\.[0-9]+)?)\s*Million\s*Estimated/gi,
+      /"jackpot"[^"]*"([0-9,]+(?:\.[0-9]+)?)[^"]*Million"/gi
+    ];
 
-function extractFromNYOpenData(data) {
-  try {
-    if (Array.isArray(data) && data.length > 0) {
-      const latest = data[0];
-      if (latest.jackpot) {
-        const amount = parseFloat(latest.jackpot);
-        if (amount >= 20000000 && amount <= 3000000000) {
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (match) {
+        const amountStr = match[1] || match[0].match(/([0-9,]+(?:\.[0-9]+)?)/)[1];
+        const amount = parseFloat(amountStr.replace(/,/g, '')) * 1000000;
+        
+        if (amount >= 20000000 && amount <= 5000000000) {
           return {
             amount: amount,
-            cashValue: latest.cash_value || Math.round(amount * 0.6),
+            cashValue: Math.round(amount * 0.6),
             formatted: `$${Math.round(amount / 1000000)}M`,
-            cashFormatted: `$${Math.round((latest.cash_value || amount * 0.6) / 1000000)}M`
+            cashFormatted: `$${Math.round(amount * 0.6 / 1000000)}M`
           };
         }
       }
     }
   } catch (error) {
-    console.log('NY Open Data extraction failed:', error.message);
+    console.log('Florida Lottery HTML extraction failed:', error.message);
   }
   return null;
 }
 
-// Validate jackpot data
+// NEW: Extract from California Lottery HTML
+function extractFromCaliforniaLotteryHTML(html) {
+  try {
+    // California-specific patterns
+    const patterns = [
+      /Estimated\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
+      /Next\s+Drawing[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
+      /"estimated_jackpot"[^"]*"([0-9,]+(?:\.[0-9]+)?)"/gi
+    ];
+
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (match) {
+        const amountStr = match[1] || match[0].match(/([0-9,]+(?:\.[0-9]+)?)/)[1];
+        const amount = parseFloat(amountStr.replace(/,/g, '')) * 1000000;
+        
+        if (amount >= 20000000 && amount <= 5000000000) {
+          return {
+            amount: amount,
+            cashValue: Math.round(amount * 0.6),
+            formatted: `$${Math.round(amount / 1000000)}M`,
+            cashFormatted: `$${Math.round(amount * 0.6 / 1000000)}M`
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.log('California Lottery HTML extraction failed:', error.message);
+  }
+  return null;
+}
+
+// Validate jackpot data (updated ranges)
 function isValidJackpotData(data) {
   if (!data || typeof data !== 'object') return false;
   
   const amount = data.amount;
   const cashValue = data.cashValue;
   
-  // Check if amounts are reasonable
-  if (!amount || amount < 20000000 || amount > 3000000000) return false;
-  if (!cashValue || cashValue < 10000000 || cashValue > 2000000000) return false;
+  // Updated validation ranges for 2025
+  if (!amount || amount < 20000000 || amount > 5000000000) return false;
+  if (!cashValue || cashValue < 10000000 || cashValue > 3000000000) return false;
   
   // Cash value should be less than annuity
   if (cashValue >= amount) return false;
@@ -301,7 +361,7 @@ function isValidJackpotData(data) {
   return true;
 }
 
-// Calculate next Powerball drawing
+// Calculate next Powerball drawing (updated for 2025 schedule)
 function calculateNextDrawing() {
   try {
     const now = new Date();
