@@ -1561,12 +1561,12 @@
                                                 }, selection.description)
                                             )
                                         ),
-                                        React.createElement('div', { style: { textAlign: 'right' } },
-                                            React.createElement('span', { 
+                                        React.createElement('div', { style: { textAlign: 'right', minWidth: 'fit-content' } },
+                                            React.createElement('div', { 
                                                 style: { 
                                                     fontSize: '0.625rem',
                                                     padding: '0.25rem 0.5rem',
-                                                    borderRadius: '9999px',
+                                                    borderRadius: '12px',
                                                     background: selection.strategy.includes('Mathematical') ? '#dbeafe' :
                                                                selection.strategy.includes('Anti-trend') ? '#fed7aa' :
                                                                selection.strategy.includes('Trending') ? '#fecaca' :
@@ -1576,11 +1576,14 @@
                                                           selection.strategy.includes('Anti-trend') ? '#ea580c' :
                                                           selection.strategy.includes('Trending') ? '#dc2626' :
                                                           selection.strategy.includes('Hybrid') ? '#7c3aed' :
-                                                          '#059669'
+                                                          '#059669',
+                                                    whiteSpace: 'nowrap',
+                                                    display: 'inline-block',
+                                                    marginBottom: '4px'
                                                 }
                                             }, selection.strategy),
                                             React.createElement('div', { 
-                                                style: { fontSize: '0.625rem', marginTop: '2px', color: '#6b7280' } 
+                                                style: { fontSize: '0.625rem', color: '#6b7280', whiteSpace: 'nowrap' } 
                                             }, 'Score: ', selection.score)
                                         )
                                     ),
