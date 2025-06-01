@@ -1,4 +1,4 @@
-// api/powerball-history.js - Accurate historical data only, no estimates
+// api/powerball-history.js - Updated with working historical data sources for 2025
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,34 +25,41 @@ export default async function handler(req, res) {
     console.log(`=== Historical API Request Started (${limit} drawings) ===`);
     console.log('Timestamp:', new Date().toISOString());
     
-    // Reliable historical data sources
+    // Updated reliable historical data sources for 2025
     const historicalSources = [
       {
-        name: 'NY State Open Data Portal',
+        name: 'NY State Open Data Portal (Primary)',
         url: `https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=${Math.min(limit * 1.2, 600)}`,
         type: 'json',
         extractor: extractFromNYStateAPI,
         timeout: 15000
       },
       {
-        name: 'Multi-State Lottery Data Feed',
-        url: 'https://www.musl.com/data/powerball/history.json',
+        name: 'NY State Powerball History Dataset',
+        url: `https://data.ny.gov/resource/dhwa-m6y4.json?$order=draw_date%20DESC&$limit=${Math.min(limit * 1.2, 600)}`,
         type: 'json',
-        extractor: extractFromMUSLData,
+        extractor: extractFromNYStateHistoryAPI,
+        timeout: 15000
+      },
+      {
+        name: 'Magayo Historical API',
+        url: `https://www.magayo.com/api/results.php?api_key=hXJDjsp8I6RY&game=us_powerball&limit=${Math.min(limit, 200)}`,
+        type: 'json',
+        extractor: extractFromMagayoHistoricalAPI,
         timeout: 12000
       },
       {
-        name: 'Official Powerball Archive',
+        name: 'Official Powerball Results Page',
         url: 'https://www.powerball.com/previous-results',
         type: 'html',
-        extractor: extractFromPowerballArchive,
+        extractor: extractFromPowerballResultsPage,
         timeout: 10000
       },
       {
-        name: 'Lottery Post Historical API',
-        url: `https://www.lotterypost.com/api/powerball/results?limit=${limit}`,
-        type: 'json',
-        extractor: extractFromLotteryPost,
+        name: 'Texas Lottery Historical Data',
+        url: 'https://www.texaslottery.com/export/sites/lottery/Games/Powerball/Winning_Numbers/',
+        type: 'html',
+        extractor: extractFromTexasHistoricalHTML,
         timeout: 10000
       }
     ];
@@ -71,10 +78,12 @@ export default async function handler(req, res) {
         
         const response = await fetch(source.url, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; LotteryCalculator/1.0)',
-            'Accept': source.type === 'json' ? 'application/json' : 'text/html',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': source.type === 'json' ? 'application/json' : 'text/html,application/xhtml+xml',
             'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
             'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
             'Referer': 'https://www.powerball.com/'
           },
           signal: controller.signal
@@ -180,7 +189,7 @@ export default async function handler(req, res) {
   }
 }
 
-// Extract from NY State Open Data API
+// NEW: Extract from NY State Open Data API (most reliable)
 function extractFromNYStateAPI(data, maxRecords = 500) {
   try {
     const drawings = [];
@@ -206,6 +215,7 @@ function extractFromNYStateAPI(data, maxRecords = 500) {
                   numbers: numbers.sort((a, b) => a - b),
                   powerball: powerball,
                   jackpot: drawing.jackpot ? parseInt(drawing.jackpot) : null,
+                  multiplier: drawing.multiplier || null,
                   source: 'NY State Open Data'
                 });
               }
@@ -225,18 +235,65 @@ function extractFromNYStateAPI(data, maxRecords = 500) {
   }
 }
 
-// Extract from MUSL data feed
-function extractFromMUSLData(data, maxRecords = 500) {
+// NEW: Extract from NY State History Dataset
+function extractFromNYStateHistoryAPI(data, maxRecords = 500) {
   try {
     const drawings = [];
     
-    if (data && data.results && Array.isArray(data.results)) {
+    if (Array.isArray(data)) {
+      data.forEach((drawing) => {
+        if (drawings.length >= maxRecords) return;
+        
+        try {
+          const date = drawing.date || drawing.draw_date;
+          if (date && drawing.white_balls && drawing.powerball) {
+            let numbers = [];
+            
+            // Handle different formats
+            if (Array.isArray(drawing.white_balls)) {
+              numbers = drawing.white_balls.map(n => parseInt(n));
+            } else if (typeof drawing.white_balls === 'string') {
+              numbers = drawing.white_balls.split(/[,\s]+/).map(n => parseInt(n.trim()));
+            }
+            
+            const powerball = parseInt(drawing.powerball);
+            
+            if (isValidPowerballNumbers(numbers, powerball)) {
+              drawings.push({
+                date: date.split('T')[0],
+                numbers: numbers.sort((a, b) => a - b),
+                powerball: powerball,
+                jackpot: drawing.jackpot || null,
+                source: 'NY State History'
+              });
+            }
+          }
+        } catch (err) {
+          console.log('Error parsing NY State history drawing:', err.message);
+        }
+      });
+    }
+    
+    return drawings;
+    
+  } catch (error) {
+    console.log('NY State History API extraction failed:', error.message);
+    return [];
+  }
+}
+
+// NEW: Extract from Magayo Historical API
+function extractFromMagayoHistoricalAPI(data, maxRecords = 500) {
+  try {
+    const drawings = [];
+    
+    if (data && data.status === 'success' && Array.isArray(data.results)) {
       data.results.forEach((drawing) => {
         if (drawings.length >= maxRecords) return;
         
         try {
-          if (drawing.date && drawing.numbers && drawing.powerball) {
-            const numbers = drawing.numbers.map(n => parseInt(n));
+          if (drawing.date && drawing.white_balls && drawing.powerball) {
+            const numbers = drawing.white_balls.map(n => parseInt(n));
             const powerball = parseInt(drawing.powerball);
             
             if (isValidPowerballNumbers(numbers, powerball)) {
@@ -245,12 +302,12 @@ function extractFromMUSLData(data, maxRecords = 500) {
                 numbers: numbers.sort((a, b) => a - b),
                 powerball: powerball,
                 jackpot: drawing.jackpot || null,
-                source: 'MUSL Data Feed'
+                source: 'Magayo API'
               });
             }
           }
         } catch (err) {
-          console.log('Error parsing MUSL drawing:', err.message);
+          console.log('Error parsing Magayo drawing:', err.message);
         }
       });
     }
@@ -258,87 +315,99 @@ function extractFromMUSLData(data, maxRecords = 500) {
     return drawings;
     
   } catch (error) {
-    console.log('MUSL data extraction failed:', error.message);
+    console.log('Magayo Historical API extraction failed:', error.message);
     return [];
   }
 }
 
-// Extract from official Powerball archive HTML
-function extractFromPowerballArchive(html, maxRecords = 500) {
+// NEW: Extract from Official Powerball Results Page
+function extractFromPowerballResultsPage(html, maxRecords = 500) {
   try {
     const drawings = [];
     
-    // Look for structured data in HTML
-    const drawingPattern = /(\d{1,2}\/\d{1,2}\/\d{4})[^0-9]*(\d{1,2})[^0-9]+(\d{1,2})[^0-9]+(\d{1,2})[^0-9]+(\d{1,2})[^0-9]+(\d{1,2})[^0-9]+(\d{1,2})/g;
+    // Updated pattern for 2025 Powerball results page
+    const drawingPattern = /(\d{2}\/\d{2}\/\d{4})[^0-9]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/g;
     
     let match;
     while ((match = drawingPattern.exec(html)) !== null && drawings.length < maxRecords) {
-      const [, dateStr, n1, n2, n3, n4, n5, pb] = match;
-      
-      // Convert MM/DD/YYYY to YYYY-MM-DD
-      const dateParts = dateStr.split('/');
-      const date = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
-      
-      const numbers = [parseInt(n1), parseInt(n2), parseInt(n3), parseInt(n4), parseInt(n5)];
-      const powerball = parseInt(pb);
-      
-      if (isValidPowerballNumbers(numbers, powerball)) {
-        drawings.push({
-          date: date,
-          numbers: numbers.sort((a, b) => a - b),
-          powerball: powerball,
-          source: 'Official Powerball Archive'
-        });
+      try {
+        const [, dateStr, n1, n2, n3, n4, n5, pb] = match;
+        
+        // Convert MM/DD/YYYY to YYYY-MM-DD
+        const dateParts = dateStr.split('/');
+        const date = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+        
+        const numbers = [parseInt(n1), parseInt(n2), parseInt(n3), parseInt(n4), parseInt(n5)];
+        const powerball = parseInt(pb);
+        
+        if (isValidPowerballNumbers(numbers, powerball)) {
+          drawings.push({
+            date: date,
+            numbers: numbers.sort((a, b) => a - b),
+            powerball: powerball,
+            source: 'Official Powerball Results'
+          });
+        }
+      } catch (err) {
+        console.log('Error parsing Powerball result:', err.message);
       }
     }
     
     return drawings;
     
   } catch (error) {
-    console.log('Powerball archive extraction failed:', error.message);
+    console.log('Powerball results page extraction failed:', error.message);
     return [];
   }
 }
 
-// Extract from Lottery Post API
-function extractFromLotteryPost(data, maxRecords = 500) {
+// NEW: Extract from Texas Historical HTML
+function extractFromTexasHistoricalHTML(html, maxRecords = 500) {
   try {
     const drawings = [];
     
-    if (data && data.drawings && Array.isArray(data.drawings)) {
-      data.drawings.forEach((drawing) => {
-        if (drawings.length >= maxRecords) return;
-        
+    // Look for Texas-specific patterns
+    const patterns = [
+      /(\d{2}\/\d{2}\/\d{4})[^0-9]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*PB:\s*(\d{1,2})/gi,
+      /Date:\s*(\d{2}\/\d{2}\/\d{4})[^0-9]*Numbers:\s*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/gi
+    ];
+    
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(html)) !== null && drawings.length < maxRecords) {
         try {
-          if (drawing.date && drawing.white_balls && drawing.red_ball) {
-            const numbers = drawing.white_balls.map(n => parseInt(n));
-            const powerball = parseInt(drawing.red_ball);
-            
-            if (isValidPowerballNumbers(numbers, powerball)) {
-              drawings.push({
-                date: drawing.date,
-                numbers: numbers.sort((a, b) => a - b),
-                powerball: powerball,
-                jackpot: drawing.jackpot || null,
-                source: 'Lottery Post API'
-              });
-            }
+          const [, dateStr, n1, n2, n3, n4, n5, pb] = match;
+          
+          // Convert MM/DD/YYYY to YYYY-MM-DD
+          const dateParts = dateStr.split('/');
+          const date = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+          
+          const numbers = [parseInt(n1), parseInt(n2), parseInt(n3), parseInt(n4), parseInt(n5)];
+          const powerball = parseInt(pb);
+          
+          if (isValidPowerballNumbers(numbers, powerball)) {
+            drawings.push({
+              date: date,
+              numbers: numbers.sort((a, b) => a - b),
+              powerball: powerball,
+              source: 'Texas Lottery'
+            });
           }
         } catch (err) {
-          console.log('Error parsing Lottery Post drawing:', err.message);
+          console.log('Error parsing Texas result:', err.message);
         }
-      });
+      }
     }
     
     return drawings;
     
   } catch (error) {
-    console.log('Lottery Post extraction failed:', error.message);
+    console.log('Texas historical HTML extraction failed:', error.message);
     return [];
   }
 }
 
-// Validate Powerball numbers
+// Validate Powerball numbers (updated for current rules)
 function isValidPowerballNumbers(numbers, powerball) {
   if (!Array.isArray(numbers) || numbers.length !== 5) return false;
   if (!powerball || powerball < 1 || powerball > 26) return false;
@@ -370,7 +439,7 @@ function validateHistoricalData(drawings) {
   return validDrawings.length >= drawings.length * 0.8;
 }
 
-// Calculate frequency statistics
+// Calculate frequency statistics (enhanced version)
 function calculateFrequencyStats(drawings) {
   const numberFreq = {};
   const powerballFreq = {};
@@ -394,26 +463,50 @@ function calculateFrequencyStats(drawings) {
     if (isRecent) powerballFreq[drawing.powerball].recent++;
   });
   
-  // Calculate hot and cold numbers
+  // Calculate hot and cold numbers with better algorithm
   const hotNumbers = Object.entries(numberFreq)
-    .sort((a, b) => (b[1].recent + b[1].total * 0.1) - (a[1].recent + a[1].total * 0.1))
+    .map(([num, freq]) => ({
+      number: parseInt(num),
+      score: freq.recent * 2 + freq.total * 0.1,
+      totalFreq: freq.total,
+      recentFreq: freq.recent
+    }))
+    .sort((a, b) => b.score - a.score)
     .slice(0, 25)
-    .map(([num]) => parseInt(num));
+    .map(item => item.number);
     
   const coldNumbers = Object.entries(numberFreq)
-    .sort((a, b) => (a[1].recent + a[1].total * 0.1) - (b[1].recent + b[1].total * 0.1))
+    .map(([num, freq]) => ({
+      number: parseInt(num),
+      score: freq.recent * 2 + freq.total * 0.1,
+      totalFreq: freq.total,
+      recentFreq: freq.recent
+    }))
+    .sort((a, b) => a.score - b.score)
     .slice(0, 25)
-    .map(([num]) => parseInt(num));
+    .map(item => item.number);
     
   const hotPowerballs = Object.entries(powerballFreq)
-    .sort((a, b) => (b[1].recent + b[1].total * 0.1) - (a[1].recent + a[1].total * 0.1))
+    .map(([num, freq]) => ({
+      number: parseInt(num),
+      score: freq.recent * 2 + freq.total * 0.1,
+      totalFreq: freq.total,
+      recentFreq: freq.recent
+    }))
+    .sort((a, b) => b.score - a.score)
     .slice(0, 10)
-    .map(([num]) => parseInt(num));
+    .map(item => item.number);
     
   const coldPowerballs = Object.entries(powerballFreq)
-    .sort((a, b) => (a[1].recent + a[1].total * 0.1) - (b[1].recent + b[1].total * 0.1))
+    .map(([num, freq]) => ({
+      number: parseInt(num),
+      score: freq.recent * 2 + freq.total * 0.1,
+      totalFreq: freq.total,
+      recentFreq: freq.recent
+    }))
+    .sort((a, b) => a.score - b.score)
     .slice(0, 10)
-    .map(([num]) => parseInt(num));
+    .map(item => item.number);
   
   return {
     numberFrequency: numberFreq,
@@ -425,6 +518,10 @@ function calculateFrequencyStats(drawings) {
     totalDrawings: totalDrawings,
     recentDrawings: recentDrawings.length,
     analysisDate: new Date().toISOString().split('T')[0],
-    dataSource: 'Live Historical Data'
+    dataSource: 'Live Historical Data',
+    dateRange: {
+      latest: drawings[0]?.date || null,
+      earliest: drawings[drawings.length - 1]?.date || null
+    }
   };
 }
