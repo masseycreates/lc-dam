@@ -1,4 +1,4 @@
-// api/powerball.js - Enhanced with better data sources and error handling
+// api/powerball.js - Complete fixed version with corrected next drawing calculation
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -469,61 +469,87 @@ function isValidJackpotData(data) {
   return true;
 }
 
+// FIXED: Completely rewritten next drawing calculation
 function calculateNextDrawing() {
   try {
+    console.log('=== Calculating Next Drawing ===');
+    
+    // Get current time in Eastern Time Zone (where Powerball drawings occur)
     const now = new Date();
-    const et = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const etNow = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
     
-    const dayOfWeek = et.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-    const hour = et.getHours();
+    console.log('Current UTC time:', now.toISOString());
+    console.log('Current ET time:', etNow.toString());
     
-    let daysToAdd = 0;
-    let drawingDay = '';
+    const dayOfWeek = etNow.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+    const hour = etNow.getHours();
+    const minute = etNow.getMinutes();
     
-    // Powerball draws on Monday, Wednesday, Saturday at 10:59 PM ET
-    if (dayOfWeek === 0) { // Sunday
-      daysToAdd = 1;
-      drawingDay = 'Monday';
-    } else if (dayOfWeek === 1) { // Monday
-      if (hour >= 23) { // After 11 PM
-        daysToAdd = 2; // Next Wednesday
-        drawingDay = 'Wednesday';
+    console.log(`Current ET: ${getDayName(dayOfWeek)} (${dayOfWeek}), ${hour}:${minute.toString().padStart(2, '0')}`);
+    
+    // Powerball drawings are Monday (1), Wednesday (3), Saturday (6) at 10:59 PM ET
+    const drawingDays = [1, 3, 6]; // Monday, Wednesday, Saturday
+    const drawingHour = 22; // 10 PM (drawings are at 10:59 PM)
+    const drawingMinute = 59;
+    
+    let nextDrawingDate = new Date(etNow);
+    let found = false;
+    
+    // Check if today is a drawing day and we haven't passed the drawing time yet
+    if (drawingDays.includes(dayOfWeek)) {
+      const todayDrawingTime = new Date(etNow);
+      todayDrawingTime.setHours(drawingHour, drawingMinute, 0, 0);
+      
+      console.log(`Today is a drawing day. Drawing time: ${todayDrawingTime.getHours()}:${todayDrawingTime.getMinutes()}`);
+      console.log(`Current time: ${etNow.getHours()}:${etNow.getMinutes()}`);
+      
+      if (etNow <= todayDrawingTime) {
+        // Drawing is today and hasn't happened yet
+        nextDrawingDate = todayDrawingTime;
+        found = true;
+        console.log('✅ Next drawing is TODAY');
       } else {
-        daysToAdd = 0; // Today
-        drawingDay = 'Monday';
+        console.log('⏰ Today\'s drawing has already passed');
       }
-    } else if (dayOfWeek === 2) { // Tuesday
-      daysToAdd = 1; // Next Wednesday
-      drawingDay = 'Wednesday';
-    } else if (dayOfWeek === 3) { // Wednesday
-      if (hour >= 23) { // After 11 PM
-        daysToAdd = 3; // Next Saturday
-        drawingDay = 'Saturday';
-      } else {
-        daysToAdd = 0; // Today
-        drawingDay = 'Wednesday';
-      }
-    } else if (dayOfWeek === 4) { // Thursday
-      daysToAdd = 2; // Next Saturday
-      drawingDay = 'Saturday';
-    } else if (dayOfWeek === 5) { // Friday
-      daysToAdd = 1; // Next Saturday
-      drawingDay = 'Saturday';
-    } else if (dayOfWeek === 6) { // Saturday
-      if (hour >= 23) { // After 11 PM
-        daysToAdd = 2; // Next Monday
-        drawingDay = 'Monday';
-      } else {
-        daysToAdd = 0; // Today
-        drawingDay = 'Saturday';
+    } else {
+      console.log('Today is not a drawing day');
+    }
+    
+    // If we haven't found today's drawing, look for the next drawing day
+    if (!found) {
+      let daysToAdd = 1;
+      
+      // Look ahead up to 7 days to find the next drawing day
+      while (daysToAdd <= 7 && !found) {
+        const checkDate = new Date(etNow);
+        checkDate.setDate(etNow.getDate() + daysToAdd);
+        checkDate.setHours(drawingHour, drawingMinute, 0, 0);
+        
+        const checkDay = checkDate.getDay();
+        console.log(`Checking ${daysToAdd} days ahead: ${getDayName(checkDay)} (${checkDay})`);
+        
+        if (drawingDays.includes(checkDay)) {
+          nextDrawingDate = checkDate;
+          found = true;
+          console.log(`✅ Next drawing found in ${daysToAdd} days: ${getDayName(checkDay)}`);
+        }
+        
+        daysToAdd++;
       }
     }
     
-    const nextDraw = new Date(et);
-    nextDraw.setDate(et.getDate() + daysToAdd);
+    if (!found) {
+      throw new Error('Could not find next drawing date within 7 days');
+    }
     
-    return {
-      date: nextDraw.toLocaleDateString('en-US', { 
+    // Get day name for the next drawing
+    const nextDrawingDayName = getDayName(nextDrawingDate.getDay());
+    
+    console.log('Final next drawing date (ET):', nextDrawingDate.toString());
+    console.log('Next drawing day:', nextDrawingDayName);
+    
+    const result = {
+      date: nextDrawingDate.toLocaleDateString('en-US', { 
         weekday: 'short', 
         month: 'short', 
         day: 'numeric',
@@ -531,14 +557,30 @@ function calculateNextDrawing() {
         timeZone: 'America/New_York'
       }),
       time: '10:59 PM ET',
-      dayOfWeek: drawingDay
+      dayOfWeek: nextDrawingDayName,
+      timestamp: nextDrawingDate.toISOString()
     };
+    
+    console.log('=== Final Result ===');
+    console.log('Date string:', result.date);
+    console.log('Day of week:', result.dayOfWeek);
+    console.log('Full timestamp:', result.timestamp);
+    
+    return result;
+    
   } catch (error) {
-    console.log('Next drawing calculation failed:', error.message);
+    console.error('Next drawing calculation failed:', error.message);
     return {
       date: 'Check powerball.com',
       time: '10:59 PM ET',
-      dayOfWeek: 'Mon/Wed/Sat'
+      dayOfWeek: 'Mon/Wed/Sat',
+      timestamp: null
     };
   }
+}
+
+// Helper function to get day name
+function getDayName(dayNumber) {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return dayNames[dayNumber] || 'Unknown';
 }
