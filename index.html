@@ -512,10 +512,8 @@
             
             // Data availability states
             const [liveDataAvailable, setLiveDataAvailable] = useState(false);
-            const [numbersDataAvailable, setNumbersDataAvailable] = useState(false);
             const [historicalDataAvailable, setHistoricalDataAvailable] = useState(false);
             const [currentJackpot, setCurrentJackpot] = useState(null);
-            const [latestNumbers, setLatestNumbers] = useState(null);
             const [nextDrawDate, setNextDrawDate] = useState('');
             const [dataStatus, setDataStatus] = useState('');
             const [isUpdating, setIsUpdating] = useState(false);
@@ -540,7 +538,7 @@
             const [takeLumpSum, setTakeLumpSum] = useState(true);
             const [taxResults, setTaxResults] = useState(null);
 
-            // Tax brackets and rates
+            // Tax brackets and rates (same as before)
             const federalTaxBrackets = {
                 single: [
                     { min: 0, max: 11000, rate: 0.10 },
@@ -714,7 +712,7 @@
                 });
             };
 
-            // Enhanced fetch function for both jackpot and latest numbers
+            // Fetch live Powerball data
             const fetchLatestPowerballData = async () => {
                 setIsUpdating(true);
                 setDataStatus('🔄 Connecting to official lottery data sources...');
@@ -731,7 +729,7 @@
                     const data = await response.json();
                     
                     if (data.success && data.dataAvailable && data.jackpot) {
-                        // SUCCESS: Live jackpot data available
+                        // SUCCESS: Live data available
                         setCurrentJackpot(data.jackpot);
                         setLiveDataAvailable(true);
                         
@@ -739,11 +737,11 @@
                             setNextDrawDate(`${data.nextDrawing.date} @ ${data.nextDrawing.time}`);
                         }
                         
-                        setDataStatus(`✅ Live data from ${data.sources?.jackpot || data.source}`);
+                        setDataStatus(`✅ Live data from ${data.source}`);
                         setLastUpdated(new Date().toLocaleString());
                         
                     } else {
-                        // FAILURE: No live jackpot data
+                        // FAILURE: No live data
                         setCurrentJackpot(null);
                         setLiveDataAvailable(false);
                         setDataStatus(data.message || 'LIVE POWERBALL DATA TEMPORARILY UNAVAILABLE');
@@ -752,23 +750,11 @@
                             setNextDrawDate(`${data.nextDrawing.date} @ ${data.nextDrawing.time}`);
                         }
                     }
-
-                    // Handle latest numbers separately (they might be available even if jackpot isn't)
-                    if (data.numbersAvailable && data.latestNumbers) {
-                        setLatestNumbers(data.latestNumbers);
-                        setNumbersDataAvailable(true);
-                        console.log('Latest numbers loaded:', data.latestNumbers);
-                    } else {
-                        setLatestNumbers(null);
-                        setNumbersDataAvailable(false);
-                    }
                     
                 } catch (error) {
                     console.error('API Error:', error);
                     setCurrentJackpot(null);
-                    setLatestNumbers(null);
                     setLiveDataAvailable(false);
-                    setNumbersDataAvailable(false);
                     setDataStatus('❌ Unable to connect to lottery data sources');
                 }
                 
@@ -812,7 +798,7 @@
                 setIsLoadingHistory(false);
             };
 
-            // Tax calculation function
+            // Tax calculation function (same as before)
             const calculateTaxes = () => {
                 const winnings = parseFloat(taxWinnings);
                 if (!winnings || winnings <= 0) return;
@@ -1162,7 +1148,7 @@
             };
 
             return React.createElement('div', { style: { maxWidth: '1280px', margin: '0 auto', padding: '1.5rem' } },
-                // Enhanced Current Jackpot Display with Latest Numbers
+                // Current Jackpot Display
                 React.createElement('div', { 
                     className: liveDataAvailable ? 'gradient-bg' : 'gradient-bg-unavailable',
                     style: { 
@@ -1175,15 +1161,8 @@
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                     }
                 },
-                    // Top section - Jackpot info
                     React.createElement('div', { 
-                        style: { 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between', 
-                            color: 'white', 
-                            marginBottom: numbersDataAvailable ? '1rem' : '0' 
-                        }
+                        style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'white' }
                     },
                         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem' } },
                             React.createElement('div', { 
@@ -1236,141 +1215,6 @@
                                 })())
                             )
                         )
-                    ),
-                    
-                    // Bottom section - Latest Numbers (only show if available)
-                    numbersDataAvailable && latestNumbers && React.createElement('div', { 
-                        style: { 
-                            background: 'rgba(255,255,255,0.15)', 
-                            borderRadius: '0.75rem', 
-                            padding: '1rem',
-                            backdropFilter: 'blur(4px)'
-                        } 
-                    },
-                        React.createElement('div', { 
-                            style: { 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'space-between',
-                                color: 'white'
-                            } 
-                        },
-                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem' } },
-                                React.createElement('div', { 
-                                    style: { 
-                                        background: 'rgba(255,255,255,0.2)', 
-                                        padding: '8px', 
-                                        borderRadius: '50%',
-                                        fontSize: '1.25rem'
-                                    } 
-                                }, '🎱'),
-                                React.createElement('div', null,
-                                    React.createElement('div', { 
-                                        style: { opacity: 0.9, fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' } 
-                                    }, 'Latest Winning Numbers'),
-                                    React.createElement('div', { 
-                                        style: { 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
-                                            gap: '0.5rem',
-                                            flexWrap: 'wrap'
-                                        } 
-                                    },
-                                        React.createElement('div', { 
-                                            style: { 
-                                                display: 'flex', 
-                                                gap: '0.25rem',
-                                                alignItems: 'center'
-                                            } 
-                                        },
-                                            latestNumbers.numbers.map(num => 
-                                                React.createElement('div', { 
-                                                    key: num,
-                                                    style: { 
-                                                        background: 'white', 
-                                                        color: '#1f2937', 
-                                                        width: '2rem', 
-                                                        height: '2rem', 
-                                                        borderRadius: '50%', 
-                                                        display: 'flex', 
-                                                        alignItems: 'center', 
-                                                        justifyContent: 'center', 
-                                                        fontSize: '0.875rem', 
-                                                        fontWeight: 700,
-                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                    } 
-                                                }, num)
-                                            )
-                                        ),
-                                        React.createElement('div', { 
-                                            style: { 
-                                                background: '#ef4444', 
-                                                color: 'white', 
-                                                width: '2rem', 
-                                                height: '2rem', 
-                                                borderRadius: '50%', 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
-                                                justifyContent: 'center', 
-                                                fontSize: '0.875rem', 
-                                                fontWeight: 700,
-                                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                                                border: '2px solid white'
-                                            } 
-                                        }, latestNumbers.powerball)
-                                    ),
-                                    React.createElement('div', { 
-                                        style: { opacity: 0.7, fontSize: '0.75rem', marginTop: '0.25rem' } 
-                                    }, `Draw Date: ${latestNumbers.drawDate}${latestNumbers.multiplier ? ` • ${latestNumbers.multiplier}x` : ''}`)
-                                )
-                            ),
-                            React.createElement('div', { style: { textAlign: 'right' } },
-                                React.createElement('button', {
-                                    onClick: () => {
-                                        const numbersText = `${latestNumbers.numbers.join(', ')} | PB: ${latestNumbers.powerball}`;
-                                        navigator.clipboard.writeText(numbersText);
-                                    },
-                                    style: { 
-                                        background: 'rgba(255,255,255,0.2)',
-                                        color: 'white',
-                                        border: '1px solid rgba(255,255,255,0.3)',
-                                        borderRadius: '0.5rem',
-                                        padding: '0.5rem 0.75rem',
-                                        fontSize: '0.75rem',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        backdropFilter: 'blur(4px)'
-                                    }
-                                }, '📋 Copy Numbers'),
-                                React.createElement('div', { 
-                                    style: { 
-                                        opacity: 0.7, 
-                                        fontSize: '0.625rem', 
-                                        marginTop: '0.25rem' 
-                                    } 
-                                }, 'Click to copy')
-                            )
-                        )
-                    ),
-                    
-                    // Enhanced "no numbers available" message when jackpot is available but numbers aren't
-                    liveDataAvailable && !numbersDataAvailable && React.createElement('div', { 
-                        style: { 
-                            background: 'rgba(255,255,255,0.1)', 
-                            borderRadius: '0.5rem', 
-                            padding: '0.75rem',
-                            marginTop: '0.75rem',
-                            border: '1px solid rgba(255,255,255,0.2)'
-                        } 
-                    },
-                        React.createElement('div', { 
-                            style: { 
-                                color: 'white', 
-                                fontSize: '0.75rem', 
-                                opacity: 0.8,
-                                textAlign: 'center'
-                            } 
-                        }, '🎲 Latest winning numbers will appear here when available')
                     )
                 ),
 
@@ -2072,4 +1916,280 @@
                             '💰 Advanced Tax Analysis Calculator'
                         ),
                         React.createElement('p', { style: { color: '#a16207', marginBottom: '1rem' } },
-                            'Calculate your actual take-home amount after federal and state taxes. All calculations use 2024 tax brackets
+                            'Calculate your actual take-home amount after federal and state taxes. All calculations use 2024 tax brackets and rates.'
+                        ),
+                        
+                        // Input Controls
+                        React.createElement('div', { className: 'tax-grid', style: { marginBottom: '1.5rem' } },
+                            React.createElement('div', null,
+                                React.createElement('label', { 
+                                    style: { 
+                                        display: 'block', 
+                                        fontSize: '0.875rem', 
+                                        fontWeight: 500, 
+                                        color: '#374151', 
+                                        marginBottom: '0.5rem' 
+                                    } 
+                                },
+                                    'Jackpot Amount ($):'
+                                ),
+                                React.createElement('input', {
+                                    type: 'number',
+                                    value: taxWinnings,
+                                    onChange: (e) => setTaxWinnings(e.target.value),
+                                    placeholder: 'Enter jackpot amount',
+                                    min: '0',
+                                    step: '1000000',
+                                    style: { 
+                                        width: '100%',
+                                        padding: '0.5rem',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '0.25rem',
+                                        fontSize: '0.875rem'
+                                    }
+                                })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { 
+                                    style: { 
+                                        display: 'block', 
+                                        fontSize: '0.875rem', 
+                                        fontWeight: 500, 
+                                        color: '#374151', 
+                                        marginBottom: '0.5rem' 
+                                    } 
+                                },
+                                    'State:'
+                                ),
+                                React.createElement('select', {
+                                    value: taxState,
+                                    onChange: (e) => setTaxState(e.target.value),
+                                    style: { 
+                                        width: '100%',
+                                        padding: '0.5rem',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '0.25rem',
+                                        fontSize: '0.875rem'
+                                    }
+                                },
+                                    Object.keys(stateTaxRates).map(state => 
+                                        React.createElement('option', { key: state, value: state }, 
+                                            `${state} (${(stateTaxRates[state] * 100).toFixed(1)}%)`
+                                        )
+                                    )
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { 
+                                    style: { 
+                                        display: 'block', 
+                                        fontSize: '0.875rem', 
+                                        fontWeight: 500, 
+                                        color: '#374151', 
+                                        marginBottom: '0.5rem' 
+                                    } 
+                                },
+                                    'Filing Status:'
+                                ),
+                                React.createElement('select', {
+                                    value: taxFilingStatus,
+                                    onChange: (e) => setTaxFilingStatus(e.target.value),
+                                    style: { 
+                                        width: '100%',
+                                        padding: '0.5rem',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '0.25rem',
+                                        fontSize: '0.875rem'
+                                    }
+                                },
+                                    React.createElement('option', { value: 'single' }, 'Single'),
+                                    React.createElement('option', { value: 'marriedJointly' }, 'Married Filing Jointly')
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { 
+                                    style: { 
+                                        display: 'block', 
+                                        fontSize: '0.875rem', 
+                                        fontWeight: 500, 
+                                        color: '#374151', 
+                                        marginBottom: '0.5rem' 
+                                    } 
+                                },
+                                    'Payment Option:'
+                                ),
+                                React.createElement('select', {
+                                    value: takeLumpSum,
+                                    onChange: (e) => setTakeLumpSum(e.target.value === 'true'),
+                                    style: { 
+                                        width: '100%',
+                                        padding: '0.5rem',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '0.25rem',
+                                        fontSize: '0.875rem'
+                                    }
+                                },
+                                    React.createElement('option', { value: true }, 'Lump Sum (Cash Value)'),
+                                    React.createElement('option', { value: false }, 'Annuity (30 Years)')
+                                )
+                            )
+                        ),
+
+                        // Quick Fill Buttons
+                        React.createElement('div', { style: { display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' } },
+                            liveDataAvailable && currentJackpot && React.createElement('button', {
+                                onClick: () => setTaxWinnings(currentJackpot.amount.toString()),
+                                className: 'btn btn-primary',
+                                style: { fontSize: '0.875rem' }
+                            }, `Use Current Jackpot (${currentJackpot.formatted})`),
+                            React.createElement('button', {
+                                onClick: () => setTaxWinnings('1000000000'),
+                                className: 'btn btn-secondary',
+                                style: { fontSize: '0.875rem' }
+                            }, 'Use $1B'),
+                            React.createElement('button', {
+                                onClick: () => setTaxWinnings('500000000'),
+                                className: 'btn btn-secondary',
+                                style: { fontSize: '0.875rem' }
+                            }, 'Use $500M')
+                        ),
+
+                        // Notice about data dependency
+                        !liveDataAvailable && React.createElement('div', { 
+                            style: { 
+                                padding: '0.75rem', 
+                                background: '#fef3c7', 
+                                border: '1px solid #f59e0b', 
+                                borderRadius: '0.5rem', 
+                                fontSize: '0.875rem', 
+                                color: '#92400e' 
+                            } 
+                        },
+                            '💡 Enter any jackpot amount to calculate taxes. Tax calculator works independently of live data.'
+                        )
+                    ),
+
+                    // Tax Results Display
+                    taxResults && React.createElement('div', { className: 'card' },
+                        React.createElement('h3', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937', marginBottom: '1.5rem' } },
+                            '📊 Tax Breakdown Results'
+                        ),
+                        
+                        // Summary Cards
+                        React.createElement('div', { className: 'tax-grid', style: { marginBottom: '1.5rem' } },
+                            React.createElement('div', { className: 'tax-item' },
+                                React.createElement('div', { className: 'tax-item-label' }, 'Gross Winnings'),
+                                React.createElement('div', { className: 'tax-item-value' }, 
+                                    `${taxResults.grossWinnings.toLocaleString()}`
+                                ),
+                                React.createElement('div', { className: 'tax-item-secondary' }, 
+                                    taxResults.paymentType
+                                )
+                            ),
+                            React.createElement('div', { className: 'tax-item' },
+                                React.createElement('div', { className: 'tax-item-label' }, 'Federal Tax'),
+                                React.createElement('div', { className: 'tax-item-value' }, 
+                                    `${taxResults.federalTax.toLocaleString()}`
+                                ),
+                                React.createElement('div', { className: 'tax-item-secondary' }, 
+                                    `${taxResults.effectiveFederalRate.toFixed(2)}% effective rate`
+                                )
+                            ),
+                            React.createElement('div', { className: 'tax-item' },
+                                React.createElement('div', { className: 'tax-item-label' }, `${taxState} State Tax`),
+                                React.createElement('div', { className: 'tax-item-value' }, 
+                                    `${taxResults.stateTax.toLocaleString()}`
+                                ),
+                                React.createElement('div', { className: 'tax-item-secondary' }, 
+                                    `${(taxResults.stateRate * 100).toFixed(1)}% rate`
+                                )
+                            ),
+                            React.createElement('div', { 
+                                className: 'tax-item',
+                                style: { background: '#f0fdf4', border: '2px solid #22c55e' } 
+                            },
+                                React.createElement('div', { className: 'tax-item-label' }, 'Your Take-Home'),
+                                React.createElement('div', { 
+                                    className: 'tax-item-value',
+                                    style: { color: '#059669', fontSize: '1.5rem' } 
+                                }, 
+                                    `${taxResults.netWinnings.toLocaleString()}`
+                                ),
+                                React.createElement('div', { className: 'tax-item-secondary' }, 
+                                    `After ${taxResults.effectiveTotalRate.toFixed(1)}% total tax`
+                                )
+                            )
+                        ),
+
+                        // Important Notes
+                        React.createElement('div', { 
+                            style: { 
+                                background: '#fefce8', 
+                                border: '1px solid #fde68a', 
+                                borderRadius: '0.5rem', 
+                                padding: '1rem', 
+                                fontSize: '0.875rem' 
+                            } 
+                        },
+                            React.createElement('h5', { style: { fontWeight: 600, color: '#92400e', marginBottom: '0.5rem' } }, 
+                                '⚠️ Important Tax Considerations:'
+                            ),
+                            React.createElement('ul', { style: { color: '#a16207', lineHeight: 1.6 } },
+                                React.createElement('li', null, '• This calculator uses 2024 federal tax brackets'),
+                                React.createElement('li', null, '• Additional state-specific deductions may apply'),
+                                React.createElement('li', null, '• Consider consulting a tax professional for large winnings'),
+                                React.createElement('li', null, '• Withholding rates may differ from actual tax owed'),
+                                React.createElement('li', null, '• Gift and estate tax implications not included')
+                            )
+                        )
+                    )
+                )
+            );
+        }
+
+        // Error boundary component
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+
+            static getDerivedStateFromError(error) {
+                return { hasError: true, error: error };
+            }
+
+            componentDidCatch(error, errorInfo) {
+                console.error('React Error:', error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    return React.createElement('div', { style: { padding: '2rem', textAlign: 'center' } },
+                        React.createElement('h2', null, 'Something went wrong!'),
+                        React.createElement('details', { style: { marginTop: '1rem', textAlign: 'left' } },
+                            React.createElement('summary', null, 'Error Details'),
+                            React.createElement('pre', { 
+                                style: { background: '#f3f4f6', padding: '1rem', borderRadius: '4px', fontSize: '0.875rem' } 
+                            }, this.state.error && this.state.error.toString())
+                        ),
+                        React.createElement('button', {
+                            onClick: () => window.location.reload(),
+                            style: { marginTop: '1rem', padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }
+                        }, 'Reload Page')
+                    );
+                }
+
+                return this.props.children;
+            }
+        }
+
+        // Render the app
+        ReactDOM.render(
+            React.createElement(ErrorBoundary, null,
+                React.createElement(AdvancedLotteryAnalysisSystem)
+            ),
+            document.getElementById('root')
+        );
+    </script>
+</body>
+</html>
