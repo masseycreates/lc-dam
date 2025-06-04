@@ -1,4 +1,4 @@
-// api/powerball.js - Simplified and more reliable version
+// api/powerball.js - Enhanced with better data sources and error handling
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -20,27 +20,43 @@ export default async function handler(req, res) {
 
   console.log('=== PowerBall API Request Started ===');
   console.log('Timestamp:', new Date().toISOString());
-  console.log('Headers:', req.headers);
 
-  // Simplified, most reliable data sources
+  // Enhanced data sources with better reliability
   const dataSources = [
     {
       name: 'NY State Open Data API',
-      url: 'https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=5',
+      url: 'https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=3',
       extractor: extractFromNYState,
-      timeout: 12000
+      timeout: 15000,
+      priority: 1
     },
     {
-      name: 'Texas Lottery HTML',
+      name: 'Lottery API Hub',
+      url: 'https://api.lottery-hub.com/v1/powerball/latest',
+      extractor: extractFromLotteryHub,
+      timeout: 12000,
+      priority: 2
+    },
+    {
+      name: 'Texas Lottery Scraper',
       url: 'https://www.texaslottery.com/export/sites/lottery/Games/Powerball/',
       extractor: extractFromTexasHTML,
-      timeout: 10000
+      timeout: 10000,
+      priority: 3
     },
     {
-      name: 'California Lottery HTML',
+      name: 'California Lottery Scraper',
       url: 'https://www.calottery.com/en/draw-games/powerball',
       extractor: extractFromCaliforniaHTML,
-      timeout: 10000
+      timeout: 10000,
+      priority: 4
+    },
+    {
+      name: 'Florida Lottery Scraper',
+      url: 'https://www.flalottery.com/powerball',
+      extractor: extractFromFloridaHTML,
+      timeout: 8000,
+      priority: 5
     }
   ];
 
@@ -48,15 +64,13 @@ export default async function handler(req, res) {
   let sourceUsed = null;
   let detailedErrors = [];
 
-  // Try each source
-  for (let i = 0; i < dataSources.length; i++) {
-    const source = dataSources[i];
-    console.log(`\n--- Attempting ${source.name} (${i + 1}/${dataSources.length}) ---`);
+  // Try each source in priority order
+  for (const source of dataSources) {
+    console.log(`\n--- Attempting ${source.name} (Priority: ${source.priority}) ---`);
     
     try {
       const startTime = Date.now();
       
-      // Create timeout controller
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         console.log(`❌ ${source.name}: Timeout after ${source.timeout}ms`);
@@ -68,12 +82,16 @@ export default async function handler(req, res) {
       const response = await fetch(source.url, {
         method: 'GET',
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; PowerballBot/1.0)',
-          'Accept': 'application/json,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': source.url.includes('api.') ? 'application/json' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.5',
-          'Accept-Encoding': 'gzip, deflate',
+          'Accept-Encoding': 'gzip, deflate, br',
           'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Connection': 'keep-alive',
+          'Referer': 'https://www.powerball.com/',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'cross-site'
         },
         signal: controller.signal
       });
@@ -95,11 +113,11 @@ export default async function handler(req, res) {
       if (contentType.includes('application/json')) {
         console.log('Parsing as JSON...');
         data = await response.json();
-        console.log(`JSON data length: ${Array.isArray(data) ? data.length : 'not array'}`);
+        console.log(`JSON data received, type: ${Array.isArray(data) ? 'array' : typeof data}`);
       } else {
-        console.log('Parsing as text/HTML...');
+        console.log('Parsing as HTML...');
         data = await response.text();
-        console.log(`HTML data length: ${data.length}`);
+        console.log(`HTML data length: ${data.length} characters`);
       }
       
       // Extract jackpot data
@@ -114,20 +132,21 @@ export default async function handler(req, res) {
         console.log(`   Response time: ${responseTime}ms`);
         break;
       } else {
-        console.log(`❌ ${source.name}: Invalid data extracted`);
-        console.log(`   Data:`, jackpotData);
-        throw new Error('No valid jackpot data extracted');
+        console.log(`❌ ${source.name}: Invalid or no data extracted`);
+        console.log(`   Extracted data:`, jackpotData);
+        throw new Error('No valid jackpot data extracted from response');
       }
       
     } catch (error) {
-      const errorMsg = `${source.name}: ${error.message}`;
-      detailedErrors.push({
+      const errorDetails = {
         source: source.name,
         error: error.message,
         type: error.name,
-        url: source.url
-      });
-      console.log(`❌ ${errorMsg}`);
+        url: source.url,
+        priority: source.priority
+      };
+      detailedErrors.push(errorDetails);
+      console.log(`❌ ${source.name} failed: ${error.message}`);
       continue;
     }
   }
@@ -136,7 +155,7 @@ export default async function handler(req, res) {
   const nextDrawing = calculateNextDrawing();
   
   if (jackpotData && sourceUsed) {
-    // SUCCESS
+    // SUCCESS - Return live data
     console.log('\n=== SUCCESS ===');
     const result = {
       success: true,
@@ -153,17 +172,18 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString(),
       debug: {
         sourcesAttempted: dataSources.length,
-        errors: detailedErrors
+        errors: detailedErrors,
+        successfulSource: sourceUsed
       }
     };
 
-    res.setHeader('Cache-Control', 's-maxage=3600, max-age=3600');
+    res.setHeader('Cache-Control', 's-maxage=1800, max-age=1800'); // 30 minutes cache
     return res.status(200).json(result);
     
   } else {
-    // FAILURE
-    console.log('\n=== FAILURE ===');
-    console.log('All sources failed. Errors:', detailedErrors);
+    // FAILURE - Return fallback data with next drawing info
+    console.log('\n=== FAILURE - All sources failed ===');
+    console.log('Detailed errors:', detailedErrors);
     
     const result = {
       success: false,
@@ -189,10 +209,10 @@ export default async function handler(req, res) {
   }
 }
 
-// Extraction functions
+// Enhanced extraction functions
 function extractFromNYState(data) {
   try {
-    console.log('NY State extractor called');
+    console.log('NY State extractor - processing data...');
     
     if (!Array.isArray(data) || data.length === 0) {
       console.log('NY State: No array data or empty array');
@@ -201,27 +221,29 @@ function extractFromNYState(data) {
     
     console.log(`NY State: Processing ${data.length} records`);
     const latest = data[0];
+    console.log('Latest record fields:', Object.keys(latest || {}));
     console.log('Latest record:', latest);
     
     if (latest && latest.jackpot) {
-      const amount = parseFloat(latest.jackpot);
-      console.log(`NY State: Parsed amount: ${amount}`);
+      const jackpotStr = latest.jackpot.toString().replace(/[$,]/g, '');
+      const amount = parseFloat(jackpotStr);
+      console.log(`NY State: Parsed jackpot amount: ${amount}`);
       
       if (amount >= 20000000 && amount <= 5000000000) {
         const cashValue = latest.cash_value ? 
-          parseFloat(latest.cash_value) : 
+          parseFloat(latest.cash_value.toString().replace(/[$,]/g, '')) : 
           Math.round(amount * 0.6);
         
         return {
           amount: amount,
           cashValue: cashValue,
-          formatted: `$${Math.round(amount / 1000000)}M`,
-          cashFormatted: `$${Math.round(cashValue / 1000000)}M`
+          formatted: formatJackpot(amount),
+          cashFormatted: formatJackpot(cashValue)
         };
       }
     }
     
-    console.log('NY State: No valid jackpot found');
+    console.log('NY State: No valid jackpot found in data');
     return null;
   } catch (error) {
     console.log('NY State extraction error:', error.message);
@@ -229,48 +251,86 @@ function extractFromNYState(data) {
   }
 }
 
+// New lottery API extractor
+function extractFromLotteryHub(data) {
+  try {
+    console.log('Lottery Hub extractor - processing data...');
+    
+    if (data && typeof data === 'object') {
+      let amount = 0;
+      let cashValue = 0;
+      
+      // Try different possible field names
+      if (data.jackpot) amount = parseFloat(data.jackpot.toString().replace(/[$,]/g, ''));
+      else if (data.amount) amount = parseFloat(data.amount.toString().replace(/[$,]/g, ''));
+      else if (data.prize) amount = parseFloat(data.prize.toString().replace(/[$,]/g, ''));
+      
+      if (data.cash_value) cashValue = parseFloat(data.cash_value.toString().replace(/[$,]/g, ''));
+      else if (data.cashValue) cashValue = parseFloat(data.cashValue.toString().replace(/[$,]/g, ''));
+      else if (amount > 0) cashValue = Math.round(amount * 0.6);
+      
+      console.log(`Lottery Hub: amount=${amount}, cashValue=${cashValue}`);
+      
+      if (amount >= 20000000 && amount <= 5000000000) {
+        return {
+          amount: amount,
+          cashValue: cashValue,
+          formatted: formatJackpot(amount),
+          cashFormatted: formatJackpot(cashValue)
+        };
+      }
+    }
+    
+    console.log('Lottery Hub: No valid data found');
+    return null;
+  } catch (error) {
+    console.log('Lottery Hub extraction error:', error.message);
+    return null;
+  }
+}
+
 function extractFromTexasHTML(html) {
   try {
-    console.log('Texas HTML extractor called');
-    console.log(`HTML length: ${html.length}`);
+    console.log('Texas HTML extractor - processing...');
+    console.log(`HTML length: ${html.length} characters`);
     
-    // Look for current jackpot patterns
+    // Enhanced patterns for Texas lottery
     const patterns = [
       /Current\s+Est\.\s+Annuitized\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
       /Est\.\s+Annuitized\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
       /Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
-      /\$([0-9,]+(?:\.[0-9]+)?)\s*Million.*Jackpot/gi
+      /\$([0-9,]+(?:\.[0-9]+)?)\s*Million.*?Jackpot/gi,
+      /powerball.*?\$([0-9,]+(?:\.[0-9]+)?)\s*million/gi,
+      /estimated.*?\$([0-9,]+(?:\.[0-9]+)?)\s*million/gi
     ];
 
     for (let i = 0; i < patterns.length; i++) {
       const pattern = patterns[i];
-      console.log(`Trying pattern ${i + 1}...`);
+      console.log(`Trying Texas pattern ${i + 1}...`);
       
-      const match = html.match(pattern);
-      if (match) {
-        console.log(`Pattern ${i + 1} matched:`, match[0]);
+      const matches = [...html.matchAll(pattern)];
+      if (matches.length > 0) {
+        console.log(`Texas pattern ${i + 1} found ${matches.length} matches`);
         
-        // Extract the number
-        const numberMatch = match[0].match(/\$?([0-9,]+(?:\.[0-9]+)?)/);
-        if (numberMatch) {
-          const amountStr = numberMatch[1].replace(/,/g, '');
-          const amount = parseFloat(amountStr) * 1000000;
+        for (const match of matches) {
+          const amountStr = match[1].replace(/,/g, '');
+          const amount = parseFloat(amountStr) * 1000000; // Convert millions to actual amount
           
-          console.log(`Extracted amount: $${amount}`);
+          console.log(`Texas extracted amount: $${amount}`);
           
           if (amount >= 20000000 && amount <= 5000000000) {
             return {
               amount: amount,
               cashValue: Math.round(amount * 0.6),
-              formatted: `$${Math.round(amount / 1000000)}M`,
-              cashFormatted: `$${Math.round(amount * 0.6 / 1000000)}M`
+              formatted: formatJackpot(amount),
+              cashFormatted: formatJackpot(amount * 0.6)
             };
           }
         }
       }
     }
     
-    console.log('Texas: No jackpot patterns matched');
+    console.log('Texas: No valid jackpot patterns matched');
     return null;
   } catch (error) {
     console.log('Texas HTML extraction error:', error.message);
@@ -280,43 +340,44 @@ function extractFromTexasHTML(html) {
 
 function extractFromCaliforniaHTML(html) {
   try {
-    console.log('California HTML extractor called');
-    console.log(`HTML length: ${html.length}`);
+    console.log('California HTML extractor - processing...');
+    console.log(`HTML length: ${html.length} characters`);
     
     const patterns = [
       /Estimated\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
       /Next\s+Drawing[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
-      /Powerball.*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi
+      /Powerball.*?\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
+      /jackpot.*?\$([0-9,]+(?:\.[0-9]+)?)\s*million/gi,
+      /\$([0-9,]+(?:\.[0-9]+)?)\s*million.*?powerball/gi
     ];
 
     for (let i = 0; i < patterns.length; i++) {
       const pattern = patterns[i];
-      console.log(`Trying CA pattern ${i + 1}...`);
+      console.log(`Trying California pattern ${i + 1}...`);
       
-      const match = html.match(pattern);
-      if (match) {
-        console.log(`CA Pattern ${i + 1} matched:`, match[0]);
+      const matches = [...html.matchAll(pattern)];
+      if (matches.length > 0) {
+        console.log(`California pattern ${i + 1} found ${matches.length} matches`);
         
-        const numberMatch = match[0].match(/\$?([0-9,]+(?:\.[0-9]+)?)/);
-        if (numberMatch) {
-          const amountStr = numberMatch[1].replace(/,/g, '');
+        for (const match of matches) {
+          const amountStr = match[1].replace(/,/g, '');
           const amount = parseFloat(amountStr) * 1000000;
           
-          console.log(`CA Extracted amount: $${amount}`);
+          console.log(`California extracted amount: $${amount}`);
           
           if (amount >= 20000000 && amount <= 5000000000) {
             return {
               amount: amount,
               cashValue: Math.round(amount * 0.6),
-              formatted: `$${Math.round(amount / 1000000)}M`,
-              cashFormatted: `$${Math.round(amount * 0.6 / 1000000)}M`
+              formatted: formatJackpot(amount),
+              cashFormatted: formatJackpot(amount * 0.6)
             };
           }
         }
       }
     }
     
-    console.log('California: No jackpot patterns matched');
+    console.log('California: No valid jackpot patterns matched');
     return null;
   } catch (error) {
     console.log('California HTML extraction error:', error.message);
@@ -324,7 +385,56 @@ function extractFromCaliforniaHTML(html) {
   }
 }
 
-// Validation function
+// New Florida extractor
+function extractFromFloridaHTML(html) {
+  try {
+    console.log('Florida HTML extractor - processing...');
+    console.log(`HTML length: ${html.length} characters`);
+    
+    const patterns = [
+      /Estimated\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
+      /jackpot.*?\$([0-9,]+(?:\.[0-9]+)?)\s*million/gi,
+      /powerball.*?\$([0-9,]+(?:\.[0-9]+)?)\s*million/gi,
+      /\$([0-9,]+(?:\.[0-9]+)?)\s*million.*?jackpot/gi
+    ];
+
+    for (const pattern of patterns) {
+      const matches = [...html.matchAll(pattern)];
+      if (matches.length > 0) {
+        for (const match of matches) {
+          const amountStr = match[1].replace(/,/g, '');
+          const amount = parseFloat(amountStr) * 1000000;
+          
+          if (amount >= 20000000 && amount <= 5000000000) {
+            return {
+              amount: amount,
+              cashValue: Math.round(amount * 0.6),
+              formatted: formatJackpot(amount),
+              cashFormatted: formatJackpot(amount * 0.6)
+            };
+          }
+        }
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.log('Florida HTML extraction error:', error.message);
+    return null;
+  }
+}
+
+// Helper functions
+function formatJackpot(amount) {
+  if (amount >= 1000000000) {
+    return `$${(amount / 1000000000).toFixed(1)}B`;
+  } else if (amount >= 1000000) {
+    return `$${Math.round(amount / 1000000)}M`;
+  } else {
+    return `$${amount.toLocaleString()}`;
+  }
+}
+
 function isValidJackpotData(data) {
   if (!data || typeof data !== 'object') {
     console.log('Validation failed: not an object');
@@ -335,12 +445,12 @@ function isValidJackpotData(data) {
   const cashValue = data.cashValue;
   
   if (!amount || amount < 20000000 || amount > 5000000000) {
-    console.log(`Validation failed: amount ${amount} out of range`);
+    console.log(`Validation failed: amount ${amount} out of range [20M-5B]`);
     return false;
   }
   
   if (!cashValue || cashValue < 10000000 || cashValue > 3000000000) {
-    console.log(`Validation failed: cashValue ${cashValue} out of range`);
+    console.log(`Validation failed: cashValue ${cashValue} out of range [10M-3B]`);
     return false;
   }
   
@@ -351,37 +461,62 @@ function isValidJackpotData(data) {
   
   const ratio = cashValue / amount;
   if (ratio < 0.4 || ratio > 0.8) {
-    console.log(`Validation failed: ratio ${ratio} out of range`);
+    console.log(`Validation failed: cash ratio ${ratio} out of range [0.4-0.8]`);
     return false;
   }
   
-  console.log('Validation passed');
+  console.log('✅ Validation passed');
   return true;
 }
 
-// Calculate next drawing
 function calculateNextDrawing() {
   try {
     const now = new Date();
     const et = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
     
-    const dayOfWeek = et.getDay();
+    const dayOfWeek = et.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
     const hour = et.getHours();
     
     let daysToAdd = 0;
+    let drawingDay = '';
     
+    // Powerball draws on Monday, Wednesday, Saturday at 10:59 PM ET
     if (dayOfWeek === 0) { // Sunday
-      daysToAdd = 1; // Next Monday
+      daysToAdd = 1;
+      drawingDay = 'Monday';
     } else if (dayOfWeek === 1) { // Monday
-      daysToAdd = (hour >= 23) ? 2 : 0; // Wed if after 11pm, today if before
+      if (hour >= 23) { // After 11 PM
+        daysToAdd = 2; // Next Wednesday
+        drawingDay = 'Wednesday';
+      } else {
+        daysToAdd = 0; // Today
+        drawingDay = 'Monday';
+      }
     } else if (dayOfWeek === 2) { // Tuesday
       daysToAdd = 1; // Next Wednesday
+      drawingDay = 'Wednesday';
     } else if (dayOfWeek === 3) { // Wednesday
-      daysToAdd = (hour >= 23) ? 3 : 0; // Sat if after 11pm, today if before
-    } else if (dayOfWeek === 4 || dayOfWeek === 5) { // Thursday or Friday
-      daysToAdd = 6 - dayOfWeek; // Next Saturday
+      if (hour >= 23) { // After 11 PM
+        daysToAdd = 3; // Next Saturday
+        drawingDay = 'Saturday';
+      } else {
+        daysToAdd = 0; // Today
+        drawingDay = 'Wednesday';
+      }
+    } else if (dayOfWeek === 4) { // Thursday
+      daysToAdd = 2; // Next Saturday
+      drawingDay = 'Saturday';
+    } else if (dayOfWeek === 5) { // Friday
+      daysToAdd = 1; // Next Saturday
+      drawingDay = 'Saturday';
     } else if (dayOfWeek === 6) { // Saturday
-      daysToAdd = (hour >= 23) ? 2 : 0; // Mon if after 11pm, today if before
+      if (hour >= 23) { // After 11 PM
+        daysToAdd = 2; // Next Monday
+        drawingDay = 'Monday';
+      } else {
+        daysToAdd = 0; // Today
+        drawingDay = 'Saturday';
+      }
     }
     
     const nextDraw = new Date(et);
@@ -396,14 +531,14 @@ function calculateNextDrawing() {
         timeZone: 'America/New_York'
       }),
       time: '10:59 PM ET',
-      dayOfWeek: nextDraw.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' })
+      dayOfWeek: drawingDay
     };
   } catch (error) {
     console.log('Next drawing calculation failed:', error.message);
     return {
       date: 'Check powerball.com',
       time: '10:59 PM ET',
-      dayOfWeek: 'Monday, Wednesday, or Saturday'
+      dayOfWeek: 'Mon/Wed/Sat'
     };
   }
 }
