@@ -1,4 +1,4 @@
-// api/powerball.js - Enhanced to include latest winning numbers in header
+// api/powerball.js - Fixed source tracking issue
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
 
   let jackpotData = null;
   let latestNumbers = null;
-  let sourceUsed = null;
+  let jackpotSource = null;  // Fixed: separate variables for each source
   let numbersSource = null;
   let detailedErrors = [];
 
@@ -144,7 +144,7 @@ export default async function handler(req, res) {
       // Check for jackpot data
       if (!jackpotData && extractedData.jackpot && isValidJackpotData(extractedData.jackpot)) {
         jackpotData = extractedData.jackpot;
-        sourceUsed = source.name;
+        jackpotSource = source.name;  // Fixed: use separate variable
         console.log(`✅ Jackpot SUCCESS from ${source.name}: ${jackpotData.formatted}`);
       }
       
@@ -172,7 +172,7 @@ export default async function handler(req, res) {
   // Calculate next drawing
   const nextDrawing = calculateNextDrawing();
   
-  // Prepare response
+  // Prepare response with proper source handling
   const result = {
     success: jackpotData !== null || latestNumbers !== null,
     dataAvailable: jackpotData !== null,
@@ -180,9 +180,10 @@ export default async function handler(req, res) {
     jackpot: jackpotData,
     latestNumbers: latestNumbers,
     nextDrawing: nextDrawing,
+    source: jackpotSource || numbersSource || 'No sources available',  // Fixed: fallback logic
     sources: {
-      jackpot: sourceUsed,
-      numbers: numbersSource
+      jackpot: jackpotSource || 'Not available',
+      numbers: numbersSource || 'Not available'
     },
     lastUpdated: new Date().toISOString(),
     timestamp: new Date().toISOString(),
@@ -190,7 +191,7 @@ export default async function handler(req, res) {
       sourcesAttempted: dataSources.length,
       errors: detailedErrors,
       successfulSources: {
-        jackpot: sourceUsed,
+        jackpot: jackpotSource,
         numbers: numbersSource
       }
     }
@@ -203,6 +204,7 @@ export default async function handler(req, res) {
     result.numbersAvailable = false;
     result.message = 'LIVE POWERBALL DATA TEMPORARILY UNAVAILABLE';
     result.details = 'Unable to retrieve current jackpot or latest numbers from official sources.';
+    result.source = 'No sources available';
     
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.status(503).json(result);
