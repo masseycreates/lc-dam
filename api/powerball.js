@@ -1,4 +1,4 @@
-// api/powerball.js - Complete fixed version with corrected next drawing calculation
+// api/powerball.js - Enhanced to include latest winning numbers in header
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,51 +21,68 @@ export default async function handler(req, res) {
   console.log('=== PowerBall API Request Started ===');
   console.log('Timestamp:', new Date().toISOString());
 
-  // Enhanced data sources with better reliability
+  // Enhanced data sources that can provide both jackpot AND latest numbers
   const dataSources = [
     {
       name: 'NY State Open Data API',
       url: 'https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=3',
       extractor: extractFromNYState,
       timeout: 15000,
-      priority: 1
+      priority: 1,
+      providesNumbers: true
+    },
+    {
+      name: 'NY State History API',
+      url: 'https://data.ny.gov/resource/dhwa-m6y4.json?$order=date%20DESC&$limit=3',
+      extractor: extractFromNYStateHistory,
+      timeout: 15000,
+      priority: 2,
+      providesNumbers: true
     },
     {
       name: 'Lottery API Hub',
       url: 'https://api.lottery-hub.com/v1/powerball/latest',
       extractor: extractFromLotteryHub,
       timeout: 12000,
-      priority: 2
+      priority: 3,
+      providesNumbers: false
     },
     {
       name: 'Texas Lottery Scraper',
       url: 'https://www.texaslottery.com/export/sites/lottery/Games/Powerball/',
       extractor: extractFromTexasHTML,
       timeout: 10000,
-      priority: 3
+      priority: 4,
+      providesNumbers: false
     },
     {
       name: 'California Lottery Scraper',
       url: 'https://www.calottery.com/en/draw-games/powerball',
       extractor: extractFromCaliforniaHTML,
       timeout: 10000,
-      priority: 4
+      priority: 5,
+      providesNumbers: false
     },
     {
-      name: 'Florida Lottery Scraper',
-      url: 'https://www.flalottery.com/powerball',
-      extractor: extractFromFloridaHTML,
+      name: 'Official Powerball Results',
+      url: 'https://www.powerball.com/previous-results',
+      extractor: extractFromPowerballResults,
       timeout: 8000,
-      priority: 5
+      priority: 6,
+      providesNumbers: true
     }
   ];
 
   let jackpotData = null;
+  let latestNumbers = null;
   let sourceUsed = null;
+  let numbersSource = null;
   let detailedErrors = [];
 
-  // Try each source in priority order
+  // Try to get both jackpot and latest numbers
   for (const source of dataSources) {
+    if (jackpotData && latestNumbers) break; // We have everything we need
+    
     console.log(`\n--- Attempting ${source.name} (Priority: ${source.priority}) ---`);
     
     try {
@@ -120,21 +137,22 @@ export default async function handler(req, res) {
         console.log(`HTML data length: ${data.length} characters`);
       }
       
-      // Extract jackpot data
-      console.log('Extracting jackpot data...');
-      jackpotData = source.extractor(data);
+      // Extract data
+      console.log('Extracting data...');
+      const extractedData = source.extractor(data);
       
-      if (jackpotData && isValidJackpotData(jackpotData)) {
+      // Check for jackpot data
+      if (!jackpotData && extractedData.jackpot && isValidJackpotData(extractedData.jackpot)) {
+        jackpotData = extractedData.jackpot;
         sourceUsed = source.name;
-        console.log(`✅ SUCCESS from ${source.name}:`);
-        console.log(`   Jackpot: ${jackpotData.formatted}`);
-        console.log(`   Cash: ${jackpotData.cashFormatted}`);
-        console.log(`   Response time: ${responseTime}ms`);
-        break;
-      } else {
-        console.log(`❌ ${source.name}: Invalid or no data extracted`);
-        console.log(`   Extracted data:`, jackpotData);
-        throw new Error('No valid jackpot data extracted from response');
+        console.log(`✅ Jackpot SUCCESS from ${source.name}: ${jackpotData.formatted}`);
+      }
+      
+      // Check for latest numbers
+      if (!latestNumbers && extractedData.latestNumbers && isValidLatestNumbers(extractedData.latestNumbers)) {
+        latestNumbers = extractedData.latestNumbers;
+        numbersSource = source.name;
+        console.log(`✅ Numbers SUCCESS from ${source.name}: ${latestNumbers.numbers.join(', ')} | PB: ${latestNumbers.powerball}`);
       }
       
     } catch (error) {
@@ -154,87 +172,82 @@ export default async function handler(req, res) {
   // Calculate next drawing
   const nextDrawing = calculateNextDrawing();
   
-  if (jackpotData && sourceUsed) {
-    // SUCCESS - Return live data
-    console.log('\n=== SUCCESS ===');
-    const result = {
-      success: true,
-      dataAvailable: true,
-      jackpot: {
-        amount: jackpotData.amount,
-        cashValue: jackpotData.cashValue,
-        formatted: jackpotData.formatted,
-        cashFormatted: jackpotData.cashFormatted
-      },
-      nextDrawing: nextDrawing,
-      source: sourceUsed,
-      lastUpdated: new Date().toISOString(),
-      timestamp: new Date().toISOString(),
-      debug: {
-        sourcesAttempted: dataSources.length,
-        errors: detailedErrors,
-        successfulSource: sourceUsed
+  // Prepare response
+  const result = {
+    success: jackpotData !== null || latestNumbers !== null,
+    dataAvailable: jackpotData !== null,
+    numbersAvailable: latestNumbers !== null,
+    jackpot: jackpotData,
+    latestNumbers: latestNumbers,
+    nextDrawing: nextDrawing,
+    sources: {
+      jackpot: sourceUsed,
+      numbers: numbersSource
+    },
+    lastUpdated: new Date().toISOString(),
+    timestamp: new Date().toISOString(),
+    debug: {
+      sourcesAttempted: dataSources.length,
+      errors: detailedErrors,
+      successfulSources: {
+        jackpot: sourceUsed,
+        numbers: numbersSource
       }
-    };
+    }
+  };
 
-    res.setHeader('Cache-Control', 's-maxage=1800, max-age=1800'); // 30 minutes cache
-    return res.status(200).json(result);
+  if (!jackpotData && !latestNumbers) {
+    // COMPLETE FAILURE
+    result.success = false;
+    result.dataAvailable = false;
+    result.numbersAvailable = false;
+    result.message = 'LIVE POWERBALL DATA TEMPORARILY UNAVAILABLE';
+    result.details = 'Unable to retrieve current jackpot or latest numbers from official sources.';
     
-  } else {
-    // FAILURE - Return fallback data with next drawing info
-    console.log('\n=== FAILURE - All sources failed ===');
-    console.log('Detailed errors:', detailedErrors);
-    
-    const result = {
-      success: false,
-      dataAvailable: false,
-      message: 'LIVE POWERBALL DATA TEMPORARILY UNAVAILABLE',
-      details: 'Unable to retrieve current jackpot information from official sources. Please check back later or visit powerball.com directly.',
-      nextDrawing: nextDrawing,
-      lastAttempted: new Date().toISOString(),
-      timestamp: new Date().toISOString(),
-      debug: {
-        sourcesAttempted: dataSources.length,
-        detailedErrors: detailedErrors,
-        environment: {
-          nodeVersion: process.version,
-          platform: process.platform,
-          region: process.env.VERCEL_REGION || 'unknown'
-        }
-      }
-    };
-
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.status(503).json(result);
+    
+  } else {
+    // PARTIAL OR COMPLETE SUCCESS
+    if (!jackpotData) {
+      result.message = 'Latest numbers available, but jackpot data unavailable';
+    } else if (!latestNumbers) {
+      result.message = 'Jackpot data available, but latest numbers unavailable';
+    }
+    
+    res.setHeader('Cache-Control', 's-maxage=1800, max-age=1800'); // 30 minutes cache
+    return res.status(200).json(result);
   }
 }
 
-// Enhanced extraction functions
+// Enhanced extraction functions that extract both jackpot AND latest numbers
+
 function extractFromNYState(data) {
+  const result = { jackpot: null, latestNumbers: null };
+  
   try {
     console.log('NY State extractor - processing data...');
     
     if (!Array.isArray(data) || data.length === 0) {
       console.log('NY State: No array data or empty array');
-      return null;
+      return result;
     }
     
     console.log(`NY State: Processing ${data.length} records`);
     const latest = data[0];
-    console.log('Latest record fields:', Object.keys(latest || {}));
     console.log('Latest record:', latest);
     
+    // Extract jackpot
     if (latest && latest.jackpot) {
       const jackpotStr = latest.jackpot.toString().replace(/[$,]/g, '');
       const amount = parseFloat(jackpotStr);
-      console.log(`NY State: Parsed jackpot amount: ${amount}`);
       
       if (amount >= 20000000 && amount <= 5000000000) {
         const cashValue = latest.cash_value ? 
           parseFloat(latest.cash_value.toString().replace(/[$,]/g, '')) : 
           Math.round(amount * 0.6);
         
-        return {
+        result.jackpot = {
           amount: amount,
           cashValue: cashValue,
           formatted: formatJackpot(amount),
@@ -243,24 +256,101 @@ function extractFromNYState(data) {
       }
     }
     
-    console.log('NY State: No valid jackpot found in data');
-    return null;
+    // Extract latest numbers
+    if (latest && latest.winning_numbers && latest.draw_date) {
+      const numberParts = latest.winning_numbers.trim().split(/\s+/);
+      
+      if (numberParts.length >= 6) {
+        const numbers = numberParts.slice(0, 5).map(n => parseInt(n));
+        const powerball = parseInt(numberParts[5]);
+        
+        if (isValidPowerballNumbers(numbers, powerball)) {
+          result.latestNumbers = {
+            numbers: numbers.sort((a, b) => a - b),
+            powerball: powerball,
+            drawDate: latest.draw_date.split('T')[0],
+            formatted: `${numbers.sort((a, b) => a - b).join(', ')} | PB: ${powerball}`,
+            multiplier: latest.multiplier || null
+          };
+        }
+      }
+    }
+    
+    return result;
+    
   } catch (error) {
     console.log('NY State extraction error:', error.message);
-    return null;
+    return result;
   }
 }
 
-// New lottery API extractor
+function extractFromNYStateHistory(data) {
+  const result = { jackpot: null, latestNumbers: null };
+  
+  try {
+    console.log('NY State History extractor - processing data...');
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      return result;
+    }
+    
+    const latest = data[0];
+    console.log('NY History latest record:', latest);
+    
+    // Extract latest numbers
+    if (latest && latest.white_balls && latest.powerball && latest.date) {
+      let numbers = [];
+      
+      if (Array.isArray(latest.white_balls)) {
+        numbers = latest.white_balls.map(n => parseInt(n));
+      } else if (typeof latest.white_balls === 'string') {
+        numbers = latest.white_balls.split(/[,\s]+/).map(n => parseInt(n.trim()));
+      }
+      
+      const powerball = parseInt(latest.powerball);
+      
+      if (isValidPowerballNumbers(numbers, powerball)) {
+        result.latestNumbers = {
+          numbers: numbers.sort((a, b) => a - b),
+          powerball: powerball,
+          drawDate: latest.date.split('T')[0],
+          formatted: `${numbers.sort((a, b) => a - b).join(', ')} | PB: ${powerball}`
+        };
+      }
+    }
+    
+    // Try to extract jackpot if available
+    if (latest && latest.jackpot) {
+      const amount = parseFloat(latest.jackpot.toString().replace(/[$,]/g, ''));
+      if (amount >= 20000000 && amount <= 5000000000) {
+        result.jackpot = {
+          amount: amount,
+          cashValue: Math.round(amount * 0.6),
+          formatted: formatJackpot(amount),
+          cashFormatted: formatJackpot(amount * 0.6)
+        };
+      }
+    }
+    
+    return result;
+    
+  } catch (error) {
+    console.log('NY State History extraction error:', error.message);
+    return result;
+  }
+}
+
 function extractFromLotteryHub(data) {
+  const result = { jackpot: null, latestNumbers: null };
+  
   try {
     console.log('Lottery Hub extractor - processing data...');
     
     if (data && typeof data === 'object') {
+      // Extract jackpot
       let amount = 0;
       let cashValue = 0;
       
-      // Try different possible field names
       if (data.jackpot) amount = parseFloat(data.jackpot.toString().replace(/[$,]/g, ''));
       else if (data.amount) amount = parseFloat(data.amount.toString().replace(/[$,]/g, ''));
       else if (data.prize) amount = parseFloat(data.prize.toString().replace(/[$,]/g, ''));
@@ -269,159 +359,248 @@ function extractFromLotteryHub(data) {
       else if (data.cashValue) cashValue = parseFloat(data.cashValue.toString().replace(/[$,]/g, ''));
       else if (amount > 0) cashValue = Math.round(amount * 0.6);
       
-      console.log(`Lottery Hub: amount=${amount}, cashValue=${cashValue}`);
-      
       if (amount >= 20000000 && amount <= 5000000000) {
-        return {
+        result.jackpot = {
           amount: amount,
           cashValue: cashValue,
           formatted: formatJackpot(amount),
           cashFormatted: formatJackpot(cashValue)
         };
       }
+      
+      // Extract latest numbers if available
+      if (data.numbers && data.powerball) {
+        const numbers = Array.isArray(data.numbers) ? data.numbers.map(n => parseInt(n)) : [];
+        const powerball = parseInt(data.powerball);
+        
+        if (isValidPowerballNumbers(numbers, powerball)) {
+          result.latestNumbers = {
+            numbers: numbers.sort((a, b) => a - b),
+            powerball: powerball,
+            drawDate: data.date || 'Unknown',
+            formatted: `${numbers.sort((a, b) => a - b).join(', ')} | PB: ${powerball}`
+          };
+        }
+      }
     }
     
-    console.log('Lottery Hub: No valid data found');
-    return null;
+    return result;
+    
   } catch (error) {
     console.log('Lottery Hub extraction error:', error.message);
-    return null;
+    return result;
   }
 }
 
 function extractFromTexasHTML(html) {
+  const result = { jackpot: null, latestNumbers: null };
+  
   try {
     console.log('Texas HTML extractor - processing...');
-    console.log(`HTML length: ${html.length} characters`);
     
-    // Enhanced patterns for Texas lottery
-    const patterns = [
+    // Extract jackpot (existing logic)
+    const jackpotPatterns = [
       /Current\s+Est\.\s+Annuitized\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
       /Est\.\s+Annuitized\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
-      /Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
-      /\$([0-9,]+(?:\.[0-9]+)?)\s*Million.*?Jackpot/gi,
-      /powerball.*?\$([0-9,]+(?:\.[0-9]+)?)\s*million/gi,
-      /estimated.*?\$([0-9,]+(?:\.[0-9]+)?)\s*million/gi
+      /Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi
     ];
 
-    for (let i = 0; i < patterns.length; i++) {
-      const pattern = patterns[i];
-      console.log(`Trying Texas pattern ${i + 1}...`);
-      
+    for (const pattern of jackpotPatterns) {
       const matches = [...html.matchAll(pattern)];
       if (matches.length > 0) {
-        console.log(`Texas pattern ${i + 1} found ${matches.length} matches`);
-        
         for (const match of matches) {
           const amountStr = match[1].replace(/,/g, '');
-          const amount = parseFloat(amountStr) * 1000000; // Convert millions to actual amount
-          
-          console.log(`Texas extracted amount: $${amount}`);
+          const amount = parseFloat(amountStr) * 1000000;
           
           if (amount >= 20000000 && amount <= 5000000000) {
-            return {
+            result.jackpot = {
               amount: amount,
               cashValue: Math.round(amount * 0.6),
               formatted: formatJackpot(amount),
               cashFormatted: formatJackpot(amount * 0.6)
             };
+            break;
           }
+        }
+        if (result.jackpot) break;
+      }
+    }
+    
+    // Extract latest numbers
+    const numberPatterns = [
+      /(\d{2}\/\d{2}\/\d{4})[^0-9]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/g,
+      /Latest.*?(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*PB:\s*(\d{1,2})/gi
+    ];
+    
+    for (const pattern of numberPatterns) {
+      const match = pattern.exec(html);
+      if (match) {
+        try {
+          let numbers, powerball, drawDate;
+          
+          if (match.length >= 8) {
+            // First pattern with date
+            drawDate = match[1];
+            numbers = [parseInt(match[2]), parseInt(match[3]), parseInt(match[4]), parseInt(match[5]), parseInt(match[6])];
+            powerball = parseInt(match[7]);
+          } else if (match.length >= 7) {
+            // Second pattern without date
+            numbers = [parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), parseInt(match[4]), parseInt(match[5])];
+            powerball = parseInt(match[6]);
+            drawDate = 'Recent';
+          }
+          
+          if (isValidPowerballNumbers(numbers, powerball)) {
+            result.latestNumbers = {
+              numbers: numbers.sort((a, b) => a - b),
+              powerball: powerball,
+              drawDate: drawDate || 'Unknown',
+              formatted: `${numbers.sort((a, b) => a - b).join(', ')} | PB: ${powerball}`
+            };
+            break;
+          }
+        } catch (err) {
+          console.log('Error parsing Texas numbers:', err.message);
         }
       }
     }
     
-    console.log('Texas: No valid jackpot patterns matched');
-    return null;
+    return result;
+    
   } catch (error) {
     console.log('Texas HTML extraction error:', error.message);
-    return null;
+    return result;
   }
 }
 
 function extractFromCaliforniaHTML(html) {
+  const result = { jackpot: null, latestNumbers: null };
+  
   try {
-    console.log('California HTML extractor - processing...');
-    console.log(`HTML length: ${html.length} characters`);
-    
-    const patterns = [
+    // Extract jackpot (existing logic)
+    const jackpotPatterns = [
       /Estimated\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
       /Next\s+Drawing[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
-      /Powerball.*?\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
-      /jackpot.*?\$([0-9,]+(?:\.[0-9]+)?)\s*million/gi,
-      /\$([0-9,]+(?:\.[0-9]+)?)\s*million.*?powerball/gi
+      /Powerball.*?\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi
     ];
 
-    for (let i = 0; i < patterns.length; i++) {
-      const pattern = patterns[i];
-      console.log(`Trying California pattern ${i + 1}...`);
-      
+    for (const pattern of jackpotPatterns) {
       const matches = [...html.matchAll(pattern)];
       if (matches.length > 0) {
-        console.log(`California pattern ${i + 1} found ${matches.length} matches`);
-        
         for (const match of matches) {
           const amountStr = match[1].replace(/,/g, '');
           const amount = parseFloat(amountStr) * 1000000;
           
-          console.log(`California extracted amount: $${amount}`);
-          
           if (amount >= 20000000 && amount <= 5000000000) {
-            return {
+            result.jackpot = {
               amount: amount,
               cashValue: Math.round(amount * 0.6),
               formatted: formatJackpot(amount),
               cashFormatted: formatJackpot(amount * 0.6)
             };
+            break;
           }
         }
+        if (result.jackpot) break;
       }
     }
     
-    console.log('California: No valid jackpot patterns matched');
-    return null;
+    return result;
+    
   } catch (error) {
     console.log('California HTML extraction error:', error.message);
-    return null;
+    return result;
   }
 }
 
-// New Florida extractor
-function extractFromFloridaHTML(html) {
+function extractFromPowerballResults(html) {
+  const result = { jackpot: null, latestNumbers: null };
+  
   try {
-    console.log('Florida HTML extractor - processing...');
-    console.log(`HTML length: ${html.length} characters`);
+    console.log('Official Powerball Results extractor - processing...');
     
-    const patterns = [
-      /Estimated\s+Jackpot[^$]*\$([0-9,]+(?:\.[0-9]+)?)\s*Million/gi,
-      /jackpot.*?\$([0-9,]+(?:\.[0-9]+)?)\s*million/gi,
-      /powerball.*?\$([0-9,]+(?:\.[0-9]+)?)\s*million/gi,
-      /\$([0-9,]+(?:\.[0-9]+)?)\s*million.*?jackpot/gi
+    // Extract latest numbers from official results
+    const numberPatterns = [
+      /(\d{2}\/\d{2}\/\d{4})[^0-9]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/g,
+      /latest.*?(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*powerball[^\d]*(\d{1,2})/gi
     ];
-
-    for (const pattern of patterns) {
-      const matches = [...html.matchAll(pattern)];
-      if (matches.length > 0) {
-        for (const match of matches) {
-          const amountStr = match[1].replace(/,/g, '');
-          const amount = parseFloat(amountStr) * 1000000;
+    
+    for (const pattern of numberPatterns) {
+      const match = pattern.exec(html);
+      if (match) {
+        try {
+          let numbers, powerball, drawDate;
           
-          if (amount >= 20000000 && amount <= 5000000000) {
-            return {
-              amount: amount,
-              cashValue: Math.round(amount * 0.6),
-              formatted: formatJackpot(amount),
-              cashFormatted: formatJackpot(amount * 0.6)
-            };
+          if (match.length >= 8) {
+            drawDate = match[1];
+            numbers = [parseInt(match[2]), parseInt(match[3]), parseInt(match[4]), parseInt(match[5]), parseInt(match[6])];
+            powerball = parseInt(match[7]);
+          } else if (match.length >= 7) {
+            numbers = [parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), parseInt(match[4]), parseInt(match[5])];
+            powerball = parseInt(match[6]);
+            drawDate = 'Recent';
           }
+          
+          if (isValidPowerballNumbers(numbers, powerball)) {
+            result.latestNumbers = {
+              numbers: numbers.sort((a, b) => a - b),
+              powerball: powerball,
+              drawDate: drawDate || 'Unknown',
+              formatted: `${numbers.sort((a, b) => a - b).join(', ')} | PB: ${powerball}`
+            };
+            break;
+          }
+        } catch (err) {
+          console.log('Error parsing official Powerball numbers:', err.message);
         }
       }
     }
     
-    return null;
+    return result;
+    
   } catch (error) {
-    console.log('Florida HTML extraction error:', error.message);
-    return null;
+    console.log('Official Powerball results extraction error:', error.message);
+    return result;
   }
+}
+
+// Validation functions
+function isValidJackpotData(data) {
+  if (!data || typeof data !== 'object') return false;
+  
+  const amount = data.amount;
+  const cashValue = data.cashValue;
+  
+  if (!amount || amount < 20000000 || amount > 5000000000) return false;
+  if (!cashValue || cashValue < 10000000 || cashValue > 3000000000) return false;
+  if (cashValue >= amount) return false;
+  
+  const ratio = cashValue / amount;
+  if (ratio < 0.4 || ratio > 0.8) return false;
+  
+  return true;
+}
+
+function isValidLatestNumbers(data) {
+  if (!data || typeof data !== 'object') return false;
+  if (!Array.isArray(data.numbers) || data.numbers.length !== 5) return false;
+  if (!data.powerball || data.powerball < 1 || data.powerball > 26) return false;
+  
+  return isValidPowerballNumbers(data.numbers, data.powerball);
+}
+
+function isValidPowerballNumbers(numbers, powerball) {
+  if (!Array.isArray(numbers) || numbers.length !== 5) return false;
+  if (!powerball || powerball < 1 || powerball > 26) return false;
+  
+  for (const num of numbers) {
+    if (!num || num < 1 || num > 69) return false;
+  }
+  
+  const uniqueNumbers = new Set(numbers);
+  if (uniqueNumbers.size !== 5) return false;
+  
+  return true;
 }
 
 // Helper functions
@@ -435,120 +614,55 @@ function formatJackpot(amount) {
   }
 }
 
-function isValidJackpotData(data) {
-  if (!data || typeof data !== 'object') {
-    console.log('Validation failed: not an object');
-    return false;
-  }
-  
-  const amount = data.amount;
-  const cashValue = data.cashValue;
-  
-  if (!amount || amount < 20000000 || amount > 5000000000) {
-    console.log(`Validation failed: amount ${amount} out of range [20M-5B]`);
-    return false;
-  }
-  
-  if (!cashValue || cashValue < 10000000 || cashValue > 3000000000) {
-    console.log(`Validation failed: cashValue ${cashValue} out of range [10M-3B]`);
-    return false;
-  }
-  
-  if (cashValue >= amount) {
-    console.log('Validation failed: cashValue >= amount');
-    return false;
-  }
-  
-  const ratio = cashValue / amount;
-  if (ratio < 0.4 || ratio > 0.8) {
-    console.log(`Validation failed: cash ratio ${ratio} out of range [0.4-0.8]`);
-    return false;
-  }
-  
-  console.log('✅ Validation passed');
-  return true;
-}
-
-// FIXED: Completely rewritten next drawing calculation
+// FIXED: Next drawing calculation (same as before)
 function calculateNextDrawing() {
   try {
-    console.log('=== Calculating Next Drawing ===');
-    
-    // Get current time in Eastern Time Zone (where Powerball drawings occur)
     const now = new Date();
     const etNow = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
     
-    console.log('Current UTC time:', now.toISOString());
-    console.log('Current ET time:', etNow.toString());
-    
-    const dayOfWeek = etNow.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+    const dayOfWeek = etNow.getDay();
     const hour = etNow.getHours();
-    const minute = etNow.getMinutes();
     
-    console.log(`Current ET: ${getDayName(dayOfWeek)} (${dayOfWeek}), ${hour}:${minute.toString().padStart(2, '0')}`);
-    
-    // Powerball drawings are Monday (1), Wednesday (3), Saturday (6) at 10:59 PM ET
     const drawingDays = [1, 3, 6]; // Monday, Wednesday, Saturday
-    const drawingHour = 22; // 10 PM (drawings are at 10:59 PM)
+    const drawingHour = 22;
     const drawingMinute = 59;
     
     let nextDrawingDate = new Date(etNow);
     let found = false;
     
-    // Check if today is a drawing day and we haven't passed the drawing time yet
     if (drawingDays.includes(dayOfWeek)) {
       const todayDrawingTime = new Date(etNow);
       todayDrawingTime.setHours(drawingHour, drawingMinute, 0, 0);
       
-      console.log(`Today is a drawing day. Drawing time: ${todayDrawingTime.getHours()}:${todayDrawingTime.getMinutes()}`);
-      console.log(`Current time: ${etNow.getHours()}:${etNow.getMinutes()}`);
-      
       if (etNow <= todayDrawingTime) {
-        // Drawing is today and hasn't happened yet
         nextDrawingDate = todayDrawingTime;
         found = true;
-        console.log('✅ Next drawing is TODAY');
-      } else {
-        console.log('⏰ Today\'s drawing has already passed');
       }
-    } else {
-      console.log('Today is not a drawing day');
     }
     
-    // If we haven't found today's drawing, look for the next drawing day
     if (!found) {
       let daysToAdd = 1;
       
-      // Look ahead up to 7 days to find the next drawing day
       while (daysToAdd <= 7 && !found) {
         const checkDate = new Date(etNow);
         checkDate.setDate(etNow.getDate() + daysToAdd);
         checkDate.setHours(drawingHour, drawingMinute, 0, 0);
         
         const checkDay = checkDate.getDay();
-        console.log(`Checking ${daysToAdd} days ahead: ${getDayName(checkDay)} (${checkDay})`);
         
         if (drawingDays.includes(checkDay)) {
           nextDrawingDate = checkDate;
           found = true;
-          console.log(`✅ Next drawing found in ${daysToAdd} days: ${getDayName(checkDay)}`);
         }
         
         daysToAdd++;
       }
     }
     
-    if (!found) {
-      throw new Error('Could not find next drawing date within 7 days');
-    }
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const nextDrawingDayName = dayNames[nextDrawingDate.getDay()];
     
-    // Get day name for the next drawing
-    const nextDrawingDayName = getDayName(nextDrawingDate.getDay());
-    
-    console.log('Final next drawing date (ET):', nextDrawingDate.toString());
-    console.log('Next drawing day:', nextDrawingDayName);
-    
-    const result = {
+    return {
       date: nextDrawingDate.toLocaleDateString('en-US', { 
         weekday: 'short', 
         month: 'short', 
@@ -561,13 +675,6 @@ function calculateNextDrawing() {
       timestamp: nextDrawingDate.toISOString()
     };
     
-    console.log('=== Final Result ===');
-    console.log('Date string:', result.date);
-    console.log('Day of week:', result.dayOfWeek);
-    console.log('Full timestamp:', result.timestamp);
-    
-    return result;
-    
   } catch (error) {
     console.error('Next drawing calculation failed:', error.message);
     return {
@@ -577,10 +684,4 @@ function calculateNextDrawing() {
       timestamp: null
     };
   }
-}
-
-// Helper function to get day name
-function getDayName(dayNumber) {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return dayNames[dayNumber] || 'Unknown';
 }
