@@ -174,7 +174,6 @@
         .confidence-medium { border-left: 4px solid #3b82f6; }
         .confidence-low { border-left: 4px solid #f59e0b; }
         
-        /* Claude AI specific styles */
         .claude-badge {
             background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
             color: white;
@@ -189,7 +188,6 @@
             border: 2px solid #a855f7;
         }
 
-        /* New compact styles for better screen fit */
         .compact-header {
             padding: 1rem;
             margin-bottom: 1rem;
@@ -214,7 +212,6 @@
             padding: 1rem;
         }
 
-        /* Tax Calculator Specific Styles */
         .tax-breakdown-table {
             width: 100%;
             border-collapse: collapse;
@@ -307,7 +304,6 @@
             font-weight: 600;
         }
         
-        /* Responsive improvements */
         @media (max-width: 768px) {
             .grid-cols-3 { grid-template-columns: 1fr; }
             .container { padding: 1rem; }
@@ -332,12 +328,10 @@
         </div>
     </div>
     
-    <!-- Complete JavaScript with Hybrid Claude + 6 Algorithms System -->
     <script>
-        // Advanced Lottery Prediction System - Complete Implementation
+        // Advanced Lottery Prediction System
         class AdvancedLotteryPredictor {
             constructor() {
-                // Algorithm performance tracking
                 this.algorithmPerformance = {
                     ewmaFrequency: { weight: 0.2, successRate: 0.15, recentHits: [] },
                     pairAnalysis: { weight: 0.18, successRate: 0.14, recentHits: [] },
@@ -347,20 +341,14 @@
                     neuralNetwork: { weight: 0.17, successRate: 0.16, recentHits: [] }
                 };
 
-                // EWMA parameters
                 this.ewmaAlpha = 0.3;
-                
-                // Neural network weights
                 this.neuralWeights = this.initializeNeuralWeights();
-                
-                // Performance tracking
                 this.predictionHistory = [];
                 this.performanceWindow = 50;
                 this.accuracyHistory = [];
                 this.isLearning = true;
             }
 
-            // EWMA Frequency Analysis
             calculateEWMAFrequencies(historicalData) {
                 const numberEWMA = {};
                 const powerballEWMA = {};
@@ -392,7 +380,6 @@
                 return { numbers: numberEWMA, powerball: powerballEWMA };
             }
 
-            // Pair Analysis
             analyzePairPatterns(historicalData) {
                 const pairFrequency = {};
                 const numberPairScores = {};
@@ -423,7 +410,6 @@
                 return { pairFrequency, numberPairScores };
             }
 
-            // Gap Analysis
             calculateGapAnalysis(historicalData) {
                 const lastSeen = {};
                 const gaps = {};
@@ -469,7 +455,6 @@
                 return { overdueScores, gaps };
             }
 
-            // Neural Network
             initializeNeuralWeights() {
                 const inputSize = 10;
                 const hiddenSize = 20;
@@ -515,7 +500,6 @@
                 
                 if (recentDraws.length === 0) return Array(10).fill(0);
                 
-                // Feature extraction
                 for (let pos = 0; pos < 5; pos++) {
                     const positionSums = recentDraws
                         .filter(draw => draw.numbers && draw.numbers[pos])
@@ -525,7 +509,6 @@
                     features.push(avg / 69);
                 }
                 
-                // Additional features
                 const sums = recentDraws
                     .filter(draw => draw.numbers && draw.numbers.length === 5)
                     .map(draw => draw.numbers.reduce((a, b) => a + b, 0));
@@ -599,7 +582,6 @@
                 return squaredDiffs.reduce((a, b) => a + b, 0) / numbers.length;
             }
 
-            // Ensemble Prediction
             generateEnsemblePrediction(historicalData) {
                 if (!this.validateHistoricalData(historicalData)) {
                     return this.fallbackPrediction();
@@ -672,19 +654,10 @@
 
                 const predictionSets = [];
                 
-                // Strategy 1: Top scores
                 predictionSets.push(this.generateTopScoreSet(rankedNumbers, powerballScores));
-                
-                // Strategy 2: Balanced range
                 predictionSets.push(this.generateBalancedSet(rankedNumbers, powerballScores));
-                
-                // Strategy 3: Pattern mix
                 predictionSets.push(this.generatePatternSet(rankedNumbers, powerballScores));
-                
-                // Strategy 4: Contrarian
                 predictionSets.push(this.generateContrarianSet(rankedNumbers, powerballScores));
-                
-                // Strategy 5: Random smart
                 predictionSets.push(this.generateSmartRandomSet(rankedNumbers, powerballScores));
                 
                 return predictionSets.sort((a, b) => b.confidence - a.confidence);
@@ -758,7 +731,6 @@
             generateSmartRandomSet(rankedNumbers, powerballScores) {
                 const candidates = [];
                 
-                // Smart random selection
                 for (let i = 1; i <= 69; i++) {
                     if (Math.random() > 0.9) candidates.push(i);
                 }
@@ -789,7 +761,6 @@
                     return candidates.slice(0, 5);
                 }
                 
-                // Simple selection optimization
                 const shuffled = [...candidates].sort(() => Math.random() - 0.5);
                 return shuffled.slice(0, 5);
             }
@@ -850,13 +821,13 @@
                 return {
                     isLearning: this.isLearning,
                     predictionsGenerated: this.predictionHistory.length,
-                    averageHitRate: 16.5, // Simulated
+                    averageHitRate: 16.5,
                     status: 'good'
                 };
             }
         }
 
-        // Enhanced Claude AI Integration with Hybrid System
+        // Claude AI Integration
         class HybridClaudeLotteryAnalyzer {
             constructor() {
                 this.apiKey = null;
@@ -867,14 +838,12 @@
                 this.hybridMode = true;
             }
 
-            // Initialize with API key
             initialize(apiKey) {
                 this.apiKey = apiKey;
                 this.isEnabled = true;
                 console.log('Claude AI initialized with hybrid system');
             }
 
-            // NEW: Generate hybrid selections combining Claude + 6 algorithms
             async generateHybridQuickSelection(historicalData, currentJackpot, requestedSets = 5, strategy = 'hybrid') {
                 if (!this.apiKey || !this.isEnabled) {
                     throw new Error('Claude AI not properly initialized');
@@ -883,11 +852,9 @@
                 try {
                     console.log('🤖🧮 Generating HYBRID Claude + Algorithms selections...');
                     
-                    // First, generate local algorithm results
                     const localResults = await this.generateLocalAlgorithmResults(historicalData, requestedSets);
                     console.log(`✅ Generated ${localResults.length} local algorithm results`);
                     
-                    // Then send to Claude for hybrid analysis
                     const sanitizedData = this.sanitizeHistoricalData(historicalData);
                     
                     const response = await fetch(this.baseURL, {
@@ -923,13 +890,11 @@
                 } catch (error) {
                     console.error('Claude hybrid selection failed:', error);
                     
-                    // Fallback: enhance local results with AI indicators
                     const localResults = await this.generateLocalAlgorithmResults(historicalData, requestedSets);
                     return this.enhanceLocalResultsForFallback(localResults);
                 }
             }
 
-            // Generate local algorithm results using the existing predictor
             async generateLocalAlgorithmResults(historicalData, requestedSets = 5) {
                 try {
                     if (!window.globalLotteryPredictor) {
@@ -953,7 +918,6 @@
                 }
             }
 
-            // Enhance local predictions with detailed information for Claude
             enhanceLocalPredictions(predictions) {
                 const enhancedStrategies = [
                     {
@@ -994,7 +958,6 @@
                 }));
             }
 
-            // Generate fallback local results when predictor fails
             generateFallbackLocalResults(requestedSets) {
                 const strategies = [
                     "Enhanced Random Distribution",
@@ -1023,7 +986,6 @@
                 });
             }
 
-            // Enhance local results when Claude hybrid fails
             enhanceLocalResultsForFallback(localResults) {
                 return localResults.map((result, index) => ({
                     id: index + 1,
@@ -1041,7 +1003,6 @@
                 }));
             }
 
-            // Test Claude API connection
             async testConnection() {
                 for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
                     try {
@@ -1089,7 +1050,6 @@
                 }
             }
 
-            // Sanitize historical data to prevent API issues
             sanitizeHistoricalData(data) {
                 if (!data || !data.drawings) {
                     return { drawings: [], totalDrawings: 0 };
@@ -1118,45 +1078,10 @@
                 };
             }
 
-            // Generate intelligent explanations for predictions
-            async generatePredictionInsights(predictionSet, historicalContext) {
-                if (!this.apiKey || !this.isEnabled) {
-                    return "Claude analysis unavailable - API key not configured";
-                }
-
-                try {
-                    const response = await fetch(this.baseURL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            apiKey: this.apiKey,
-                            analysisType: 'predictionInsights',
-                            predictionSet: predictionSet,
-                            historicalContext: historicalContext
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`API Error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    return data.success ? data.analysis : "Claude analysis temporarily unavailable";
-
-                } catch (error) {
-                    console.error('Claude prediction insights failed:', error);
-                    return "Claude analysis temporarily unavailable";
-                }
-            }
-
-            // Validate API key format
             validateApiKey(key) {
                 return key && key.startsWith('sk-ant-') && key.length > 20;
             }
 
-            // Get status
             getStatus() {
                 return {
                     isEnabled: this.isEnabled,
@@ -1167,12 +1092,11 @@
             }
         }
 
-        // Enhanced Tax Calculator for Lottery Winnings
+        // Tax Calculator
         class LotteryTaxCalculator {
             constructor() {
                 this.currentYear = new Date().getFullYear();
                 
-                // 2024/2025 Federal Tax Brackets (Single Filing)
                 this.federalBrackets = [
                     { min: 0, max: 11000, rate: 0.10 },
                     { min: 11000, max: 44725, rate: 0.12 },
@@ -1183,7 +1107,6 @@
                     { min: 578125, max: Infinity, rate: 0.37 }
                 ];
                 
-                // State tax rates (simplified - actual rates may vary by income level)
                 this.stateTaxRates = {
                     'AL': 0.05, 'AK': 0.00, 'AZ': 0.045, 'AR': 0.066, 'CA': 0.133,
                     'CO': 0.044, 'CT': 0.0699, 'DE': 0.066, 'FL': 0.00, 'GA': 0.0575,
@@ -1241,22 +1164,17 @@
             }
             
             calculateTotalTaxes(grossWinnings, state = 'GA', filingStatus = 'single', hasOtherIncome = 0) {
-                // Federal withholding is 24% for lottery winnings over $5,000
                 const federalWithheld = grossWinnings * 0.24;
                 
-                // Calculate actual federal tax owed (including other income)
                 const totalIncome = grossWinnings + hasOtherIncome;
                 const federalTaxCalc = this.calculateFederalTax(totalIncome);
                 const federalTaxOwed = federalTaxCalc.total;
                 
-                // State tax calculation
                 const stateTaxRate = this.stateTaxRates[state] || 0;
                 const stateTaxOwed = this.calculateStateTax(grossWinnings, state);
                 
-                // Calculate refund or additional owed
                 const federalRefundOrOwed = federalWithheld - federalTaxOwed;
                 
-                // Net winnings calculation
                 const totalTaxOwed = federalTaxOwed + stateTaxOwed;
                 const netWinnings = grossWinnings - totalTaxOwed;
                 
@@ -1275,25 +1193,21 @@
             }
             
             calculateAnnuityVsLumpSum(jackpotAmount, state = 'GA') {
-                // Annuity calculations (30 payments over 29 years, increasing 5% annually)
                 const annualPayment = jackpotAmount / 30;
                 const firstYearPayment = annualPayment;
                 
-                // Lump sum is typically about 60% of jackpot
                 const lumpSum = jackpotAmount * 0.6;
                 
-                // Calculate taxes for both scenarios
                 const annuityTaxes = this.calculateTotalTaxes(firstYearPayment, state);
                 const lumpSumTaxes = this.calculateTotalTaxes(lumpSum, state);
                 
-                // Project total annuity value (simplified - doesn't account for varying tax brackets each year)
                 let totalAnnuityAfterTax = 0;
                 let currentPayment = firstYearPayment;
                 
                 for (let year = 0; year < 30; year++) {
                     const yearTaxes = this.calculateTotalTaxes(currentPayment, state);
                     totalAnnuityAfterTax += yearTaxes.netWinnings;
-                    currentPayment *= 1.05; // 5% annual increase
+                    currentPayment *= 1.05;
                 }
                 
                 return {
@@ -1332,10 +1246,9 @@
         window.LotteryTaxCalculator = LotteryTaxCalculator;
         window.currentJackpotData = null;
 
-        // Update the global function to use hybrid system
+        // Global functions
         window.generateAdvancedQuickSelection = async function(historicalStats) {
             try {
-                // Check if Claude AI is enabled for hybrid analysis
                 if (window.claudeAnalyzer && window.claudeAnalyzer.isEnabled) {
                     console.log('🤖🧮 Generating HYBRID Claude + 6 Algorithms selections...');
                     
@@ -1354,11 +1267,9 @@
                         
                     } catch (claudeError) {
                         console.warn('Claude hybrid analysis failed, using local algorithms:', claudeError.message);
-                        // Fall through to local algorithm only
                     }
                 }
                 
-                // Fallback: Use local algorithms only
                 console.log('🧮 Using local algorithm ensemble...');
                 return generateEnhancedLocalSelections(historicalStats);
                 
@@ -1368,7 +1279,6 @@
             }
         };
 
-        // Enhanced local selection generation (standalone)
         function generateEnhancedLocalSelections(historicalStats) {
             try {
                 const predictor = window.globalLotteryPredictor;
@@ -1388,7 +1298,6 @@
             }
         }
 
-        // Enhanced local predictions for display
         function enhanceLocalPredictionsForDisplay(predictions) {
             const enhancedDescriptions = [
                 {
@@ -1434,7 +1343,6 @@
             }));
         }
 
-        // Utility functions
         window.convertHistoricalData = function(stats) {
             if (!stats || !stats.drawings) return [];
             
@@ -1505,7 +1413,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // Tax Calculator React Component
+        // Tax Calculator Component
         function TaxCalculatorTab() {
             const [jackpotAmount, setJackpotAmount] = useState('');
             const [selectedState, setSelectedState] = useState('GA');
@@ -1514,7 +1422,6 @@
             const [calculator] = useState(new window.LotteryTaxCalculator());
             const [activeCalculation, setActiveCalculation] = useState('simple');
 
-            // Auto-populate jackpot from current data
             useEffect(() => {
                 if (window.currentJackpotData && window.currentJackpotData.amount) {
                     setJackpotAmount(window.currentJackpotData.amount.toString());
@@ -1547,7 +1454,6 @@
 
             const renderSimpleCalculation = (results) => {
                 return React.createElement('div', { className: 'space-y-6' },
-                    // Summary Cards
                     React.createElement('div', { className: 'tax-summary-grid' },
                         React.createElement('div', { className: 'tax-summary-item' },
                             React.createElement('div', { className: 'text-sm text-gray-600' }, 'Gross Winnings'),
@@ -1567,12 +1473,10 @@
                         )
                     ),
 
-                    // Tax Breakdown
                     React.createElement('div', { className: 'card' },
                         React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '💰 Tax Breakdown'),
                         
                         React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
-                            // Federal Taxes
                             React.createElement('div', null,
                                 React.createElement('h5', { className: 'font-semibold mb-3 text-blue-700' }, '🏛️ Federal Taxes'),
                                 React.createElement('div', { className: 'space-y-2 text-sm' },
@@ -1595,7 +1499,6 @@
                                 )
                             ),
 
-                            // State Taxes
                             React.createElement('div', null,
                                 React.createElement('h5', { className: 'font-semibold mb-3 text-green-700' }, 
                                     `🏛️ ${calculator.stateNames[selectedState]} State Taxes`
@@ -1621,7 +1524,6 @@
                         )
                     ),
 
-                    // Federal Tax Bracket Breakdown
                     results.federalTaxDetails.length > 0 ? React.createElement('div', { className: 'card' },
                         React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '📊 Federal Tax Bracket Breakdown'),
                         React.createElement('div', { className: 'overflow-x-auto' },
@@ -1654,7 +1556,6 @@
                 const { annuity, lumpSum } = results;
                 
                 return React.createElement('div', { className: 'space-y-6' },
-                    // Overall Comparison
                     React.createElement('div', { className: 'comparison-card card' },
                         React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '⚖️ Annuity vs Lump Sum Comparison'),
                         React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
@@ -1687,9 +1588,7 @@
                         )
                     ),
 
-                    // Detailed Breakdown
                     React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6' },
-                        // Annuity Details
                         React.createElement('div', { className: 'annuity-card card' },
                             React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '📅 30-Year Annuity Details'),
                             React.createElement('div', { className: 'space-y-3' },
@@ -1717,7 +1616,6 @@
                             )
                         ),
 
-                        // Lump Sum Details
                         React.createElement('div', { className: 'lump-sum-card card' },
                             React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '💰 Lump Sum Details'),
                             React.createElement('div', { className: 'space-y-3' },
@@ -1755,11 +1653,9 @@
             const states = Object.entries(calculator.stateNames).map(([code, name]) => ({ code, name }));
 
             return React.createElement('div', { className: 'space-y-6' },
-                // Calculator Input Section
                 React.createElement('div', { className: 'card' },
                     React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '🧮 Lottery Tax Calculator'),
                     
-                    // Calculation Type Selector
                     React.createElement('div', { className: 'mb-4' },
                         React.createElement('div', { className: 'flex gap-2 mb-3' },
                             React.createElement('button', {
@@ -1774,7 +1670,6 @@
                     ),
                     
                     React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4' },
-                        // Jackpot Amount
                         React.createElement('div', { className: 'tax-input-group' },
                             React.createElement('label', null, 
                                 activeCalculation === 'simple' ? '💰 Winnings Amount' : '🎰 Total Jackpot'
@@ -1796,7 +1691,6 @@
                             }, activeCalculation === 'simple' ? 'Use Current Cash' : 'Use Current Jackpot') : null
                         ),
 
-                        // State Selection
                         React.createElement('div', { className: 'tax-input-group' },
                             React.createElement('label', null, '🏛️ Your State'),
                             React.createElement('select', {
@@ -1811,7 +1705,6 @@
                             )
                         ),
 
-                        // Other Income (only for simple calculation)
                         activeCalculation === 'simple' ? React.createElement('div', { className: 'tax-input-group' },
                             React.createElement('label', null, '💼 Other Annual Income'),
                             React.createElement('input', {
@@ -1823,7 +1716,6 @@
                             })
                         ) : null,
 
-                        // Calculate Button
                         React.createElement('div', { className: 'tax-input-group justify-end' },
                             React.createElement('label', { className: 'invisible' }, 'Actions'),
                             React.createElement('div', { className: 'flex gap-2' },
@@ -1839,7 +1731,6 @@
                         )
                     ),
                     
-                    // Quick Info
                     React.createElement('div', { className: 'warning-banner' },
                         React.createElement('p', { className: 'text-amber-700 text-xs' },
                             '⚠️ Tax calculations are estimates for educational purposes. Consult a tax professional for advice. ',
@@ -1848,7 +1739,6 @@
                     )
                 ),
 
-                // Results Section
                 calculationResults ? React.createElement('div', null,
                     calculationResults.type === 'simple' ? 
                         renderSimpleCalculation(calculationResults.data) :
@@ -1863,16 +1753,13 @@
             );
         }
 
-        // Export for use in main app
         window.TaxCalculatorTab = TaxCalculatorTab;
 
         function AdvancedLotterySystem() {
-            // State management
             const [selectedNumbers, setSelectedNumbers] = useState([]);
             const [powerball, setPowerball] = useState('');
             const [activeTab, setActiveTab] = useState('quick-selection');
             
-            // Enhanced data states
             const [liveDataAvailable, setLiveDataAvailable] = useState(false);
             const [historicalDataAvailable, setHistoricalDataAvailable] = useState(false);
             const [currentJackpot, setCurrentJackpot] = useState(null);
@@ -1881,23 +1768,18 @@
             const [isUpdating, setIsUpdating] = useState(false);
             const [lastUpdated, setLastUpdated] = useState('');
             
-            // Historical analysis with data limit selector
             const [historicalStats, setHistoricalStats] = useState(null);
             const [isLoadingHistory, setIsLoadingHistory] = useState(false);
             const [historicalRecordsLimit, setHistoricalRecordsLimit] = useState(500);
             
-            // Enhanced prediction states with AI
             const [quickSelectionSets, setQuickSelectionSets] = useState([]);
             
-            // Claude AI Integration states
             const [aiApiKey, setAiApiKey] = useState('');
             const [isLoadingAI, setIsLoadingAI] = useState(false);
             const [aiEnabled, setAiEnabled] = useState(false);
             
-            // Performance tracking
             const [systemPerformance, setSystemPerformance] = useState(null);
 
-            // Initialize system
             useEffect(() => {
                 const initializeData = async () => {
                     setDataStatus('🚀 Initializing hybrid Claude + 6 algorithms system...');
@@ -1907,7 +1789,107 @@
                 initializeData();
             }, []);
 
-            // Enhanced data fetching with Claude integration
+            // FIXED: Updated fetchHistoricalData function
+            const fetchHistoricalData = async (customLimit = null) => {
+                const limit = customLimit || historicalRecordsLimit;
+                setIsLoadingHistory(true);
+                
+                console.log(`📊 Fetching ${limit} historical drawings...`);
+                
+                try {
+                    const response = await fetch(`/api/powerball-history?limit=${limit}`, {
+                        method: 'GET',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    console.log(`📊 Historical data response:`, data);
+                    
+                    if (data.success && data.dataAvailable && data.statistics) {
+                        setHistoricalStats(data.statistics);
+                        setHistoricalDataAvailable(true);
+                        
+                        console.log(`✅ Loaded ${data.statistics.totalDrawings} drawings for analysis`);
+                        
+                        if (window.generateAdvancedQuickSelection) {
+                            const advancedSelection = await window.generateAdvancedQuickSelection(data.statistics);
+                            setQuickSelectionSets(advancedSelection);
+                            console.log(`✅ Generated ${advancedSelection.length} initial selections`);
+                        }
+                    } else {
+                        console.warn('Historical data not available, using fallback');
+                        setHistoricalStats(generateFallbackStats(limit));
+                        setHistoricalDataAvailable(false);
+                    }
+                } catch (error) {
+                    console.error('Historical Data Error:', error);
+                    setHistoricalStats(generateFallbackStats(limit));
+                    setHistoricalDataAvailable(false);
+                }
+                
+                setIsLoadingHistory(false);
+            };
+
+            // FIXED: Updated handleDataLimitChange function
+            const handleDataLimitChange = async (newLimit) => {
+                console.log(`📊 Changing data limit from ${historicalRecordsLimit} to ${newLimit}`);
+                
+                setHistoricalRecordsLimit(newLimit);
+                setIsLoadingHistory(true);
+                setDataStatus(`🔄 Loading ${newLimit} historical drawings for analysis...`);
+                
+                try {
+                    const response = await fetch(`/api/powerball-history?limit=${newLimit}`, {
+                        method: 'GET',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    console.log(`📊 Received data for ${newLimit} limit:`, data);
+                    
+                    if (data.success && data.dataAvailable && data.statistics) {
+                        setHistoricalStats(data.statistics);
+                        setHistoricalDataAvailable(true);
+                        
+                        console.log(`✅ Updated analysis with ${data.statistics.totalDrawings} drawings`);
+                        setDataStatus(`✅ Analysis updated with ${data.statistics.totalDrawings} drawings`);
+                        
+                        if (window.generateAdvancedQuickSelection) {
+                            setDataStatus(`🤖🧮 Regenerating selections with ${newLimit} drawings...`);
+                            
+                            try {
+                                const newSelections = await window.generateAdvancedQuickSelection(data.statistics);
+                                setQuickSelectionSets(newSelections);
+                                console.log(`✅ Generated ${newSelections.length} new selections with updated data`);
+                                setDataStatus(`✅ ${newSelections.length} selections generated with ${data.statistics.totalDrawings} drawings`);
+                            } catch (selectionError) {
+                                console.error('Selection generation failed:', selectionError);
+                                setDataStatus(`⚠️ Data updated but selection generation failed`);
+                            }
+                        }
+                        
+                    } else {
+                        console.warn('No valid historical data received');
+                        setHistoricalStats(generateFallbackStats(newLimit));
+                        setHistoricalDataAvailable(false);
+                        setDataStatus(`⚠️ Using fallback data (${newLimit} limit)`);
+                    }
+                } catch (error) {
+                    console.error('Data limit change failed:', error);
+                    setHistoricalStats(generateFallbackStats(newLimit));
+                    setHistoricalDataAvailable(false);
+                    setDataStatus(`❌ Failed to load ${newLimit} drawings`);
+                } finally {
+                    setIsLoadingHistory(false);
+                }
+            };
+
             const fetchLatestPowerballData = async () => {
                 setIsUpdating(true);
                 setDataStatus('🔄 Connecting to official lottery data sources...');
@@ -1926,8 +1908,6 @@
                     if (data.success && data.dataAvailable && data.jackpot) {
                         setCurrentJackpot(data.jackpot);
                         setLiveDataAvailable(true);
-                        
-                        // Store for Claude access
                         window.currentJackpotData = data.jackpot;
                         
                         if (data.nextDrawing) {
@@ -1957,49 +1937,6 @@
                 setIsUpdating(false);
             };
 
-            const fetchHistoricalData = async () => {
-                setIsLoadingHistory(true);
-                
-                try {
-                    const response = await fetch(`/api/powerball-history?limit=${historicalRecordsLimit}`, {
-                        method: 'GET',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Cache-Control': 'no-cache'
-                        }
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success && data.dataAvailable && data.statistics) {
-                        setHistoricalStats(data.statistics);
-                        setHistoricalDataAvailable(true);
-                        
-                        // Generate initial quick selection (will use hybrid if Claude enabled)
-                        if (window.generateAdvancedQuickSelection) {
-                            const advancedSelection = await window.generateAdvancedQuickSelection(data.statistics);
-                            setQuickSelectionSets(advancedSelection);
-                        }
-                    } else {
-                        setHistoricalStats(generateFallbackStats(historicalRecordsLimit));
-                        setHistoricalDataAvailable(false);
-                    }
-                } catch (error) {
-                    console.error('Historical Data Error:', error);
-                    setHistoricalStats(generateFallbackStats(historicalRecordsLimit));
-                    setHistoricalDataAvailable(false);
-                }
-                
-                setIsLoadingHistory(false);
-            };
-
-            // Handle data limit changes
-            const handleDataLimitChange = async (newLimit) => {
-                setHistoricalRecordsLimit(newLimit);
-                await fetchHistoricalData();
-            };
-
-            // Enhanced Claude AI functions
             const enableAI = async () => {
                 const trimmedKey = aiApiKey.trim();
                 
@@ -2014,10 +1951,8 @@
                 }
                 
                 try {
-                    // Initialize Claude analyzer
                     window.claudeAnalyzer.initialize(trimmedKey);
                     
-                    // Test the connection
                     setDataStatus('🔄 Testing Claude AI hybrid connection...');
                     setIsLoadingAI(true);
                     
@@ -2028,7 +1963,6 @@
                         localStorage.setItem('lottery_ai_enabled', 'true');
                         setDataStatus('✅ Claude AI hybrid system enabled and connected successfully');
                         
-                        // Auto-generate hybrid quick selection
                         await generateClaudeHybridSelection();
                         
                         console.log('Claude AI hybrid system enabled successfully');
@@ -2075,17 +2009,13 @@
                         'hybrid'
                     );
                     
-                    // Update the quick selection with hybrid results
                     setQuickSelectionSets(hybridSelections);
-                    
-                    // Show success message
                     setDataStatus('🤖🧮 Claude + 6 Algorithms hybrid selections generated successfully!');
                     
                 } catch (error) {
                     console.error('Claude hybrid selection failed:', error);
                     alert(`Claude Hybrid Error: ${error.message}`);
                     
-                    // Fallback to local algorithms
                     if (window.generateAdvancedQuickSelection) {
                         const fallbackSelection = await window.generateAdvancedQuickSelection(historicalStats);
                         setQuickSelectionSets(fallbackSelection);
@@ -2095,7 +2025,6 @@
                 }
             };
 
-            // Basic lottery functions
             const toggleNumber = (num) => {
                 if (selectedNumbers.includes(num)) {
                     setSelectedNumbers(selectedNumbers.filter(n => n !== num));
@@ -2121,7 +2050,6 @@
                 setPowerball(Math.floor(Math.random() * 26) + 1);
             };
 
-            // Fallback stats generation
             const generateFallbackStats = (recordCount = 150) => {
                 const numberFreq = {};
                 for (let i = 1; i <= 69; i++) {
@@ -2145,7 +2073,6 @@
                 };
             };
 
-            // Data limit selector options
             const dataLimitOptions = [
                 { value: 50, label: '50 drawings (2 months)' },
                 { value: 100, label: '100 drawings (4 months)' },
@@ -2156,17 +2083,17 @@
                 { value: 2000, label: '2000 drawings (8+ years)' }
             ];
 
-            // Tab content
             const renderTabContent = () => {
                 switch (activeTab) {
                     case 'quick-selection':
                         return React.createElement('div', { className: 'space-y-4' },
-                            // Data Selector Section
                             React.createElement('div', { className: 'data-selector' },
                                 React.createElement('div', { className: 'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3' },
                                     React.createElement('div', null,
                                         React.createElement('h4', { className: 'text-sm font-semibold text-gray-700' }, '📊 Historical Data Range'),
-                                        React.createElement('p', { className: 'text-xs text-gray-600' }, 'Select amount of historical data for analysis')
+                                        React.createElement('p', { className: 'text-xs text-gray-600' }, 
+                                            isLoadingHistory ? 'Updating analysis...' : 'Select amount of historical data for analysis'
+                                        )
                                     ),
                                     React.createElement('div', { className: 'flex items-center gap-2' },
                                         React.createElement('select', {
@@ -2176,18 +2103,33 @@
                                             className: 'px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white disabled:opacity-50'
                                         },
                                             dataLimitOptions.map(option =>
-                                                React.createElement('option', { key: option.value, value: option.value }, option.label)
+                                                React.createElement('option', { 
+                                                    key: option.value, 
+                                                    value: option.value 
+                                                }, option.label)
                                             )
                                         ),
                                         isLoadingHistory ? React.createElement('div', { className: 'loading-spinner' }) : null
                                     )
                                 ),
-                                historicalStats ? React.createElement('div', { className: 'text-xs text-gray-600' },
-                                    `Currently analyzing ${historicalStats.totalDrawings} drawings • Data source: ${historicalStats.dataSource || 'API'}`
-                                ) : null
+                                
+                                historicalStats ? React.createElement('div', { className: 'grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs' },
+                                    React.createElement('div', { className: 'text-gray-600' },
+                                        `📈 Currently analyzing: ${historicalStats.totalDrawings} drawings`
+                                    ),
+                                    React.createElement('div', { className: 'text-gray-600' },
+                                        `🔥 Data source: ${historicalStats.dataSource || 'API'}`
+                                    ),
+                                    React.createElement('div', { className: 'text-gray-600' },
+                                        `🎯 Range: ${historicalStats.dateRange ? 
+                                            `${historicalStats.dateRange.earliest} to ${historicalStats.dateRange.latest}` : 
+                                            'Full range'}`
+                                    )
+                                ) : React.createElement('div', { className: 'text-xs text-gray-500' },
+                                    'No historical data loaded'
+                                )
                             ),
 
-                            // Claude AI Controls - Compact Layout
                             React.createElement('div', { className: 'card-compact enhanced-prediction-card' },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement('div', { className: 'flex items-center gap-2' },
@@ -2244,7 +2186,6 @@
                                 )
                             ),
 
-                            // Quick Selection Results - Compact Grid Layout
                             React.createElement('div', { className: 'card-compact quick-selection-card' },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement('div', null,
@@ -2322,11 +2263,9 @@
 
                     case 'calculator':
                         return React.createElement('div', { className: 'space-y-6' },
-                            // Manual Selection
                             React.createElement('div', { className: 'card' },
                                 React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '🎯 Manual Number Selection'),
                                 
-                                // Current Selection Display
                                 React.createElement('div', { className: 'mb-6' },
                                     React.createElement('h4', { className: 'text-sm font-medium mb-2' }, 'Your Selection:'),
                                     React.createElement('div', { className: 'flex items-center gap-4 mb-4' },
@@ -2363,7 +2302,6 @@
                                     )
                                 ),
 
-                                // Number Grid
                                 React.createElement('div', null,
                                     React.createElement('h4', { className: 'text-sm font-medium mb-2' }, 'Main Numbers (1-69):'),
                                     React.createElement('div', { className: 'grid grid-cols-10 gap-2 mb-6' },
@@ -2406,7 +2344,6 @@
 
                     case 'analysis':
                         return React.createElement('div', { className: 'space-y-6' },
-                            // Data Status
                             React.createElement('div', { className: 'card' },
                                 React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '📊 Data Analysis & Statistics'),
                                 
@@ -2425,7 +2362,6 @@
                                     )
                                 ),
 
-                                // Hot/Cold Numbers
                                 historicalStats && historicalStats.hotNumbers ? React.createElement('div', { className: 'space-y-4' },
                                     React.createElement('div', null,
                                         React.createElement('h4', { className: 'font-medium text-sm mb-2' }, '🔥 Hot Numbers (Most Frequent)'),
@@ -2452,7 +2388,6 @@
                                 ) : React.createElement('p', { className: 'text-gray-500 text-sm' }, 'Statistical analysis will appear here when historical data is loaded.')
                             ),
 
-                            // System Performance
                             systemPerformance ? React.createElement('div', { className: 'card' },
                                 React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '⚙️ System Performance'),
                                 React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
@@ -2484,7 +2419,6 @@
             };
 
             return React.createElement('div', { style: { maxWidth: '1280px', margin: '0 auto', padding: '1rem' } },
-                // Header with enhanced status - More compact
                 React.createElement('div', { 
                     className: liveDataAvailable ? 'gradient-bg' : 'gradient-bg-unavailable',
                     style: {
@@ -2533,7 +2467,6 @@
                     )
                 ),
 
-                // Status Message - More compact
                 dataStatus ? React.createElement('div', { 
                     className: `mb-3 p-2 rounded-lg text-xs ${
                         dataStatus.includes('✅') ? 'success-banner' :
@@ -2541,7 +2474,6 @@
                     }`
                 }, dataStatus) : null,
 
-                // Navigation Tabs
                 React.createElement('div', { className: 'mb-4' },
                     React.createElement('div', { className: 'flex border-b border-gray-200' },
                         [
@@ -2565,10 +2497,8 @@
                     )
                 ),
 
-                // Tab Content
                 renderTabContent(),
 
-                // Footer - More compact
                 React.createElement('div', { className: 'mt-6 text-center text-xs text-gray-500' },
                     React.createElement('p', null, 
                         '🎰 Claude AI + 6 Algorithms Hybrid Lottery System • Educational purposes only'
@@ -2588,7 +2518,6 @@
             );
         }
 
-        // Render the app
         ReactDOM.render(React.createElement(AdvancedLotterySystem), document.getElementById('root'));
     </script>
 </body>
