@@ -1,11 +1,10 @@
-// Claude AI Integration Service
+// Claude AI Integration Service - Simplified
 class HybridClaudeLotteryAnalyzer {
     constructor() {
         this.apiKey = null;
         this.baseURL = "/api/claude";
         this.isEnabled = false;
-        this.retryCount = 0;
-        this.maxRetries = 3;
+        this.maxRetries = 2;
         this.hybridMode = true;
     }
 
@@ -23,11 +22,11 @@ class HybridClaudeLotteryAnalyzer {
         try {
             console.log('🤖🧮 Generating HYBRID Claude + Algorithms selections...');
             
+            // First generate local results as backup
             const localResults = await this.generateLocalAlgorithmResults(historicalData, requestedSets);
             console.log(`✅ Generated ${localResults.length} local algorithm results`);
             
-            const sanitizedData = this.sanitizeHistoricalData(historicalData);
-            
+            // Prepare request to Claude API
             const response = await fetch(this.baseURL, {
                 method: 'POST',
                 headers: {
@@ -36,7 +35,7 @@ class HybridClaudeLotteryAnalyzer {
                 body: JSON.stringify({
                     apiKey: this.apiKey,
                     analysisType: 'hybridSelection',
-                    historicalData: sanitizedData,
+                    historicalData: this.sanitizeHistoricalData(historicalData),
                     currentJackpot: currentJackpot,
                     requestedSets: requestedSets,
                     strategy: strategy,
@@ -61,6 +60,7 @@ class HybridClaudeLotteryAnalyzer {
         } catch (error) {
             console.error('Claude hybrid selection failed:', error);
             
+            // Return enhanced local results as fallback
             const localResults = await this.generateLocalAlgorithmResults(historicalData, requestedSets);
             return this.enhanceLocalResultsForFallback(localResults);
         }
@@ -69,12 +69,11 @@ class HybridClaudeLotteryAnalyzer {
     async generateLocalAlgorithmResults(historicalData, requestedSets = 5) {
         try {
             if (!window.globalLotteryPredictor) {
-                throw new Error('Local predictor not available');
+                return this.generateFallbackLocalResults(requestedSets);
             }
 
             const predictor = window.globalLotteryPredictor;
-            const convertedData = window.convertHistoricalData ? 
-                window.convertHistoricalData(historicalData) : [];
+            const convertedData = this.convertHistoricalData(historicalData);
             
             if (convertedData.length < 10) {
                 return this.generateFallbackLocalResults(requestedSets);
@@ -87,6 +86,24 @@ class HybridClaudeLotteryAnalyzer {
             console.warn('Local algorithm generation failed:', error);
             return this.generateFallbackLocalResults(requestedSets);
         }
+    }
+
+    convertHistoricalData(stats) {
+        if (!stats || !stats.drawings) return [];
+        
+        return stats.drawings
+            .filter(drawing => 
+                drawing.numbers && 
+                Array.isArray(drawing.numbers) && 
+                drawing.numbers.length === 5 &&
+                drawing.powerball
+            )
+            .map(drawing => ({
+                numbers: drawing.numbers.slice(),
+                powerball: drawing.powerball,
+                date: drawing.date || new Date().toISOString()
+            }))
+            .slice(0, 100); // Limit for performance
     }
 
     enhanceLocalPredictions(predictions) {
@@ -161,7 +178,7 @@ class HybridClaudeLotteryAnalyzer {
         return localResults.map((result, index) => ({
             id: index + 1,
             name: `🧮 ${result.strategy} (Algorithm)`,
-            description: `LOCAL ALGORITHM: ${result.analysis} Note: Claude AI enhancement temporarily unavailable.`,
+            description: `LOCAL ALGORITHM: ${result.analysis} (Claude AI enhancement temporarily unavailable)`,
             algorithmDetail: result.algorithmDetail,
             numbers: result.numbers,
             powerball: result.powerball,
@@ -175,49 +192,42 @@ class HybridClaudeLotteryAnalyzer {
     }
 
     async testConnection() {
-        for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-            try {
-                console.log(`Claude connection test attempt ${attempt}/${this.maxRetries}`);
-                
-                const response = await fetch(this.baseURL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
+        try {
+            console.log('Testing Claude AI connection...');
+            
+            const response = await fetch(this.baseURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    apiKey: this.apiKey,
+                    analysisType: 'predictionInsights',
+                    predictionSet: {
+                        numbers: [1, 2, 3, 4, 5],
+                        powerball: 1,
+                        strategy: 'connection_test',
+                        confidence: 50
                     },
-                    body: JSON.stringify({
-                        apiKey: this.apiKey,
-                        analysisType: 'predictionInsights',
-                        predictionSet: {
-                            numbers: [1, 2, 3, 4, 5],
-                            powerball: 1,
-                            strategy: 'connection_test',
-                            confidence: 50
-                        },
-                        historicalContext: {
-                            totalDrawings: 100,
-                            recentTrends: 'connection_test'
-                        }
-                    })
-                });
+                    historicalContext: {
+                        totalDrawings: 100,
+                        recentTrends: 'connection_test'
+                    }
+                })
+            });
 
-                const data = await response.json();
-                
-                if (data.success) {
-                    console.log('✅ Claude AI connection successful');
-                    return { success: true, error: null, usage: data.usage };
-                } else {
-                    throw new Error(data.error || 'Unknown API error');
-                }
-
-            } catch (error) {
-                console.warn(`Claude connection attempt ${attempt} failed:`, error.message);
-                
-                if (attempt === this.maxRetries) {
-                    return { success: false, error: error.message };
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            const data = await response.json();
+            
+            if (data.success) {
+                console.log('✅ Claude AI connection successful');
+                return { success: true, error: null, usage: data.usage };
+            } else {
+                throw new Error(data.error || 'Unknown API error');
             }
+
+        } catch (error) {
+            console.warn('Claude connection failed:', error.message);
+            return { success: false, error: error.message };
         }
     }
 
@@ -226,7 +236,7 @@ class HybridClaudeLotteryAnalyzer {
             return { drawings: [], totalDrawings: 0 };
         }
 
-        const maxDrawings = 100;
+        const maxDrawings = 50; // Reduced for performance
         const sanitizedDrawings = data.drawings
             .slice(0, maxDrawings)
             .filter(drawing => 
@@ -244,13 +254,13 @@ class HybridClaudeLotteryAnalyzer {
         return {
             drawings: sanitizedDrawings,
             totalDrawings: data.totalDrawings || sanitizedDrawings.length,
-            hotNumbers: data.hotNumbers?.slice(0, 15) || [],
-            coldNumbers: data.coldNumbers?.slice(0, 15) || []
+            hotNumbers: data.hotNumbers?.slice(0, 10) || [],
+            coldNumbers: data.coldNumbers?.slice(0, 10) || []
         };
     }
 
     validateApiKey(key) {
-        return key && key.startsWith('sk-ant-') && key.length > 20;
+        return key && typeof key === 'string' && key.startsWith('sk-ant-') && key.length > 20;
     }
 
     getStatus() {
