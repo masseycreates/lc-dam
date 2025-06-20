@@ -10,13 +10,15 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎰</text></svg>">
     
     <style>
+        /* Suppress external service warnings */
+        .console-suppress {
+            display: none !important;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -29,6 +31,89 @@
             color: #1f2937;
             line-height: 1.6;
         }
+        
+        /* Utility Classes */
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .gap-6 { gap: 1.5rem; }
+        
+        .p-2 { padding: 0.5rem; }
+        .p-3 { padding: 0.75rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        
+        .w-full { width: 100%; }
+        .max-w-6xl { max-width: 72rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        
+        .text-xs { font-size: 0.75rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-base { font-size: 1rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-800 { color: #1f2937; }
+        .text-white { color: #ffffff; }
+        .text-blue-600 { color: #2563eb; }
+        .text-green-600 { color: #059669; }
+        .text-red-600 { color: #dc2626; }
+        .text-purple-700 { color: #7c3aed; }
+        
+        .bg-white { background-color: #ffffff; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-blue-500 { background-color: #3b82f6; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-purple-500 { background-color: #9333ea; }
+        .bg-purple-600 { background-color: #7c3aed; }
+        .bg-gray-500 { background-color: #6b7280; }
+        .bg-red-500 { background-color: #ef4444; }
+        .bg-green-50 { background-color: #f0fdf4; }
+        .bg-yellow-50 { background-color: #fefce8; }
+        
+        .border { border-width: 1px; }
+        .border-2 { border-width: 2px; }
+        .border-gray-300 { border-color: #d1d5db; }
+        .border-blue-500 { border-color: #3b82f6; }
+        .border-purple-500 { border-color: #9333ea; }
+        .border-green-500 { border-color: #22c55e; }
+        .border-yellow-300 { border-color: #fde68a; }
+        .border-red-300 { border-color: #fca5a5; }
+        
+        .rounded { border-radius: 0.25rem; }
+        .rounded-md { border-radius: 0.375rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .rounded-full { border-radius: 9999px; }
+        
+        .shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        
+        .grid { display: grid; }
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-cols-10 { grid-template-columns: repeat(10, minmax(0, 1fr)); }
         
         .gradient-bg {
             background: linear-gradient(135deg, #9333ea 0%, #3b82f6 50%, #10b981 100%);
@@ -53,6 +138,7 @@
             cursor: pointer;
             font-weight: 500;
             transition: all 0.2s;
+            font-size: 0.875rem;
         }
         
         .btn-primary {
@@ -160,12 +246,123 @@
         .confidence-medium { border-left: 4px solid #3b82f6; }
         .confidence-low { border-left: 4px solid #f59e0b; }
         
-        /* Responsive improvements */
+        /* Number button grid */
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .number-btn {
+            width: 2rem;
+            height: 2rem;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #1f2937;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .number-btn:hover {
+            border-color: #9333ea;
+        }
+        
+        .number-btn.selected {
+            border-color: #9333ea;
+            background: #9333ea;
+            color: white;
+        }
+        
+        .number-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Responsive */
         @media (max-width: 768px) {
             .grid-cols-3 { grid-template-columns: 1fr; }
+            .grid-cols-10 { grid-template-columns: repeat(8, 1fr); }
+            .number-grid { grid-template-columns: repeat(8, 1fr); }
             .container { padding: 1rem; }
+            .text-3xl { font-size: 1.5rem; }
+        }
+        
+        /* Input styling */
+        input, select {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Tab styling */
+        .tab-container {
+            background: #f3f4f6;
+            padding: 0.25rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.25rem;
+        }
+        
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background: white;
+            color: #4b5563;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .tab-btn.active {
+            background: #9333ea;
+            color: white;
+        }
+        
+        /* Hide external warnings */
+        .external-warning {
+            display: none !important;
         }
     </style>
+    
+    <!-- Suppress external service console warnings -->
+    <script>
+        // Suppress feature flag and extension warnings
+        const originalConsoleWarn = console.warn;
+        const originalConsoleError = console.error;
+        
+        console.warn = function(...args) {
+            const message = args.join(' ');
+            if (message.includes('cdn.tailwindcss.com') || 
+                message.includes('FeatureFlagService') || 
+                message.includes('chrome-extension') ||
+                message.includes('Babel transformer')) {
+                return;
+            }
+            originalConsoleWarn.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            const message = args.join(' ');
+            if (message.includes('chrome-extension') || 
+                message.includes('ERR_FILE_NOT_FOUND') ||
+                message.includes('FeatureFlagService')) {
+                return;
+            }
+            originalConsoleError.apply(console, args);
+        };
+    </script>
 </head>
 <body>
     <div id="root">
@@ -176,7 +373,7 @@
     </div>
     
     <script type="text/babel">
-        // Claude AI Integration - Fixed Browser Compatible Implementation
+        // Claude AI Integration - Browser Compatible Implementation
         class ClaudeLotteryAnalyzer {
             constructor() {
                 this.apiKey = null;
@@ -185,7 +382,6 @@
                 this.isInitialized = false;
             }
 
-            // Fixed initialization method
             initialize(apiKey) {
                 if (!apiKey || typeof apiKey !== 'string') {
                     console.error('Invalid API key provided to Claude analyzer');
@@ -198,15 +394,12 @@
                 return true;
             }
 
-            // Generate intelligent explanations for predictions
             async generatePredictionInsights(predictionSet, historicalContext) {
                 if (!this.isInitialized || !this.apiKey) {
                     return "Claude analysis unavailable - API key not configured";
                 }
 
                 try {
-                    console.log('Sending request to Claude proxy...');
-                    
                     const response = await fetch(this.proxyURL, {
                         method: 'POST',
                         headers: {
@@ -219,23 +412,15 @@
                         })
                     });
 
-                    console.log('Proxy response status:', response.status);
-
                     if (!response.ok) {
                         const errorData = await response.json().catch(() => ({}));
-                        console.error('Proxy error:', errorData);
                         throw new Error(`Proxy error: ${response.status} - ${errorData.error || 'Unknown error'}`);
                     }
 
                     const data = await response.json();
-                    console.log('Claude analysis success:', data);
-                    
                     return data.analysis || "Claude analysis completed successfully";
                     
                 } catch (error) {
-                    console.error('Claude analysis failed:', error);
-                    
-                    // Provide helpful error messages
                     if (error.message.includes('401')) {
                         return "Invalid API key. Please check your Anthropic API key.";
                     } else if (error.message.includes('429')) {
@@ -248,83 +433,6 @@
                 }
             }
 
-            // Advanced historical pattern analysis
-            async analyzeHistoricalAnomalies(recentDrawings) {
-                if (!this.isInitialized || !this.apiKey) return null;
-
-                const summaryData = this.summarizeDrawings(recentDrawings.slice(0, 20));
-                
-                const customPrompt = `Analyze these recent lottery drawings for statistical anomalies:
-${summaryData}
-
-Identify: 1) Unusual patterns 2) Statistical deviations 3) Emerging trends
-Keep response under 200 words and focus on mathematical observations.`;
-
-                try {
-                    const response = await fetch(this.proxyURL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            apiKey: this.apiKey,
-                            prompt: customPrompt
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    return {
-                        analysis: data.analysis,
-                        confidence: 75,
-                        anomalies: "Pattern analysis complete"
-                    };
-                } catch (error) {
-                    console.error('Historical analysis failed:', error);
-                    return null;
-                }
-            }
-
-            // Generate contextual strategy recommendations
-            async generateStrategyRecommendations(playerPreferences, currentJackpot) {
-                if (!this.isInitialized || !this.apiKey) {
-                    return "Configure Claude for personalized recommendations";
-                }
-
-                const customPrompt = `Player profile: ${JSON.stringify(playerPreferences)}
-Current jackpot: ${currentJackpot?.amount || 'unknown'}
-
-Recommend optimal lottery strategy considering risk tolerance and mathematical approaches.
-Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
-
-                try {
-                    const response = await fetch(this.proxyURL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            apiKey: this.apiKey,
-                            prompt: customPrompt
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    return data.analysis;
-                } catch (error) {
-                    console.error('Strategy recommendations failed:', error);
-                    return "Strategy recommendations temporarily unavailable";
-                }
-            }
-
-            // Helper methods
             summarizeDrawings(drawings) {
                 if (!Array.isArray(drawings)) return "No drawing data available";
                 
@@ -347,14 +455,12 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                 };
 
                 this.ewmaAlpha = 0.3;
-                this.neuralWeights = this.initializeNeuralWeights();
                 this.predictionHistory = [];
                 this.performanceWindow = 50;
                 this.accuracyHistory = [];
                 this.isLearning = true;
             }
 
-            // EWMA Frequency Analysis
             calculateEWMAFrequencies(historicalData) {
                 const numberEWMA = {};
                 const powerballEWMA = {};
@@ -386,7 +492,6 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                 return { numbers: numberEWMA, powerball: powerballEWMA };
             }
 
-            // Pair Analysis
             analyzePairPatterns(historicalData) {
                 const pairFrequency = {};
                 const numberPairScores = {};
@@ -417,25 +522,6 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                 return { pairFrequency, numberPairScores };
             }
 
-            // Initialize Neural Network weights
-            initializeNeuralWeights() {
-                const inputSize = 10;
-                const hiddenSize = 20;
-                const outputSize = 69;
-                
-                return {
-                    w1: Array(inputSize).fill().map(() => 
-                        Array(hiddenSize).fill().map(() => (Math.random() - 0.5) * 0.1)
-                    ),
-                    w2: Array(hiddenSize).fill().map(() => 
-                        Array(outputSize).fill().map(() => (Math.random() - 0.5) * 0.1)
-                    ),
-                    b1: Array(hiddenSize).fill(0),
-                    b2: Array(outputSize).fill(0)
-                };
-            }
-
-            // Generate ensemble prediction
             generateEnsemblePrediction(historicalData) {
                 if (!this.validateHistoricalData(historicalData)) {
                     return this.fallbackPrediction();
@@ -459,7 +545,6 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                     compositeScores[num] = 0;
                 }
                 
-                // Combine EWMA and pair analysis
                 Object.entries(algorithmResults.ewma).forEach(([num, score]) => {
                     compositeScores[parseInt(num)] += score * 0.6;
                 });
@@ -478,19 +563,10 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
 
                 const predictionSets = [];
                 
-                // Strategy 1: Top scores
                 predictionSets.push(this.generateTopScoreSet(rankedNumbers, powerballScores));
-                
-                // Strategy 2: Balanced range
                 predictionSets.push(this.generateBalancedSet(rankedNumbers, powerballScores));
-                
-                // Strategy 3: Pattern mix
                 predictionSets.push(this.generatePatternSet(rankedNumbers, powerballScores));
-                
-                // Strategy 4: Contrarian
                 predictionSets.push(this.generateContrarianSet(rankedNumbers, powerballScores));
-                
-                // Strategy 5: Random smart
                 predictionSets.push(this.generateSmartRandomSet(rankedNumbers, powerballScores));
                 
                 return predictionSets.sort((a, b) => b.confidence - a.confidence);
@@ -836,7 +912,7 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
             const [isOptimizing, setIsOptimizing] = useState(false);
             const [quickSelectionSets, setQuickSelectionSets] = useState([]);
             
-            // Claude AI Integration states - FIXED
+            // Claude AI Integration states
             const [aiApiKey, setAiApiKey] = useState('');
             const [aiInsights, setAiInsights] = useState({});
             const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -898,8 +974,8 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
 
             // Update system performance tracking
             useEffect(() => {
-                if (window.getSystemPerformanceMetrics) {
-                    const performance = window.getSystemPerformanceMetrics();
+                if (getSystemPerformanceMetrics) {
+                    const performance = getSystemPerformanceMetrics();
                     setSystemPerformance(performance);
                 }
             }, [optimizedSets]);
@@ -940,7 +1016,6 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                         }
                     }
                 } catch (error) {
-                    console.error('API Error:', error);
                     setCurrentJackpot(null);
                     setLiveDataAvailable(false);
                     setDataStatus('❌ Unable to connect to lottery data sources');
@@ -967,7 +1042,6 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                         setHistoricalStats(data.statistics);
                         setHistoricalDataAvailable(true);
                         
-                        // Update quick selection
                         if (generateAdvancedQuickSelection) {
                             const advancedSelection = generateAdvancedQuickSelection(data.statistics);
                             setQuickSelectionSets(advancedSelection);
@@ -977,7 +1051,6 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                         setHistoricalDataAvailable(false);
                     }
                 } catch (error) {
-                    console.error('Historical Data Error:', error);
                     setHistoricalStats(generateFallbackStats(historicalRecordsLimit));
                     setHistoricalDataAvailable(false);
                 }
@@ -999,12 +1072,10 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                         
                         setOptimizedSets(predictions);
                         
-                        // Generate Claude AI insights if enabled
                         if (aiEnabled && aiApiKey && window.claudeAnalyzer.isInitialized) {
                             await generateAIInsights(predictions);
                         }
                         
-                        // Update system status
                         if (getSystemPerformanceMetrics) {
                             const performance = getSystemPerformanceMetrics();
                             setSystemPerformance(performance);
@@ -1017,7 +1088,6 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                         generateBasicOptimization();
                     }
                 } catch (error) {
-                    console.error('Advanced prediction failed:', error);
                     generateBasicOptimization();
                 } finally {
                     setIsOptimizing(false);
@@ -1046,13 +1116,11 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                         
                         insights[i] = insight;
                         
-                        // Add small delay to avoid rate limiting
                         if (i < 2) await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                     
                     setAiInsights(insights);
                 } catch (error) {
-                    console.error('Claude insights failed:', error);
                     setAiInsights({
                         0: "Claude analysis temporarily unavailable. Please check your API key and try again."
                     });
@@ -1061,12 +1129,12 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                 }
             };
 
-            // Claude API key validation - FIXED
+            // Claude API key validation
             const validateClaudeApiKey = (key) => {
                 return key && typeof key === 'string' && key.startsWith('sk-ant-') && key.length > 20;
             };
 
-            // Initialize Claude AI when API key is provided - FIXED
+            // Initialize Claude AI when API key is provided
             const enableAI = () => {
                 const trimmedKey = aiApiKey.trim();
                 
@@ -1080,12 +1148,10 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                     if (success) {
                         setAiEnabled(true);
                         localStorage.setItem('lottery_ai_enabled', 'true');
-                        console.log('Claude AI enabled successfully');
                     } else {
                         alert('Failed to initialize Claude AI. Please check your API key.');
                     }
                 } else {
-                    console.error('Claude analyzer not available');
                     alert('Claude analyzer is not available. Please refresh the page.');
                 }
             };
@@ -1224,42 +1290,38 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                 };
             };
 
-            return React.createElement('div', { style: { maxWidth: '1280px', margin: '0 auto', padding: '1.5rem' } },
+            return React.createElement('div', { className: 'max-w-6xl mx-auto p-6' },
                 // Header with enhanced status
                 React.createElement('div', { 
-                    className: liveDataAvailable ? 'gradient-bg' : 'gradient-bg-unavailable',
-                    style: {
-                        position: 'sticky', top: 0, zIndex: 50, marginBottom: '1.5rem',
-                        borderRadius: '0.75rem', padding: '1.5rem',
-                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                    }
+                    className: `${liveDataAvailable ? 'gradient-bg' : 'gradient-bg-unavailable'} rounded-xl p-6 mb-6 shadow-lg`,
+                    style: { position: 'sticky', top: 0, zIndex: 50 }
                 },
-                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'white' } },
-                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem' } },
-                            React.createElement('div', { style: { background: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '50%' } },
-                                liveDataAvailable ? '🎯' : '⚠️'
-                            ),
+                    React.createElement('div', { className: 'flex items-center justify-between text-white' },
+                        React.createElement('div', { className: 'flex items-center gap-4' },
+                            React.createElement('div', { 
+                                className: 'bg-white bg-opacity-20 p-3 rounded-full text-2xl'
+                            }, liveDataAvailable ? '🎯' : '⚠️'),
                             React.createElement('div', null,
-                                React.createElement('div', { style: { opacity: 0.8, fontSize: '0.875rem', fontWeight: 500 } },
+                                React.createElement('div', { className: 'text-sm font-medium opacity-80' },
                                     liveDataAvailable ? 'Enhanced Powerball Intelligence' : 'Enhanced System - Data Unavailable'
                                 ),
-                                React.createElement('div', { style: { fontSize: '1.875rem', fontWeight: 700 } },
+                                React.createElement('div', { className: 'text-3xl font-bold' },
                                     liveDataAvailable && currentJackpot ? currentJackpot.formatted : 'Visit powerball.com'
                                 ),
-                                React.createElement('div', { style: { opacity: 0.7, fontSize: '0.75rem' } },
+                                React.createElement('div', { className: 'text-xs opacity-70' },
                                     liveDataAvailable && currentJackpot ? `Cash Value: ${currentJackpot.cashFormatted} • ` : 'For current jackpot amount • ',
                                     'Next Drawing: ',
                                     nextDrawDate || 'TBD'
                                 )
                             )
                         ),
-                        systemPerformance && React.createElement('div', { style: { textAlign: 'center' } },
-                            React.createElement('div', { style: { background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '8px' } },
-                                React.createElement('div', { style: { fontSize: '0.875rem', marginBottom: '0.25rem' } }, 'AI System Status'),
-                                React.createElement('div', { style: { fontSize: '1.125rem', fontFamily: 'monospace' } },
+                        systemPerformance && React.createElement('div', { className: 'text-center' },
+                            React.createElement('div', { className: 'bg-white bg-opacity-20 p-4 rounded-lg' },
+                                React.createElement('div', { className: 'text-sm mb-1' }, 'AI System Status'),
+                                React.createElement('div', { className: 'text-lg font-mono' },
                                     systemPerformance.averageHitRate + '% Hit Rate'
                                 ),
-                                React.createElement('div', { style: { opacity: 0.7, fontSize: '0.75rem', marginTop: '0.25rem' } },
+                                React.createElement('div', { className: 'text-xs opacity-70 mt-1' },
                                     systemPerformance.predictionsGenerated + ' predictions • ' + systemPerformance.status
                                 )
                             )
@@ -1269,13 +1331,13 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
 
                 // Enhanced status banner
                 !liveDataAvailable && React.createElement('div', { className: 'error-banner' },
-                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem' } },
-                        React.createElement('span', { style: { fontSize: '1.25rem' } }, '🚨'),
+                    React.createElement('div', { className: 'flex items-center gap-2' },
+                        React.createElement('span', { className: 'text-xl' }, '🚨'),
                         React.createElement('div', null,
-                            React.createElement('div', { style: { fontWeight: 600, color: '#dc2626' } },
+                            React.createElement('div', { className: 'font-semibold text-red-600' },
                                 'LIVE DATA UNAVAILABLE - ENHANCED SYSTEM ACTIVE'
                             ),
-                            React.createElement('div', { style: { fontSize: '0.875rem', color: '#7f1d1d', marginTop: '0.25rem' } },
+                            React.createElement('div', { className: 'text-sm text-red-700 mt-1' },
                                 'Advanced prediction algorithms are active. Visit powerball.com for current jackpot.'
                             )
                         )
@@ -1284,13 +1346,13 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
 
                 // System performance banner
                 systemPerformance && systemPerformance.averageHitRate > 0 && React.createElement('div', { className: 'success-banner' },
-                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem' } },
-                        React.createElement('span', { style: { fontSize: '1.25rem' } }, '🎯'),
+                    React.createElement('div', { className: 'flex items-center gap-2' },
+                        React.createElement('span', { className: 'text-xl' }, '🎯'),
                         React.createElement('div', null,
-                            React.createElement('div', { style: { fontWeight: 600, color: '#059669' } },
+                            React.createElement('div', { className: 'font-semibold text-green-600' },
                                 `ENHANCED AI SYSTEM ACTIVE - ${systemPerformance.averageHitRate}% HIT RATE`
                             ),
-                            React.createElement('div', { style: { fontSize: '0.875rem', color: '#047857', marginTop: '0.25rem' } },
+                            React.createElement('div', { className: 'text-sm text-green-700 mt-1' },
                                 `Advanced algorithms learning from ${systemPerformance.predictionsGenerated} predictions. Target: 17-19% accuracy.`
                             )
                         )
@@ -1298,38 +1360,33 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                 ),
 
                 // Main header
-                React.createElement('div', { style: { marginBottom: '2rem' } },
+                React.createElement('div', { className: 'mb-6' },
                     React.createElement('h1', { 
-                        style: {
-                            fontSize: '2.25rem', fontWeight: 700, color: '#1f2937', marginBottom: '0.5rem',
-                            display: 'flex', alignItems: 'center', gap: '1rem'
-                        }
+                        className: 'text-3xl font-bold text-gray-800 mb-2 flex items-center gap-4'
                     },
                         '🧠 Advanced Lottery Intelligence System',
                         systemPerformance && React.createElement('span', {
-                            style: {
-                                fontSize: '0.875rem',
-                                background: systemPerformance.status === 'optimal' ? '#22c55e' : 
-                                           systemPerformance.status === 'good' ? '#3b82f6' : '#f59e0b',
-                                color: 'white', padding: '0.25rem 0.75rem', borderRadius: '9999px'
-                            }
+                            className: `text-sm px-3 py-1 rounded-full text-white ${
+                                systemPerformance.status === 'optimal' ? 'bg-green-500' : 
+                                systemPerformance.status === 'good' ? 'bg-blue-500' : 'bg-yellow-500'
+                            }`
                         }, systemPerformance.status.toUpperCase())
                     ),
-                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
-                        React.createElement('p', { style: { color: '#6b7280' } },
+                    React.createElement('div', { className: 'flex items-center justify-between' },
+                        React.createElement('p', { className: 'text-gray-600' },
                             'Enhanced with advanced algorithms, ensemble learning, Claude AI analysis, and real-time adaptation'
                         ),
-                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem' } },
-                            lastUpdated && React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280' } },
+                        React.createElement('div', { className: 'flex items-center gap-4' },
+                            lastUpdated && React.createElement('div', { className: 'text-sm text-gray-600' },
                                 'Last updated: ' + lastUpdated
                             ),
                             React.createElement('button', {
                                 onClick: fetchLatestPowerballData,
                                 disabled: isUpdating,
-                                className: isUpdating ? 'btn btn-secondary' : 'btn btn-primary'
+                                className: `btn ${isUpdating ? 'btn-secondary' : 'btn-primary'}`
                             },
                                 isUpdating ? React.createElement('span', null,
-                                    React.createElement('span', { className: 'loading-spinner', style: { marginRight: '0.5rem' } }),
+                                    React.createElement('span', { className: 'loading-spinner mr-2' }),
                                     'Updating...'
                                 ) : '🔄 Update Data'
                             )
@@ -1338,12 +1395,7 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                 ),
 
                 // Enhanced tabs
-                React.createElement('div', {
-                    style: {
-                        background: '#f3f4f6', padding: '0.25rem', borderRadius: '8px', marginBottom: '1.5rem',
-                        display: 'flex', gap: '0.25rem'
-                    }
-                },
+                React.createElement('div', { className: 'tab-container' },
                     [
                         { id: 'calculator', label: 'Basic Calculator', icon: '🧮' },
                         { id: 'optimization', label: 'Claude AI Optimization', icon: '🤖' },
@@ -1352,54 +1404,36 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                         React.createElement('button', {
                             key: tab.id,
                             onClick: () => setActiveTab(tab.id),
-                            style: {
-                                padding: '0.5rem 1rem', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                                background: activeTab === tab.id ? '#9333ea' : 'white',
-                                color: activeTab === tab.id ? 'white' : '#4b5563',
-                                transition: 'all 0.2s', fontSize: '0.875rem'
-                            }
+                            className: `tab-btn ${activeTab === tab.id ? 'active' : ''}`
                         }, `${tab.icon} ${tab.label}`)
                     )
                 ),
 
                 // Tab content - Calculator
-                activeTab === 'calculator' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
+                activeTab === 'calculator' && React.createElement('div', { className: 'grid gap-6' },
                     React.createElement('div', { className: 'card' },
-                        React.createElement('h2', { style: { fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' } },
+                        React.createElement('h2', { className: 'text-2xl font-semibold mb-4' },
                             '🎯 Manual Number Selection'
                         ),
-                        React.createElement('div', { style: { marginBottom: '1rem' } },
-                            React.createElement('h3', { style: { fontWeight: 600, color: '#374151', marginBottom: '0.5rem' } },
+                        React.createElement('div', { className: 'mb-4' },
+                            React.createElement('h3', { className: 'font-semibold text-gray-700 mb-2' },
                                 'Select 5 main numbers (1-69):'
                             ),
-                            React.createElement('div', {
-                                style: {
-                                    display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '0.5rem',
-                                    marginBottom: '1rem'
-                                }
-                            },
+                            React.createElement('div', { className: 'number-grid mb-4' },
                                 Array.from({length: 69}, (_, i) => i + 1).map(num =>
                                     React.createElement('button', {
                                         key: num,
                                         onClick: () => toggleNumber(num),
                                         disabled: !selectedNumbers.includes(num) && selectedNumbers.length >= 5,
-                                        style: {
-                                            width: '2rem', height: '2rem', fontSize: '0.75rem', borderRadius: '4px',
-                                            border: selectedNumbers.includes(num) ? '1px solid #9333ea' : '1px solid #d1d5db',
-                                            background: selectedNumbers.includes(num) ? '#9333ea' : 'white',
-                                            color: selectedNumbers.includes(num) ? 'white' : '#1f2937',
-                                            cursor: (!selectedNumbers.includes(num) && selectedNumbers.length >= 5) ? 'not-allowed' : 'pointer',
-                                            opacity: (!selectedNumbers.includes(num) && selectedNumbers.length >= 5) ? 0.5 : 1,
-                                            transition: 'all 0.2s'
-                                        }
+                                        className: `number-btn ${selectedNumbers.includes(num) ? 'selected' : ''}`
                                     }, num)
                                 )
                             )
                         ),
                         
-                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' } },
+                        React.createElement('div', { className: 'flex items-center gap-4 mb-4' },
                             React.createElement('div', null,
-                                React.createElement('label', { style: { display: 'block', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' } },
+                                React.createElement('label', { className: 'block font-semibold text-gray-700 mb-2' },
                                     'Powerball (1-26):'
                                 ),
                                 React.createElement('input', {
@@ -1408,14 +1442,11 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                                     max: '26',
                                     value: powerball,
                                     onChange: (e) => setPowerball(e.target.value),
-                                    style: {
-                                        width: '5rem', padding: '0.5rem', border: '1px solid #d1d5db',
-                                        borderRadius: '0.25rem', fontSize: '0.875rem'
-                                    },
+                                    className: 'w-20',
                                     placeholder: '1-26'
                                 })
                             ),
-                            React.createElement('div', { style: { display: 'flex', gap: '0.5rem' } },
+                            React.createElement('div', { className: 'flex gap-2' },
                                 React.createElement('button', { onClick: quickPick, className: 'btn btn-purple' },
                                     '🎲 Quick Pick'
                                 ),
@@ -1425,23 +1456,20 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                             )
                         ),
                         
-                        React.createElement('div', { className: 'card', style: { background: '#f9fafb' } },
-                            React.createElement('h3', { style: { fontWeight: 600, color: '#374151', marginBottom: '0.5rem' } },
+                        React.createElement('div', { className: 'card bg-gray-50' },
+                            React.createElement('h3', { className: 'font-semibold text-gray-700 mb-2' },
                                 'Your Selection:'
                             ),
-                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' } },
+                            React.createElement('div', { className: 'flex items-center gap-2 mb-2 flex-wrap' },
                                 selectedNumbers.map(num =>
                                     React.createElement('span', { key: num, className: 'number-display' }, num)
                                 ),
                                 powerball && React.createElement('span', { className: 'powerball-display' }, powerball)
                             ),
                             selectedNumbers.length === 5 && powerball && React.createElement('div', {
-                                style: {
-                                    marginTop: '0.5rem', padding: '0.75rem', background: '#fefce8',
-                                    borderRadius: '4px'
-                                }
+                                className: 'mt-2 p-3 bg-yellow-50 rounded'
                             },
-                                React.createElement('p', { style: { fontWeight: 600, color: '#92400e' } },
+                                React.createElement('p', { className: 'font-semibold text-yellow-800' },
                                     'Probability: 1 in 292,201,338 (0.0000034%)'
                                 )
                             )
@@ -1450,74 +1478,62 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
 
                     // Enhanced Quick Selection
                     React.createElement('div', { className: 'enhanced-prediction-card' },
-                        React.createElement('h3', { style: { fontSize: '1.5rem', fontWeight: 700, color: '#1f2937', marginBottom: '1rem' } },
+                        React.createElement('h3', { className: 'text-2xl font-bold text-gray-800 mb-4' },
                             '🎯 AI-Enhanced Quick Selection'
                         ),
-                        React.createElement('p', { style: { color: '#4b5563', marginBottom: '1rem' } },
+                        React.createElement('p', { className: 'text-gray-600 mb-4' },
                             'Advanced algorithm predictions using statistical analysis and pattern recognition.'
                         ),
                         
-                        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' } },
+                        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4' },
                             quickSelectionSets.slice(0, 5).map(selection =>
                                 React.createElement('div', {
                                     key: selection.id,
-                                    className: `card ${selection.confidence >= 90 ? 'confidence-high' : selection.confidence >= 80 ? 'confidence-medium' : 'confidence-low'}`,
-                                    style: { background: 'white', padding: '1rem' }
+                                    className: `card ${selection.confidence >= 90 ? 'confidence-high' : selection.confidence >= 80 ? 'confidence-medium' : 'confidence-low'} bg-white p-4`
                                 },
-                                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' } },
-                                        React.createElement('h4', { style: { fontWeight: 600, color: '#1f2937', fontSize: '0.875rem' } },
+                                    React.createElement('div', { className: 'flex items-center justify-between mb-3' },
+                                        React.createElement('h4', { className: 'font-semibold text-gray-800 text-sm' },
                                             selection.name
                                         ),
                                         React.createElement('span', {
-                                            style: {
-                                                fontSize: '0.75rem',
-                                                background: selection.confidence >= 90 ? '#dcfce7' : selection.confidence >= 80 ? '#dbeafe' : '#fef3c7',
-                                                color: selection.confidence >= 90 ? '#059669' : selection.confidence >= 80 ? '#1d4ed8' : '#d97706',
-                                                padding: '0.25rem 0.5rem', borderRadius: '0.25rem'
-                                            }
+                                            className: `text-xs px-2 py-1 rounded ${
+                                                selection.confidence >= 90 ? 'bg-green-100 text-green-700' : 
+                                                selection.confidence >= 80 ? 'bg-blue-100 text-blue-700' : 
+                                                'bg-yellow-100 text-yellow-700'
+                                            }`
                                         }, selection.strategy)
                                     ),
                                     
-                                    React.createElement('p', { style: { fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem', lineHeight: 1.4 } },
+                                    React.createElement('p', { className: 'text-xs text-gray-600 mb-3 leading-relaxed' },
                                         selection.description
                                     ),
                                     
-                                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' } },
+                                    React.createElement('div', { className: 'flex items-center gap-1 mb-3 flex-wrap' },
                                         selection.numbers.map(num =>
                                             React.createElement('span', {
                                                 key: num,
-                                                className: 'number-display',
-                                                style: { fontSize: '0.75rem', padding: '0.125rem 0.5rem' }
+                                                className: 'number-display text-xs py-1 px-2'
                                             }, num)
                                         ),
                                         React.createElement('span', {
-                                            className: 'powerball-display',
-                                            style: { fontSize: '0.75rem', padding: '0.125rem 0.5rem' }
+                                            className: 'powerball-display text-xs py-1 px-2'
                                         }, selection.powerball)
                                     ),
-                                    React.createElement('div', { style: { display: 'flex', gap: '0.25rem' } },
+                                    React.createElement('div', { className: 'flex gap-1' },
                                         React.createElement('button', {
                                             onClick: () => {
                                                 setSelectedNumbers(selection.numbers);
                                                 setPowerball(selection.powerball.toString());
                                             },
-                                            style: {
-                                                fontSize: '0.625rem', background: '#3b82f6', color: 'white',
-                                                padding: '0.25rem 0.5rem', borderRadius: '0.25rem',
-                                                border: 'none', cursor: 'pointer'
-                                            }
+                                            className: 'btn btn-primary text-xs flex-1'
                                         }, '✓ Use These'),
                                         React.createElement('button', {
                                             onClick: () => {
                                                 const numbersText = `${selection.numbers.join(', ')} | PB: ${selection.powerball}`;
                                                 navigator.clipboard?.writeText(numbersText);
                                             },
-                                            style: {
-                                                fontSize: '0.625rem', background: '#1f2937', color: 'white',
-                                                padding: '0.25rem 0.5rem', borderRadius: '0.25rem',
-                                                border: 'none', cursor: 'pointer'
-                                            }
-                                        }, '📋 Copy')
+                                            className: 'btn btn-secondary text-xs'
+                                        }, '📋')
                                     )
                                 )
                             )
@@ -1526,23 +1542,23 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                 ),
 
                 // Enhanced Optimization Tab with Claude AI
-                activeTab === 'optimization' && React.createElement('div', { style: { display: 'grid', gap: '1.5rem' } },
+                activeTab === 'optimization' && React.createElement('div', { className: 'grid gap-6' },
                     // Custom AI Generation Controls
-                    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' } },
+                    React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
                         // Strategy selector
                         React.createElement('div', { className: 'card' },
-                            React.createElement('h3', { style: { fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' } },
+                            React.createElement('h3', { className: 'text-lg font-semibold mb-3' },
                                 '🎯 Custom AI Generation'
                             ),
-                            React.createElement('div', { style: { display: 'grid', gap: '0.75rem' } },
+                            React.createElement('div', { className: 'grid gap-3' },
                                 React.createElement('div', null,
-                                    React.createElement('label', { style: { display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' } },
+                                    React.createElement('label', { className: 'block text-xs font-medium mb-1' },
                                         'AI Strategy:'
                                     ),
                                     React.createElement('select', {
                                         value: optimizationStrategy,
                                         onChange: (e) => setOptimizationStrategy(e.target.value),
-                                        style: { width: '100%', fontSize: '0.75rem', padding: '0.5rem' }
+                                        className: 'w-full text-xs'
                                     },
                                         React.createElement('option', { value: 'ensemble' }, 'Ensemble Learning'),
                                         React.createElement('option', { value: 'balanced' }, 'Balanced Mix'),
@@ -1552,13 +1568,13 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                                     )
                                 ),
                                 React.createElement('div', null,
-                                    React.createElement('label', { style: { display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' } },
+                                    React.createElement('label', { className: 'block text-xs font-medium mb-1' },
                                         'Number of Sets:'
                                     ),
                                     React.createElement('select', {
                                         value: numOptimizedSets,
                                         onChange: (e) => setNumOptimizedSets(parseInt(e.target.value)),
-                                        style: { width: '100%', fontSize: '0.75rem', padding: '0.5rem' }
+                                        className: 'w-full text-xs'
                                     },
                                         React.createElement('option', { value: 3 }, '3 Sets'),
                                         React.createElement('option', { value: 5 }, '5 Sets'),
@@ -1570,24 +1586,23 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                             React.createElement('button', {
                                 onClick: generateAdvancedPredictions,
                                 disabled: isOptimizing || isLoadingHistory,
-                                className: isOptimizing ? 'btn btn-secondary' : 'btn btn-purple',
-                                style: { fontSize: '0.75rem', width: '100%', marginTop: '0.75rem' }
+                                className: `btn ${isOptimizing ? 'btn-secondary' : 'btn-purple'} text-xs w-full mt-3`
                             },
                                 isOptimizing ? React.createElement('span', null,
-                                    React.createElement('span', { className: 'loading-spinner', style: { marginRight: '0.5rem' } }),
+                                    React.createElement('span', { className: 'loading-spinner mr-2' }),
                                     'AI Processing...'
                                 ) : '🤖 Generate Claude AI Predictions'
                             )
                         ),
 
                         // Claude AI Configuration
-                        React.createElement('div', { className: 'card', style: { background: aiEnabled ? '#f0fdf4' : '#fefce8' } },
-                            React.createElement('h3', { style: { fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' } },
+                        React.createElement('div', { className: `card ${aiEnabled ? 'bg-green-50' : 'bg-yellow-50'}` },
+                            React.createElement('h3', { className: 'text-lg font-semibold mb-3' },
                                 '🤖 Claude AI Analysis'
                             ),
-                            !aiEnabled ? React.createElement('div', { style: { display: 'grid', gap: '0.75rem' } },
+                            !aiEnabled ? React.createElement('div', { className: 'grid gap-3' },
                                 React.createElement('div', null,
-                                    React.createElement('label', { style: { display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' } },
+                                    React.createElement('label', { className: 'block text-xs font-medium mb-1' },
                                         'Anthropic API Key:'
                                     ),
                                     React.createElement('input', {
@@ -1595,55 +1610,36 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                                         value: aiApiKey,
                                         onChange: (e) => setAiApiKey(e.target.value),
                                         placeholder: 'sk-ant-api...',
-                                        style: { 
-                                            width: '100%', 
-                                            fontSize: '0.75rem', 
-                                            padding: '0.5rem',
-                                            border: '1px solid #d1d5db',
-                                            borderRadius: '0.25rem'
-                                        }
+                                        className: 'w-full text-xs'
                                     })
                                 ),
-                                React.createElement('div', { style: { fontSize: '0.625rem', color: '#6b7280' } },
-                                    React.createElement('div', { style: { marginBottom: '0.25rem' } },
+                                React.createElement('div', { className: 'text-xs text-gray-600' },
+                                    React.createElement('div', { className: 'mb-1' },
                                         React.createElement('strong', null, 'Get your API key from:'), ' console.anthropic.com'
                                     ),
-                                    React.createElement('div', { style: { color: '#059669' } },
+                                    React.createElement('div', { className: 'text-green-600' },
                                         '✓ Uses cost-effective Claude 3 Haiku model (~$0.50/1M tokens)'
                                     )
                                 ),
                                 React.createElement('button', {
                                     onClick: enableAI,
                                     disabled: !aiApiKey.trim(),
-                                    className: 'btn btn-primary',
-                                    style: { fontSize: '0.75rem', width: '100%' }
+                                    className: 'btn btn-primary text-xs w-full'
                                 }, '🧠 Enable Claude Analysis')
-                            ) : React.createElement('div', { style: { display: 'grid', gap: '0.75rem' } },
+                            ) : React.createElement('div', { className: 'grid gap-3' },
                                 React.createElement('div', {
-                                    style: { 
-                                        fontSize: '0.75rem', 
-                                        color: '#059669', 
-                                        background: '#dcfce7', 
-                                        padding: '0.5rem', 
-                                        borderRadius: '0.25rem',
-                                        textAlign: 'center'
-                                    }
+                                    className: 'text-xs text-green-600 bg-green-100 p-2 rounded text-center'
                                 }, '✅ Claude AI Enabled (Haiku Model)'),
-                                React.createElement('div', { style: { fontSize: '0.625rem', color: '#6b7280' } },
+                                React.createElement('div', { className: 'text-xs text-gray-600' },
                                     '• Advanced statistical analysis', React.createElement('br'),
                                     '• Mathematical pattern insights', React.createElement('br'),
                                     '• Intelligent explanations', React.createElement('br'),
                                     '• Cost-effective Claude 3 Haiku model'
                                 ),
                                 isLoadingAI && React.createElement('div', {
-                                    style: { 
-                                        fontSize: '0.625rem', 
-                                        color: '#3b82f6',
-                                        textAlign: 'center',
-                                        padding: '0.5rem'
-                                    }
+                                    className: 'text-xs text-blue-600 text-center p-2'
                                 },
-                                    React.createElement('span', { className: 'loading-spinner', style: { marginRight: '0.5rem' } }),
+                                    React.createElement('span', { className: 'loading-spinner mr-2' }),
                                     'Claude analyzing patterns...'
                                 ),
                                 React.createElement('button', {
@@ -1653,26 +1649,25 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                                         setAiInsights({});
                                         localStorage.removeItem('lottery_ai_enabled');
                                     },
-                                    className: 'btn btn-secondary',
-                                    style: { fontSize: '0.625rem', width: '100%' }
+                                    className: 'btn btn-secondary text-xs w-full'
                                 }, 'Disable Claude AI')
                             )
                         ),
 
                         // Historical settings
                         React.createElement('div', { className: 'card' },
-                            React.createElement('h3', { style: { fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' } },
+                            React.createElement('h3', { className: 'text-lg font-semibold mb-3' },
                                 '⚙️ Analysis Settings'
                             ),
-                            React.createElement('div', { style: { display: 'grid', gap: '0.75rem' } },
+                            React.createElement('div', { className: 'grid gap-3' },
                                 React.createElement('div', null,
-                                    React.createElement('label', { style: { display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' } },
+                                    React.createElement('label', { className: 'block text-xs font-medium mb-1' },
                                         'Historical Records:'
                                     ),
                                     React.createElement('select', {
                                         value: historicalRecordsLimit,
                                         onChange: (e) => setHistoricalRecordsLimit(parseInt(e.target.value)),
-                                        style: { width: '100%', fontSize: '0.75rem', padding: '0.5rem' }
+                                        className: 'w-full text-xs'
                                     },
                                         React.createElement('option', { value: 100 }, '100 Recent Drawings'),
                                         React.createElement('option', { value: 200 }, '200 Recent Drawings'),
@@ -1684,8 +1679,7 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                                 React.createElement('button', {
                                     onClick: fetchHistoricalData,
                                     disabled: isLoadingHistory,
-                                    className: isLoadingHistory ? 'btn btn-secondary' : 'btn btn-primary',
-                                    style: { fontSize: '0.75rem', width: '100%' }
+                                    className: `btn ${isLoadingHistory ? 'btn-secondary' : 'btn-primary'} text-xs w-full`
                                 }, isLoadingHistory ? 'Updating...' : '🔄 Update Analysis')
                             )
                         )
@@ -1693,121 +1687,88 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
 
                     // Enhanced Results Display with Claude AI
                     optimizedSets.length > 0 && React.createElement('div', { className: 'card' },
-                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' } },
-                            React.createElement('h3', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' } },
+                        React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                            React.createElement('h3', { className: 'text-xl font-semibold text-gray-800' },
                                 '🤖 Claude AI-Enhanced Predictions'
                             ),
                             React.createElement('div', {
-                                style: {
-                                    fontSize: '0.75rem', color: '#059669', background: '#f0fdf4',
-                                    padding: '0.25rem 0.5rem', borderRadius: '0.25rem'
-                                }
+                                className: 'text-xs text-green-600 bg-green-50 px-2 py-1 rounded'
                             }, `${optimizedSets.length} sets generated`)
                         ),
                         
-                        React.createElement('div', { style: { display: 'grid', gap: '0.75rem' } },
+                        React.createElement('div', { className: 'grid gap-3' },
                             optimizedSets.map((set, index) =>
                                 React.createElement('div', {
                                     key: index,
-                                    className: `card ${set.confidence >= 90 ? 'confidence-high' : set.confidence >= 80 ? 'confidence-medium' : 'confidence-low'}`,
-                                    style: { background: '#f9fafb', padding: '1rem' }
+                                    className: `card ${set.confidence >= 90 ? 'confidence-high' : set.confidence >= 80 ? 'confidence-medium' : 'confidence-low'} bg-gray-50 p-4`
                                 },
-                                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' } },
+                                    React.createElement('div', { className: 'flex items-center justify-between mb-2' },
                                         React.createElement('div', null,
-                                            React.createElement('span', { style: { fontSize: '0.875rem', fontWeight: 600, color: '#1f2937' } },
+                                            React.createElement('span', { className: 'text-sm font-semibold text-gray-800' },
                                                 `Set ${index + 1}: ${set.strategy}`
                                             ),
-                                            React.createElement('div', { style: { fontSize: '0.75rem', color: '#6b7280' } },
+                                            React.createElement('div', { className: 'text-xs text-gray-600' },
                                                 set.analysis
                                             )
                                         ),
-                                        React.createElement('div', { style: { textAlign: 'right' } },
+                                        React.createElement('div', { className: 'text-right' },
                                             React.createElement('div', {
-                                                style: {
-                                                    fontSize: '0.875rem', fontWeight: 600,
-                                                    color: set.confidence >= 90 ? '#059669' : set.confidence >= 80 ? '#1d4ed8' : '#d97706'
-                                                }
+                                                className: `text-sm font-semibold ${
+                                                    set.confidence >= 90 ? 'text-green-600' : 
+                                                    set.confidence >= 80 ? 'text-blue-600' : 'text-yellow-600'
+                                                }`
                                             }, `${set.confidence}%`),
-                                            React.createElement('div', { style: { fontSize: '0.625rem', color: '#6b7280' } },
+                                            React.createElement('div', { className: 'text-xs text-gray-600' },
                                                 'confidence'
                                             )
                                         )
                                     ),
-                                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' } },
+                                    React.createElement('div', { className: 'flex items-center gap-1 mb-3 flex-wrap' },
                                         set.numbers.map(num =>
                                             React.createElement('span', {
                                                 key: num,
-                                                className: 'number-display',
-                                                style: { fontSize: '0.875rem', fontWeight: 600 }
+                                                className: 'number-display text-sm font-semibold'
                                             }, num)
                                         ),
                                         React.createElement('span', {
-                                            className: 'powerball-display',
-                                            style: { fontSize: '0.875rem', fontWeight: 600 }
+                                            className: 'powerball-display text-sm font-semibold'
                                         }, set.powerball)
                                     ),
-                                    React.createElement('div', { style: { display: 'flex', gap: '0.5rem' } },
+                                    React.createElement('div', { className: 'flex gap-2' },
                                         React.createElement('button', {
                                             onClick: () => {
                                                 setSelectedNumbers(set.numbers);
                                                 setPowerball(set.powerball.toString());
                                                 setActiveTab('calculator');
                                             },
-                                            className: 'btn btn-primary',
-                                            style: { fontSize: '0.75rem' }
+                                            className: 'btn btn-primary text-xs'
                                         }, '✓ Use This Set'),
                                         React.createElement('button', {
                                             onClick: () => {
                                                 const numbersText = `${set.numbers.join(', ')} | PB: ${set.powerball}`;
                                                 navigator.clipboard?.writeText(numbersText);
                                             },
-                                            className: 'btn btn-secondary',
-                                            style: { fontSize: '0.75rem' }
+                                            className: 'btn btn-secondary text-xs'
                                         }, '📋 Copy')
                                     ),
                                     
                                     // Claude AI Insights
                                     aiEnabled && aiInsights[index] && React.createElement('div', {
-                                        style: {
-                                            marginTop: '0.75rem',
-                                            padding: '0.75rem',
-                                            background: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)',
-                                            border: '1px solid #a855f7',
-                                            borderRadius: '0.5rem',
-                                            fontSize: '0.75rem',
-                                            lineHeight: 1.4
-                                        }
+                                        className: 'mt-3 p-3 bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-lg text-xs leading-relaxed'
                                     },
                                         React.createElement('div', {
-                                            style: { 
-                                                fontSize: '0.625rem', 
-                                                fontWeight: 600, 
-                                                color: '#7c3aed', 
-                                                marginBottom: '0.5rem',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.25rem'
-                                            }
+                                            className: 'text-xs font-semibold text-purple-600 mb-2 flex items-center gap-1'
                                         }, '🤖 Claude 3 Analysis'),
-                                        React.createElement('div', { style: { color: '#6b21a8' } },
+                                        React.createElement('div', { className: 'text-purple-800' },
                                             aiInsights[index]
                                         )
                                     ),
                                     
                                     // AI Loading State
                                     aiEnabled && isLoadingAI && index < 3 && !aiInsights[index] && React.createElement('div', {
-                                        style: {
-                                            marginTop: '0.75rem',
-                                            padding: '0.75rem',
-                                            background: '#f8fafc',
-                                            border: '1px solid #e2e8f0',
-                                            borderRadius: '0.5rem',
-                                            fontSize: '0.75rem',
-                                            textAlign: 'center',
-                                            color: '#64748b'
-                                        }
+                                        className: 'mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-center text-gray-600'
                                     },
-                                        React.createElement('span', { className: 'loading-spinner', style: { marginRight: '0.5rem' } }),
+                                        React.createElement('span', { className: 'loading-spinner mr-2' }),
                                         'Generating Claude insights...'
                                     )
                                 )
@@ -1817,24 +1778,21 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                 ),
 
                 // Tax Analysis Tab
-                activeTab === 'taxes' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
-                    React.createElement('div', { className: 'card', style: { background: 'linear-gradient(135deg, #fefce8 0%, #fef3c7 100%)', border: '2px solid #f59e0b' } },
-                        React.createElement('h2', { style: { fontSize: '1.5rem', fontWeight: 600, color: '#92400e', marginBottom: '1rem' } },
+                activeTab === 'taxes' && React.createElement('div', { className: 'grid gap-6' },
+                    React.createElement('div', { className: 'card bg-gradient-to-r from-yellow-50 to-yellow-100 border-2 border-yellow-300' },
+                        React.createElement('h2', { className: 'text-2xl font-semibold text-yellow-800 mb-4' },
                             '💰 Advanced Tax Analysis Calculator'
                         ),
-                        React.createElement('p', { style: { color: '#a16207', marginBottom: '1rem' } },
+                        React.createElement('p', { className: 'text-yellow-700 mb-4' },
                             'Calculate your actual take-home amount after federal and state taxes. Enhanced with current 2024 tax brackets.'
                         ),
                         
                         // Input Controls
-                        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' } },
+                        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6' },
                             React.createElement('div', null,
-                                React.createElement('label', {
-                                    style: {
-                                        display: 'block', fontSize: '0.875rem', fontWeight: 500,
-                                        color: '#374151', marginBottom: '0.5rem'
-                                    }
-                                }, 'Jackpot Amount ($):'),
+                                React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                    'Jackpot Amount ($):'
+                                ),
                                 React.createElement('input', {
                                     type: 'number',
                                     value: taxWinnings,
@@ -1842,26 +1800,17 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                                     placeholder: 'Enter jackpot amount',
                                     min: '0',
                                     step: '1000000',
-                                    style: {
-                                        width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
-                                        borderRadius: '0.25rem', fontSize: '0.875rem'
-                                    }
+                                    className: 'w-full'
                                 })
                             ),
                             React.createElement('div', null,
-                                React.createElement('label', {
-                                    style: {
-                                        display: 'block', fontSize: '0.875rem', fontWeight: 500,
-                                        color: '#374151', marginBottom: '0.5rem'
-                                    }
-                                }, 'State:'),
+                                React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                    'State:'
+                                ),
                                 React.createElement('select', {
                                     value: taxState,
                                     onChange: (e) => setTaxState(e.target.value),
-                                    style: {
-                                        width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
-                                        borderRadius: '0.25rem', fontSize: '0.875rem'
-                                    }
+                                    className: 'w-full'
                                 },
                                     Object.keys(stateTaxRates).map(state =>
                                         React.createElement('option', { key: state, value: state },
@@ -1871,38 +1820,26 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                                 )
                             ),
                             React.createElement('div', null,
-                                React.createElement('label', {
-                                    style: {
-                                        display: 'block', fontSize: '0.875rem', fontWeight: 500,
-                                        color: '#374151', marginBottom: '0.5rem'
-                                    }
-                                }, 'Filing Status:'),
+                                React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                    'Filing Status:'
+                                ),
                                 React.createElement('select', {
                                     value: taxFilingStatus,
                                     onChange: (e) => setTaxFilingStatus(e.target.value),
-                                    style: {
-                                        width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
-                                        borderRadius: '0.25rem', fontSize: '0.875rem'
-                                    }
+                                    className: 'w-full'
                                 },
                                     React.createElement('option', { value: 'single' }, 'Single'),
                                     React.createElement('option', { value: 'marriedJointly' }, 'Married Filing Jointly')
                                 )
                             ),
                             React.createElement('div', null,
-                                React.createElement('label', {
-                                    style: {
-                                        display: 'block', fontSize: '0.875rem', fontWeight: 500,
-                                        color: '#374151', marginBottom: '0.5rem'
-                                    }
-                                }, 'Payment Option:'),
+                                React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                    'Payment Option:'
+                                ),
                                 React.createElement('select', {
                                     value: takeLumpSum,
                                     onChange: (e) => setTakeLumpSum(e.target.value === 'true'),
-                                    style: {
-                                        width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
-                                        borderRadius: '0.25rem', fontSize: '0.875rem'
-                                    }
+                                    className: 'w-full'
                                 },
                                     React.createElement('option', { value: true }, 'Lump Sum (Cash Value)'),
                                     React.createElement('option', { value: false }, 'Annuity (30 Years)')
@@ -1911,71 +1848,65 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
                         ),
 
                         // Quick Fill Buttons
-                        React.createElement('div', { style: { display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' } },
+                        React.createElement('div', { className: 'flex gap-2 mb-6 flex-wrap' },
                             liveDataAvailable && currentJackpot && React.createElement('button', {
                                 onClick: () => setTaxWinnings(currentJackpot.amount.toString()),
-                                className: 'btn btn-primary',
-                                style: { fontSize: '0.875rem' }
+                                className: 'btn btn-primary text-sm'
                             }, `Use Current: ${currentJackpot.formatted}`),
                             React.createElement('button', {
                                 onClick: () => setTaxWinnings('1000000000'),
-                                className: 'btn btn-secondary',
-                                style: { fontSize: '0.875rem' }
+                                className: 'btn btn-secondary text-sm'
                             }, 'Use $1B'),
                             React.createElement('button', {
                                 onClick: () => setTaxWinnings('500000000'),
-                                className: 'btn btn-secondary',
-                                style: { fontSize: '0.875rem' }
+                                className: 'btn btn-secondary text-sm'
                             }, 'Use $500M')
                         )
                     ),
 
                     // Tax Results Display
                     taxResults && React.createElement('div', { className: 'card' },
-                        React.createElement('h3', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937', marginBottom: '1.5rem' } },
+                        React.createElement('h3', { className: 'text-xl font-semibold text-gray-800 mb-6' },
                             '📊 Tax Breakdown Results'
                         ),
                         
                         // Summary Cards
-                        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' } },
-                            React.createElement('div', { style: { background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' } },
-                                React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' } }, 'Gross Winnings'),
-                                React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' } },
+                        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6' },
+                            React.createElement('div', { className: 'bg-white p-4 rounded-lg border border-gray-200' },
+                                React.createElement('div', { className: 'text-sm text-gray-600 mb-1' }, 'Gross Winnings'),
+                                React.createElement('div', { className: 'text-xl font-semibold text-gray-800' },
                                     `${taxResults.grossWinnings.toLocaleString()}`
                                 ),
-                                React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' } },
+                                React.createElement('div', { className: 'text-xs text-gray-500 mt-1' },
                                     takeLumpSum ? 'Lump Sum' : 'Annuity'
                                 )
                             ),
-                            React.createElement('div', { style: { background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' } },
-                                React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' } }, 'Federal Tax'),
-                                React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' } },
+                            React.createElement('div', { className: 'bg-white p-4 rounded-lg border border-gray-200' },
+                                React.createElement('div', { className: 'text-sm text-gray-600 mb-1' }, 'Federal Tax'),
+                                React.createElement('div', { className: 'text-xl font-semibold text-gray-800' },
                                     `${taxResults.federalTax.toLocaleString()}`
                                 ),
-                                React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' } },
+                                React.createElement('div', { className: 'text-xs text-gray-500 mt-1' },
                                     'Progressive rate system'
                                 )
                             ),
-                            React.createElement('div', { style: { background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' } },
-                                React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' } }, `${taxState} State Tax`),
-                                React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' } },
+                            React.createElement('div', { className: 'bg-white p-4 rounded-lg border border-gray-200' },
+                                React.createElement('div', { className: 'text-sm text-gray-600 mb-1' }, `${taxState} State Tax`),
+                                React.createElement('div', { className: 'text-xl font-semibold text-gray-800' },
                                     `${taxResults.stateTax.toLocaleString()}`
                                 ),
-                                React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' } },
+                                React.createElement('div', { className: 'text-xs text-gray-500 mt-1' },
                                     `${(stateTaxRates[taxState] * 100).toFixed(1)}% flat rate`
                                 )
                             ),
                             React.createElement('div', {
-                                style: {
-                                    background: '#f0fdf4', padding: '1rem', borderRadius: '8px',
-                                    border: '2px solid #22c55e'
-                                }
+                                className: 'bg-green-50 p-4 rounded-lg border-2 border-green-500'
                             },
-                                React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' } }, 'Your Take-Home'),
-                                React.createElement('div', { style: { fontSize: '1.5rem', fontWeight: 600, color: '#059669' } },
+                                React.createElement('div', { className: 'text-sm text-gray-600 mb-1' }, 'Your Take-Home'),
+                                React.createElement('div', { className: 'text-2xl font-semibold text-green-600' },
                                     `${taxResults.netWinnings.toLocaleString()}`
                                 ),
-                                React.createElement('div', { style: { fontSize: '0.75rem', color: '#047857', marginTop: '0.25rem' } },
+                                React.createElement('div', { className: 'text-xs text-green-700 mt-1' },
                                     `After ${taxResults.effectiveTotalRate.toFixed(1)}% total tax`
                                 )
                             )
@@ -1983,15 +1914,12 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
 
                         // Important Notes
                         React.createElement('div', {
-                            style: {
-                                background: '#fefce8', border: '1px solid #fde68a', borderRadius: '0.5rem',
-                                padding: '1rem', fontSize: '0.875rem'
-                            }
+                            className: 'bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm'
                         },
-                            React.createElement('h5', { style: { fontWeight: 600, color: '#92400e', marginBottom: '0.5rem' } },
+                            React.createElement('h5', { className: 'font-semibold text-yellow-800 mb-2' },
                                 '⚠️ Important Tax Considerations:'
                             ),
-                            React.createElement('ul', { style: { color: '#a16207', lineHeight: 1.6, paddingLeft: '1rem' } },
+                            React.createElement('ul', { className: 'text-yellow-700 leading-relaxed pl-4 list-disc' },
                                 React.createElement('li', null, 'This calculator uses 2024 federal tax brackets'),
                                 React.createElement('li', null, 'Additional state-specific deductions may apply'),
                                 React.createElement('li', null, 'Consider consulting a tax professional for large winnings'),
@@ -2020,17 +1948,14 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
 
             render() {
                 if (this.state.hasError) {
-                    return React.createElement('div', { style: { padding: '2rem', textAlign: 'center' } },
-                        React.createElement('h2', null, 'System Error - Enhanced Features Disabled'),
-                        React.createElement('p', { style: { color: '#6b7280', marginTop: '1rem' } },
+                    return React.createElement('div', { className: 'p-8 text-center' },
+                        React.createElement('h2', { className: 'text-xl font-bold mb-4' }, 'System Error - Enhanced Features Disabled'),
+                        React.createElement('p', { className: 'text-gray-600 mb-4' },
                             'The enhanced lottery system encountered an error. Please refresh the page.'
                         ),
                         React.createElement('button', {
                             onClick: () => window.location.reload(),
-                            style: {
-                                marginTop: '1rem', padding: '0.5rem 1rem', background: '#3b82f6',
-                                color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'
-                            }
+                            className: 'btn btn-primary'
                         }, 'Reload Page')
                     );
                 }
@@ -2039,6 +1964,13 @@ Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
             }
         }
 
+        // Render the enhanced app
+        ReactDOM.render(
+            React.createElement(ErrorBoundary, null,
+                React.createElement(AdvancedLotterySystem)
+            ),
+            document.getElementById('root')
+        );
     </script>
 </body>
 </html>
