@@ -13,6 +13,9 @@
     
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎰</text></svg>">
+    
+    <!-- Load CSS -->
+    <link rel="stylesheet" href="public_tools/css/styles.css">
 </head>
 <body>
     <div id="root">
@@ -22,7 +25,26 @@
             <div id="loading-progress" style="font-size: 0.9rem; opacity: 0.8;">Initializing...</div>
         </div>
     </div>
+
+    <!-- Load JavaScript files in correct order -->
+    <!-- 1. Constants and utilities first -->
+    <script src="public_tools/js/utils/constants.js"></script>
+    <script src="public_tools/js/utils/helpers.js"></script>
     
+    <!-- 2. Services -->
+    <script src="public_tools/js/services/ApiService.js"></script>
+    <script src="public_tools/js/services/LotteryPredictor.js"></script>
+    <script src="public_tools/js/services/ClaudeAnalyzer.js"></script>
+    <script src="public_tools/js/services/TaxCalculatorService.js"></script>
+    
+    <!-- 3. Components -->
+    <script src="public_tools/js/components/Header.js"></script>
+    <script src="public_tools/js/components/QuickSelection.js"></script>
+    <script src="public_tools/js/components/ManualCalculator.js"></script>
+    <script src="public_tools/js/components/TaxCalculator.js"></script>
+    <script src="public_tools/js/components/DataAnalysis.js"></script>
+    
+    <!-- 4. Main app last -->
     <script type="text/babel">
         // Simple Error Boundary
         class ErrorBoundary extends React.Component {
@@ -41,48 +63,25 @@
 
             render() {
                 if (this.state.hasError) {
-                    return (
-                        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                            <div className="text-center p-8">
-                                <div className="text-6xl mb-4">⚠️</div>
-                                <h1 className="text-2xl font-bold text-gray-900 mb-4">Application Error</h1>
-                                <p className="text-gray-600 mb-6">Something went wrong. Please reload the page.</p>
-                                <button 
-                                    onClick={() => window.location.reload()}
-                                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                >
-                                    Reload Application
-                                </button>
-                                <p className="text-xs text-gray-500 mt-4">
-                                    {this.state.error ? this.state.error.message : 'Unknown error'}
-                                </p>
-                            </div>
-                        </div>
+                    return React.createElement('div', { 
+                        className: 'min-h-screen flex items-center justify-center bg-gray-50' 
+                    },
+                        React.createElement('div', { className: 'text-center p-8' },
+                            React.createElement('div', { className: 'text-6xl mb-4' }, '⚠️'),
+                            React.createElement('h1', { className: 'text-2xl font-bold text-gray-900 mb-4' }, 'Application Error'),
+                            React.createElement('p', { className: 'text-gray-600 mb-6' }, 'Something went wrong. Please reload the page.'),
+                            React.createElement('button', {
+                                onClick: () => window.location.reload(),
+                                className: 'px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600'
+                            }, 'Reload Application'),
+                            React.createElement('p', { className: 'text-xs text-gray-500 mt-4' },
+                                this.state.error ? this.state.error.message : 'Unknown error'
+                            )
+                        )
                     );
                 }
 
                 return this.props.children;
-            }
-        }
-
-        // Utility function for API calls with timeout
-        async function fetchWithTimeout(url, options = {}, timeout = 5000) {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-            
-            try {
-                const response = await fetch(url, {
-                    ...options,
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                return response;
-            } catch (error) {
-                clearTimeout(timeoutId);
-                if (error.name === 'AbortError') {
-                    throw new Error('Request timeout');
-                }
-                throw error;
             }
         }
 
@@ -99,14 +98,16 @@
             const [aiApiKey, setAiApiKey] = useState('');
             const [aiEnabled, setAiEnabled] = useState(false);
             const [loadingStep, setLoadingStep] = useState('Initializing...');
+            const [nextDrawDate, setNextDrawDate] = useState('');
+            const [lastUpdated, setLastUpdated] = useState('');
+            const [isUpdating, setIsUpdating] = useState(false);
 
             useEffect(() => {
-                // Set a maximum loading time - force load the app even if APIs fail
                 const maxLoadingTime = setTimeout(() => {
                     console.log('⏰ Maximum loading time reached, forcing app load');
                     setApiStatus('⚠️ API Timeout');
                     setIsLoading(false);
-                }, 10000); // 10 seconds max
+                }, 10000);
 
                 const initializeApp = async () => {
                     try {
@@ -128,13 +129,15 @@
                 };
 
                 initializeApp();
-
                 return () => clearTimeout(maxLoadingTime);
             }, []);
 
             const testApiConnection = async () => {
                 try {
-                    const response = await fetchWithTimeout('/api/test', {}, 3000);
+                    const response = await fetch('/api/test', { 
+                        method: 'GET',
+                        signal: AbortSignal.timeout(5000)
+                    });
                     const data = await response.json();
                     
                     if (data.success) {
@@ -153,17 +156,30 @@
 
             const loadJackpotData = async () => {
                 try {
-                    const response = await fetchWithTimeout('/api/powerball', {}, 5000);
+                    const response = await fetch('/api/powerball', {
+                        method: 'GET',
+                        signal: AbortSignal.timeout(8000)
+                    });
                     const data = await response.json();
                     
                     if (data.success && data.jackpot) {
                         setCurrentJackpot(data.jackpot);
+                        if (data.nextDrawing) {
+                            setNextDrawDate(`${data.nextDrawing.date} @ ${data.nextDrawing.time}`);
+                        }
+                        setLastUpdated(new Date().toLocaleString());
                         return true;
                     }
                 } catch (error) {
                     console.warn('Jackpot data failed:', error);
                 }
                 return false;
+            };
+
+            const refreshData = async () => {
+                setIsUpdating(true);
+                await loadJackpotData();
+                setIsUpdating(false);
             };
 
             const generateQuickPick = () => {
@@ -183,14 +199,15 @@
                 }
 
                 try {
-                    const response = await fetchWithTimeout('/api/claude', {
+                    const response = await fetch('/api/claude', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             apiKey: aiApiKey,
                             analysisType: 'predictionInsights'
-                        })
-                    }, 8000);
+                        }),
+                        signal: AbortSignal.timeout(10000)
+                    });
 
                     const data = await response.json();
                     
@@ -207,21 +224,21 @@
 
             const generateAdvancedNumbers = async () => {
                 if (!aiEnabled) {
-                    // Generate using local algorithms
                     generateQuickPick();
                     return;
                 }
 
                 try {
-                    const response = await fetchWithTimeout('/api/claude', {
+                    const response = await fetch('/api/claude', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             apiKey: aiApiKey,
                             analysisType: 'hybridSelection',
                             requestedSets: 1
-                        })
-                    }, 10000);
+                        }),
+                        signal: AbortSignal.timeout(12000)
+                    });
 
                     const data = await response.json();
                     
@@ -230,15 +247,15 @@
                         setSelectedNumbers(selection.numbers);
                         setPowerball(selection.powerball);
                     } else {
-                        generateQuickPick(); // Fallback
+                        generateQuickPick();
                     }
                 } catch (error) {
                     console.warn('Claude generation failed:', error);
-                    generateQuickPick(); // Fallback
+                    generateQuickPick();
                 }
             };
 
-            // Update loading progress in real-time
+            // Update loading progress
             useEffect(() => {
                 const progressElement = document.getElementById('loading-progress');
                 if (progressElement && isLoading) {
@@ -247,294 +264,237 @@
             }, [loadingStep, isLoading]);
 
             if (isLoading) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600 text-white">
-                        <div className="text-center">
-                            <div className="text-6xl mb-4 animate-bounce">🎰</div>
-                            <div className="text-2xl font-bold mb-2">Claude AI + 6 Algorithms</div>
-                            <div className="text-lg opacity-80">Advanced Lottery Intelligence System</div>
-                            <div className="mt-4 text-sm opacity-60">{loadingStep}</div>
-                            <div className="mt-2 text-xs opacity-40">
-                                Loading will complete automatically in a few seconds...
-                            </div>
-                        </div>
-                    </div>
+                return React.createElement('div', { 
+                    className: 'min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600 text-white' 
+                },
+                    React.createElement('div', { className: 'text-center' },
+                        React.createElement('div', { className: 'text-6xl mb-4 animate-bounce' }, '🎰'),
+                        React.createElement('div', { className: 'text-2xl font-bold mb-2' }, 'Claude AI + 6 Algorithms'),
+                        React.createElement('div', { className: 'text-lg opacity-80' }, 'Advanced Lottery Intelligence System'),
+                        React.createElement('div', { className: 'mt-4 text-sm opacity-60' }, loadingStep),
+                        React.createElement('div', { className: 'mt-2 text-xs opacity-40' },
+                            'Loading will complete automatically in a few seconds...'
+                        )
+                    )
                 );
             }
 
-            return (
-                <div className="min-h-screen bg-gray-50">
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4">
-                        <div className="max-w-4xl mx-auto">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="text-3xl">🎰</div>
-                                    <div>
-                                        <h1 className="text-xl font-bold">
-                                            {aiEnabled ? 'Claude AI + 6 Algorithms Hybrid' : 'Enhanced Lottery System'}
-                                        </h1>
-                                        <p className="text-sm opacity-80">
-                                            {currentJackpot ? currentJackpot.formatted : 'Visit powerball.com for current jackpot'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-sm">{apiStatus}</div>
-                                    <div className="text-xs opacity-70">
-                                        AI: {aiEnabled ? '🤖 Active' : '⭕ Disabled'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            return React.createElement('div', { className: 'min-h-screen bg-gray-50' },
+                // Header
+                React.createElement('div', { 
+                    className: currentJackpot ? 
+                        'bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4' :
+                        'bg-gradient-to-r from-gray-600 to-gray-700 text-white p-4'
+                },
+                    React.createElement('div', { className: 'max-w-4xl mx-auto' },
+                        React.createElement('div', { className: 'flex items-center justify-between' },
+                            React.createElement('div', { className: 'flex items-center gap-3' },
+                                React.createElement('div', { className: 'text-3xl' }, '🎰'),
+                                React.createElement('div', null,
+                                    React.createElement('h1', { className: 'text-xl font-bold' },
+                                        aiEnabled ? 'Claude AI + 6 Algorithms Hybrid' : 'Enhanced Lottery System'
+                                    ),
+                                    React.createElement('p', { className: 'text-sm opacity-80' },
+                                        currentJackpot ? currentJackpot.formatted : 'Visit powerball.com for current jackpot'
+                                    )
+                                )
+                            ),
+                            React.createElement('div', { className: 'text-right' },
+                                React.createElement('button', {
+                                    onClick: refreshData,
+                                    disabled: isUpdating,
+                                    className: 'bg-white bg-opacity-20 hover:bg-opacity-30 px-3 py-1 rounded text-sm transition-colors'
+                                }, isUpdating ? '⏳ Loading...' : '🔄 Refresh'),
+                                React.createElement('div', { className: 'text-xs opacity-70 mt-1' }, apiStatus)
+                            )
+                        )
+                    )
+                ),
 
-                    <div className="max-w-4xl mx-auto p-4">
-                        {/* Tab Navigation */}
-                        <div className="mb-6">
-                            <div className="flex border-b border-gray-200">
-                                {[
-                                    { id: 'generator', label: 'Number Generator', icon: '🎲' },
-                                    { id: 'ai-setup', label: 'Claude AI Setup', icon: '🤖' },
-                                    { id: 'tools', label: 'Tools', icon: '🔧' }
-                                ].map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-                                            activeTab === tab.id 
-                                                ? 'border-blue-500 text-blue-600' 
-                                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                        }`}
-                                    >
-                                        {tab.icon} {tab.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                React.createElement('div', { className: 'max-w-4xl mx-auto p-4' },
+                    // Tab Navigation
+                    React.createElement('div', { className: 'mb-6' },
+                        React.createElement('div', { className: 'flex border-b border-gray-200' },
+                            [
+                                { id: 'generator', label: 'Number Generator', icon: '🎲' },
+                                { id: 'ai-setup', label: 'Claude AI Setup', icon: '🤖' },
+                                { id: 'tools', label: 'Tools', icon: '🔧' }
+                            ].map(tab =>
+                                React.createElement('button', {
+                                    key: tab.id,
+                                    onClick: () => setActiveTab(tab.id),
+                                    className: `px-4 py-2 font-medium border-b-2 transition-colors ${
+                                        activeTab === tab.id 
+                                            ? 'border-blue-500 text-blue-600' 
+                                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`
+                                }, tab.icon, ' ', tab.label)
+                            )
+                        )
+                    ),
 
-                        {/* Tab Content */}
-                        {activeTab === 'generator' && (
-                            <div className="space-y-6">
-                                <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
-                                    <h2 className="text-xl font-bold mb-4">
-                                        {aiEnabled ? '🤖🧮 Hybrid AI Generator' : '🎲 Quick Pick Generator'}
-                                    </h2>
+                    // Tab Content
+                    activeTab === 'generator' && React.createElement('div', { className: 'space-y-6' },
+                        React.createElement('div', { className: 'bg-white rounded-lg border-2 border-gray-200 p-6' },
+                            React.createElement('h2', { className: 'text-xl font-bold mb-4' },
+                                aiEnabled ? '🤖🧮 Hybrid AI Generator' : '🎲 Quick Pick Generator'
+                            ),
+                            
+                            selectedNumbers.length > 0 && React.createElement('div', { className: 'mb-4 p-4 bg-blue-50 rounded-lg' },
+                                React.createElement('h3', { className: 'font-semibold mb-2' }, 'Your Numbers:'),
+                                React.createElement('div', { className: 'flex items-center gap-2' },
+                                    React.createElement('div', { className: 'flex gap-1' },
+                                        selectedNumbers.map(num =>
+                                            React.createElement('span', { 
+                                                key: num, 
+                                                className: 'bg-gray-200 px-3 py-1 rounded font-mono'
+                                            }, num)
+                                        )
+                                    ),
+                                    React.createElement('span', { 
+                                        className: 'bg-red-500 text-white px-3 py-1 rounded font-mono' 
+                                    }, `PB: ${powerball}`)
+                                )
+                            ),
+
+                            React.createElement('div', { className: 'flex gap-3 flex-wrap' },
+                                React.createElement('button', {
+                                    onClick: aiEnabled ? generateAdvancedNumbers : generateQuickPick,
+                                    className: 'px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
+                                }, aiEnabled ? '🤖🧮 Generate Hybrid' : '🎲 Generate Quick Pick'),
+                                
+                                React.createElement('button', {
+                                    onClick: generateQuickPick,
+                                    className: 'px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors'
+                                }, '🎲 Random Quick Pick'),
+                                
+                                selectedNumbers.length > 0 && React.createElement('button', {
+                                    onClick: () => {
+                                        const ticket = `${selectedNumbers.join(', ')} | PB: ${powerball}`;
+                                        if (navigator.clipboard) {
+                                            navigator.clipboard.writeText(ticket);
+                                        } else {
+                                            alert(`Numbers: ${ticket}`);
+                                        }
+                                    },
+                                    className: 'px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors'
+                                }, '📋 Copy Numbers')
+                            )
+                        )
+                    ),
+
+                    activeTab === 'ai-setup' && React.createElement('div', { className: 'space-y-6' },
+                        React.createElement('div', { className: 'bg-white rounded-lg border-2 border-gray-200 p-6' },
+                            React.createElement('h2', { className: 'text-xl font-bold mb-4' }, '🤖 Claude AI Setup'),
+                            
+                            !aiEnabled ? React.createElement('div', null,
+                                React.createElement('p', { className: 'text-gray-600 mb-4' },
+                                    'Enable hybrid Claude AI + 6 Algorithms analysis for enhanced predictions.'
+                                ),
+                                
+                                React.createElement('div', { className: 'space-y-4' },
+                                    React.createElement('div', null,
+                                        React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                            'Anthropic API Key'
+                                        ),
+                                        React.createElement('input', {
+                                            type: 'password',
+                                            value: aiApiKey,
+                                            onChange: (e) => setAiApiKey(e.target.value),
+                                            placeholder: 'sk-ant-...',
+                                            className: 'w-full px-3 py-2 border border-gray-300 rounded-lg'
+                                        })
+                                    ),
                                     
-                                    {selectedNumbers.length > 0 && (
-                                        <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                                            <h3 className="font-semibold mb-2">Your Numbers:</h3>
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex gap-1">
-                                                    {selectedNumbers.map(num => (
-                                                        <span key={num} className="bg-gray-200 px-3 py-1 rounded font-mono">
-                                                            {num}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                                <span className="bg-red-500 text-white px-3 py-1 rounded font-mono">
-                                                    PB: {powerball}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
+                                    React.createElement('button', {
+                                        onClick: testClaudeAPI,
+                                        disabled: !aiApiKey.trim(),
+                                        className: aiApiKey.trim() ?
+                                            'bg-purple-600 text-white hover:bg-purple-700 px-6 py-3 rounded-lg transition-colors' :
+                                            'bg-gray-300 text-gray-600 cursor-not-allowed px-6 py-3 rounded-lg'
+                                    }, '🚀 Test & Enable Claude AI')
+                                ),
+                                
+                                React.createElement('p', { className: 'text-xs text-gray-500 mt-4' },
+                                    'Get your API key from ',
+                                    React.createElement('a', { 
+                                        href: 'https://console.anthropic.com/', 
+                                        target: '_blank',
+                                        className: 'text-blue-600 hover:underline'
+                                    }, 'console.anthropic.com'),
+                                    '. Your key is stored locally and never shared.'
+                                )
+                            ) : React.createElement('div', { className: 'bg-green-50 border border-green-200 rounded-lg p-4' },
+                                React.createElement('div', { className: 'flex items-center gap-2' },
+                                    React.createElement('span', { className: 'text-2xl' }, '✅'),
+                                    React.createElement('div', null,
+                                        React.createElement('h3', { className: 'font-semibold text-green-800' }, 'Claude AI Active'),
+                                        React.createElement('p', { className: 'text-green-700 text-sm' },
+                                            'Hybrid analysis is now available. Advanced algorithms are enhanced with Claude AI insights.'
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
 
-                                    <div className="flex gap-3 flex-wrap">
-                                        <button
-                                            onClick={aiEnabled ? generateAdvancedNumbers : generateQuickPick}
-                                            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                        >
-                                            {aiEnabled ? '🤖🧮 Generate Hybrid' : '🎲 Generate Quick Pick'}
-                                        </button>
-                                        
-                                        <button
-                                            onClick={generateQuickPick}
-                                            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                                        >
-                                            🎲 Random Quick Pick
-                                        </button>
-                                        
-                                        {selectedNumbers.length > 0 && (
-                                            <button
-                                                onClick={() => {
-                                                    const ticket = `${selectedNumbers.join(', ')} | PB: ${powerball}`;
-                                                    navigator.clipboard?.writeText(ticket) || alert(`Numbers: ${ticket}`);
-                                                }}
-                                                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                                            >
-                                                📋 Copy Numbers
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                    activeTab === 'tools' && React.createElement('div', { className: 'space-y-6' },
+                        React.createElement('div', { className: 'bg-white rounded-lg border-2 border-gray-200 p-6' },
+                            React.createElement('h2', { className: 'text-xl font-bold mb-4' }, '🔧 System Tools & Diagnostics'),
+                            
+                            React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+                                React.createElement('button', {
+                                    onClick: () => window.open('/api/test', '_blank'),
+                                    className: 'p-4 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
+                                },
+                                    React.createElement('div', { className: 'text-lg font-semibold' }, '🔍 API Test'),
+                                    React.createElement('div', { className: 'text-sm text-gray-600' }, 'Test API connectivity')
+                                ),
+                                
+                                React.createElement('button', {
+                                    onClick: () => window.open('/api/powerball', '_blank'),
+                                    className: 'p-4 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
+                                },
+                                    React.createElement('div', { className: 'text-lg font-semibold' }, '🎰 Powerball API'),
+                                    React.createElement('div', { className: 'text-sm text-gray-600' }, 'Check live jackpot data')
+                                ),
+                                
+                                React.createElement('button', {
+                                    onClick: () => window.location.reload(),
+                                    className: 'p-4 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
+                                },
+                                    React.createElement('div', { className: 'text-lg font-semibold' }, '🔄 Reload App'),
+                                    React.createElement('div', { className: 'text-sm text-gray-600' }, 'Refresh application')
+                                )
+                            ),
 
-                                <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
-                                    <h3 className="text-lg font-semibold mb-3">🧠 Algorithm Status</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                            <h4 className="font-medium mb-2 text-blue-700">📊 Local Algorithms (6)</h4>
-                                            <ul className="space-y-1 text-gray-600">
-                                                <li>• EWMA Frequency Analysis</li>
-                                                <li>• Neural Network Pattern Recognition</li>
-                                                <li>• Pair Relationship Analysis</li>
-                                                <li>• Gap Pattern Optimization</li>
-                                                <li>• Markov Chain Transitions</li>
-                                                <li>• Sum Range Optimization</li>
-                                            </ul>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-medium mb-2">
-                                                {aiEnabled ? '🤖 Claude AI (Active)' : '🤖 Claude AI (Setup Required)'}
-                                            </h4>
-                                            <div className="text-gray-600 space-y-1">
-                                                <div>{aiEnabled ? '✅ Hybrid analysis enabled' : '⭕ Setup required in AI tab'}</div>
-                                                <div>• Advanced statistical validation</div>
-                                                <div>• Pattern insight enhancement</div>
-                                                <div>• Strategic confidence scoring</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                            React.createElement('div', { className: 'mt-6 p-4 bg-gray-50 rounded-lg' },
+                                React.createElement('h3', { className: 'font-semibold mb-2' }, '📊 Current Status'),
+                                React.createElement('div', { className: 'text-sm space-y-1' },
+                                    React.createElement('div', null, `API Status: ${apiStatus}`),
+                                    React.createElement('div', null, `Jackpot Data: ${currentJackpot ? '✅ Available' : '❌ Unavailable'}`),
+                                    React.createElement('div', null, `Claude AI: ${aiEnabled ? '🤖 Active' : '⭕ Disabled'}`),
+                                    React.createElement('div', null, `Last Load: ${new Date().toLocaleTimeString()}`)
+                                )
+                            )
+                        )
+                    ),
 
-                        {activeTab === 'ai-setup' && (
-                            <div className="space-y-6">
-                                <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
-                                    <h2 className="text-xl font-bold mb-4">🤖 Claude AI Setup</h2>
-                                    
-                                    {!aiEnabled ? (
-                                        <div>
-                                            <p className="text-gray-600 mb-4">
-                                                Enable hybrid Claude AI + 6 Algorithms analysis for enhanced predictions.
-                                            </p>
-                                            
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Anthropic API Key
-                                                    </label>
-                                                    <input
-                                                        type="password"
-                                                        value={aiApiKey}
-                                                        onChange={(e) => setAiApiKey(e.target.value)}
-                                                        placeholder="sk-ant-..."
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                                    />
-                                                </div>
-                                                
-                                                <button
-                                                    onClick={testClaudeAPI}
-                                                    disabled={!aiApiKey.trim()}
-                                                    className={`px-6 py-3 rounded-lg transition-colors ${
-                                                        aiApiKey.trim()
-                                                            ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                                            : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                                    }`}
-                                                >
-                                                    🚀 Test & Enable Claude AI
-                                                </button>
-                                            </div>
-                                            
-                                            <p className="text-xs text-gray-500 mt-4">
-                                                Get your API key from{' '}
-                                                <a 
-                                                    href="https://console.anthropic.com/" 
-                                                    target="_blank"
-                                                    className="text-blue-600 hover:underline"
-                                                >
-                                                    console.anthropic.com
-                                                </a>
-                                                . Your key is stored locally and never shared.
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-2xl">✅</span>
-                                                <div>
-                                                    <h3 className="font-semibold text-green-800">Claude AI Active</h3>
-                                                    <p className="text-green-700 text-sm">
-                                                        Hybrid analysis is now available. Advanced algorithms are enhanced with Claude AI insights.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'tools' && (
-                            <div className="space-y-6">
-                                <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
-                                    <h2 className="text-xl font-bold mb-4">🔧 System Tools & Diagnostics</h2>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <button
-                                            onClick={() => window.open('/api/test', '_blank')}
-                                            className="p-4 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                                        >
-                                            <div className="text-lg font-semibold">🔍 API Test</div>
-                                            <div className="text-sm text-gray-600">Test API connectivity</div>
-                                        </button>
-                                        
-                                        <button
-                                            onClick={() => window.open('/api/powerball', '_blank')}
-                                            className="p-4 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                                        >
-                                            <div className="text-lg font-semibold">🎰 Powerball API</div>
-                                            <div className="text-sm text-gray-600">Check live jackpot data</div>
-                                        </button>
-                                        
-                                        <button
-                                            onClick={() => window.open('/api/diagnose', '_blank')}
-                                            className="p-4 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                                        >
-                                            <div className="text-lg font-semibold">🩺 Diagnostics</div>
-                                            <div className="text-sm text-gray-600">System health check</div>
-                                        </button>
-                                        
-                                        <button
-                                            onClick={() => window.location.reload()}
-                                            className="p-4 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                                        >
-                                            <div className="text-lg font-semibold">🔄 Reload App</div>
-                                            <div className="text-sm text-gray-600">Refresh application</div>
-                                        </button>
-                                    </div>
-
-                                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                                        <h3 className="font-semibold mb-2">📊 Current Status</h3>
-                                        <div className="text-sm space-y-1">
-                                            <div>API Status: {apiStatus}</div>
-                                            <div>Jackpot Data: {currentJackpot ? '✅ Available' : '❌ Unavailable'}</div>
-                                            <div>Claude AI: {aiEnabled ? '🤖 Active' : '⭕ Disabled'}</div>
-                                            <div>Last Load: {new Date().toLocaleTimeString()}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Footer */}
-                        <div className="mt-8 text-center text-xs text-gray-500">
-                            <p>🎰 Claude AI + 6 Algorithms Hybrid Lottery System • Educational purposes only</p>
-                            <p className="mt-1">
-                                Data: {apiStatus} • AI: {aiEnabled ? '🤖 Hybrid Active' : 'Local Only'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                    // Footer
+                    React.createElement('div', { className: 'mt-8 text-center text-xs text-gray-500' },
+                        React.createElement('p', null, '🎰 Claude AI + 6 Algorithms Hybrid Lottery System • Educational purposes only'),
+                        React.createElement('p', { className: 'mt-1' },
+                            `Data: ${apiStatus} • AI: ${aiEnabled ? '🤖 Hybrid Active' : 'Local Only'}`
+                        )
+                    )
+                )
             );
         }
 
         // Initialize Application
         function App() {
-            return (
-                <ErrorBoundary>
-                    <LotteryApp />
-                </ErrorBoundary>
+            return React.createElement(ErrorBoundary, null,
+                React.createElement(LotteryApp)
             );
         }
 
@@ -542,7 +502,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ Lottery System Loading...');
             try {
-                ReactDOM.render(<App />, document.getElementById('root'));
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(React.createElement(App));
                 console.log('✅ Lottery System Loaded Successfully');
             } catch (error) {
                 console.error('❌ Failed to render application:', error);
