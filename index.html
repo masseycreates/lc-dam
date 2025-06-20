@@ -1608,21 +1608,79 @@
                             ),
                             React.createElement('div', { className: 'text-blue-700' },
                                 `${historicalStats.totalDrawings} historical drawings • ${historicalDataAvailable ? 'Live data' : 'Simulated data'} • Last updated: ${new Date().toLocaleDateString()}`
-                            )
                         )
-                    ),
+                    )
+                ),
 
-                    // Enhanced Quick Selection
+                // Enhanced Optimization Tab with Claude AI
+                activeTab === 'optimization' && React.createElement('div', { className: 'grid gap-6' },
+                    // AI-Enhanced Quick Selection - Moved from Calculator tab
                     React.createElement('div', { className: 'enhanced-prediction-card' },
-                        React.createElement('h3', { className: 'text-2xl font-bold text-gray-800 mb-4' },
-                            '🎯 AI-Enhanced Quick Selection'
+                        React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                            React.createElement('h3', { className: 'text-2xl font-bold text-gray-800' },
+                                '🤖 AI-Enhanced Quick Selection'
+                            ),
+                            systemPerformance && React.createElement('div', {
+                                className: `text-xs px-3 py-1 rounded-full text-white ${
+                                    systemPerformance.status === 'optimal' ? 'bg-green-500' : 
+                                    systemPerformance.status === 'good' ? 'bg-blue-500' : 'bg-yellow-500'
+                                }`
+                            }, `${systemPerformance.averageHitRate}% Hit Rate • ${systemPerformance.status}`)
                         ),
                         React.createElement('p', { className: 'text-gray-600 mb-4' },
-                            'Advanced algorithm predictions using statistical analysis and pattern recognition.'
+                            `Claude AI-powered predictions using advanced algorithms with ensemble learning. Analyzing ${historicalStats ? historicalStats.totalDrawings : historicalRecordsLimit} historical draws for enhanced accuracy.`
                         ),
                         
+                        // Data Input Controls
+                        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg' },
+                            React.createElement('div', null,
+                                React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                    'Historical Data Records:'
+                                ),
+                                React.createElement('select', {
+                                    value: historicalRecordsLimit,
+                                    onChange: (e) => setHistoricalRecordsLimit(parseInt(e.target.value)),
+                                    className: 'w-full text-sm'
+                                },
+                                    React.createElement('option', { value: 50 }, '50 Recent (Fast)'),
+                                    React.createElement('option', { value: 100 }, '100 Recent (Balanced)'),
+                                    React.createElement('option', { value: 200 }, '200 Recent (Detailed)'),
+                                    React.createElement('option', { value: 500 }, '500 Recent (Deep Analysis)'),
+                                    React.createElement('option', { value: 1000 }, '1,000 Recent (Maximum)'),
+                                    React.createElement('option', { value: 2000 }, '2,000 Recent (Ultra Deep)')
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                    'Claude AI Analysis:'
+                                ),
+                                React.createElement('div', { 
+                                    className: `text-sm px-3 py-2 rounded ${aiEnabled ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`
+                                }, aiEnabled ? '✅ Enabled & Ready' : '⚠️ Configure API Key Below')
+                            ),
+                            React.createElement('div', { className: 'flex items-end' },
+                                React.createElement('button', {
+                                    onClick: () => {
+                                        fetchHistoricalData();
+                                        if (generateAdvancedQuickSelection && historicalStats) {
+                                            const advancedSelection = generateAdvancedQuickSelection(historicalStats);
+                                            setQuickSelectionSets(advancedSelection);
+                                        }
+                                    },
+                                    disabled: isLoadingHistory,
+                                    className: `btn ${isLoadingHistory ? 'btn-secondary' : 'btn-purple'} w-full text-sm`
+                                },
+                                    isLoadingHistory ? React.createElement('span', null,
+                                        React.createElement('span', { className: 'loading-spinner mr-2' }),
+                                        'Updating...'
+                                    ) : '🔄 Refresh AI Selections'
+                                )
+                            )
+                        ),
+                        
+                        // Display AI-Enhanced Quick Selections
                         React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4' },
-                            quickSelectionSets.slice(0, 5).map(selection =>
+                            quickSelectionSets.slice(0, 6).map(selection =>
                                 React.createElement('div', {
                                     key: selection.id,
                                     className: `card ${selection.confidence >= 90 ? 'confidence-high' : selection.confidence >= 80 ? 'confidence-medium' : 'confidence-low'} bg-white p-4`
@@ -1640,9 +1698,19 @@
                                         }, selection.strategy)
                                     ),
                                     
+                                    // Algorithm Detail
+                                    selection.algorithmDetail && React.createElement('div', {
+                                        className: 'text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded mb-2 font-medium'
+                                    }, `🔬 ${selection.algorithmDetail}`),
+                                    
                                     React.createElement('p', { className: 'text-xs text-gray-600 mb-3 leading-relaxed' },
                                         selection.description
                                     ),
+                                    
+                                    // Technical Analysis
+                                    selection.technicalAnalysis && React.createElement('div', {
+                                        className: 'text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded mb-3 font-mono'
+                                    }, `📊 ${selection.technicalAnalysis}`),
                                     
                                     React.createElement('div', { className: 'flex items-center gap-1 mb-3 flex-wrap' },
                                         selection.numbers.map(num =>
@@ -1660,25 +1728,56 @@
                                             onClick: () => {
                                                 setSelectedNumbers(selection.numbers);
                                                 setPowerball(selection.powerball.toString());
+                                                setActiveTab('calculator');
                                             },
                                             className: 'btn btn-primary text-xs flex-1'
-                                        }, '✓ Use These'),
+                                        }, '✓ Use Numbers'),
                                         React.createElement('button', {
                                             onClick: () => {
                                                 const numbersText = `${selection.numbers.join(', ')} | PB: ${selection.powerball}`;
                                                 navigator.clipboard?.writeText(numbersText);
                                             },
                                             className: 'btn btn-secondary text-xs'
-                                        }, '📋')
+                                        }, '📋'),
+                                        aiEnabled && React.createElement('button', {
+                                            onClick: async () => {
+                                                if (window.claudeAnalyzer && window.claudeAnalyzer.isInitialized) {
+                                                    setIsLoadingAI(true);
+                                                    try {
+                                                        const context = {
+                                                            recentTrends: "Advanced pattern analysis",
+                                                            totalDrawings: historicalStats?.totalDrawings || 0
+                                                        };
+                                                        const insight = await window.claudeAnalyzer.generatePredictionInsights(selection, context);
+                                                        setAiInsights(prev => ({ ...prev, [`quick_${selection.id}`]: insight }));
+                                                    } catch (error) {
+                                                        console.error('Claude analysis failed:', error);
+                                                    } finally {
+                                                        setIsLoadingAI(false);
+                                                    }
+                                                }
+                                            },
+                                            disabled: isLoadingAI,
+                                            className: 'btn btn-purple text-xs'
+                                        }, '🤖')
+                                    ),
+                                    
+                                    // Claude AI Insights for Quick Selections
+                                    aiEnabled && aiInsights[`quick_${selection.id}`] && React.createElement('div', {
+                                        className: 'mt-3 p-3 bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-lg text-xs leading-relaxed'
+                                    },
+                                        React.createElement('div', {
+                                            className: 'text-xs font-semibold text-purple-600 mb-2 flex items-center gap-1'
+                                        }, '🤖 Claude AI Insight'),
+                                        React.createElement('div', { className: 'text-purple-800' },
+                                            aiInsights[`quick_${selection.id}`]
+                                        )
                                     )
                                 )
                             )
                         )
-                    )
-                ),
+                    ),
 
-                // Enhanced Optimization Tab with Claude AI
-                activeTab === 'optimization' && React.createElement('div', { className: 'grid gap-6' },
                     // Custom AI Generation Controls
                     React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
                         // Strategy selector
