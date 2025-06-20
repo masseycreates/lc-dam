@@ -1207,7 +1207,7 @@
             // State management
             const [selectedNumbers, setSelectedNumbers] = useState([]);
             const [powerball, setPowerball] = useState('');
-            const [activeTab, setActiveTab] = useState('calculator');
+            const [activeTab, setActiveTab] = useState('quick-selection');
             
             // Enhanced data states
             const [liveDataAvailable, setLiveDataAvailable] = useState(false);
@@ -1224,23 +1224,15 @@
             const [historicalRecordsLimit, setHistoricalRecordsLimit] = useState(500);
             
             // Enhanced prediction states with AI
-            const [optimizationStrategy, setOptimizationStrategy] = useState('hybrid');
-            const [numOptimizedSets, setNumOptimizedSets] = useState(5);
-            const [optimizedSets, setOptimizedSets] = useState([]);
-            const [isOptimizing, setIsOptimizing] = useState(false);
             const [quickSelectionSets, setQuickSelectionSets] = useState([]);
             
             // Claude AI Integration states
             const [aiApiKey, setAiApiKey] = useState('');
-            const [aiInsights, setAiInsights] = useState({});
             const [isLoadingAI, setIsLoadingAI] = useState(false);
             const [aiEnabled, setAiEnabled] = useState(false);
             
             // Performance tracking
             const [systemPerformance, setSystemPerformance] = useState(null);
-            
-            // Tax calculation states (simplified for space)
-            const [taxWinnings, setTaxWinnings] = useState('');
 
             // Initialize system
             useEffect(() => {
@@ -1484,6 +1476,301 @@
                 };
             };
 
+            // Tab content
+            const renderTabContent = () => {
+                switch (activeTab) {
+                    case 'quick-selection':
+                        return React.createElement('div', { className: 'space-y-6' },
+                            // Claude AI Controls
+                            React.createElement('div', { className: 'card enhanced-prediction-card' },
+                                React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                                    React.createElement('div', { className: 'flex items-center gap-3' },
+                                        React.createElement('div', { style: { fontSize: '1.5rem' } }, '🤖🧮'),
+                                        React.createElement('div', null,
+                                            React.createElement('h3', { className: 'text-lg font-semibold' }, 'Claude AI + 6 Algorithms Hybrid System'),
+                                            React.createElement('p', { className: 'text-sm text-gray-600' }, 'Enable Claude AI for intelligent analysis combining all 6 mathematical algorithms')
+                                        )
+                                    ),
+                                    aiEnabled ? React.createElement('span', { className: 'claude-badge' }, '✅ ENABLED') : null
+                                ),
+                                
+                                !aiEnabled ? React.createElement('div', { className: 'space-y-3' },
+                                    React.createElement('div', { className: 'warning-banner' },
+                                        React.createElement('p', { className: 'text-amber-700' }, '⚠️ Claude AI is currently disabled. Using local 6 algorithms only. Enable Claude for hybrid analysis.')
+                                    ),
+                                    React.createElement('div', { className: 'flex flex-col gap-3' },
+                                        React.createElement('input', {
+                                            type: 'password',
+                                            value: aiApiKey,
+                                            onChange: (e) => setAiApiKey(e.target.value),
+                                            placeholder: 'Enter your Anthropic API key (sk-ant-...)',
+                                            className: 'px-3 py-2 border border-gray-300 rounded-md'
+                                        }),
+                                        React.createElement('button', {
+                                            onClick: enableAI,
+                                            disabled: isLoadingAI || !aiApiKey.trim(),
+                                            className: `btn btn-purple ${isLoadingAI ? 'opacity-50' : ''}`
+                                        },
+                                            isLoadingAI ? React.createElement('span', { className: 'loading-spinner' }) : null,
+                                            ' Enable Claude AI Hybrid System'
+                                        )
+                                    ),
+                                    React.createElement('p', { className: 'text-xs text-gray-500' }, 
+                                        'Get your API key from ',
+                                        React.createElement('a', { 
+                                            href: 'https://console.anthropic.com/', 
+                                            target: '_blank',
+                                            className: 'text-purple-600 underline'
+                                        }, 'console.anthropic.com')
+                                    )
+                                ) : React.createElement('div', { className: 'space-y-3' },
+                                    React.createElement('div', { className: 'success-banner' },
+                                        React.createElement('p', { className: 'text-green-700' }, '✅ Claude AI is active and analyzing with 6 algorithms for optimal predictions.')
+                                    ),
+                                    React.createElement('button', {
+                                        onClick: generateClaudeHybridSelection,
+                                        disabled: isLoadingAI,
+                                        className: `btn btn-purple ${isLoadingAI ? 'opacity-50' : ''}`
+                                    },
+                                        isLoadingAI ? React.createElement('span', { className: 'loading-spinner' }) : null,
+                                        ' 🤖🧮 Generate New Hybrid Selection'
+                                    )
+                                )
+                            ),
+
+                            // Quick Selection Results
+                            React.createElement('div', { className: 'card quick-selection-card' },
+                                React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                                    React.createElement('div', null,
+                                        React.createElement('h3', { className: 'text-lg font-semibold' }, 
+                                            aiEnabled ? '🤖🧮 Claude AI + 6 Algorithms Hybrid Selections' : '🧮 6 Mathematical Algorithms'
+                                        ),
+                                        React.createElement('p', { className: 'text-sm text-gray-600' }, 
+                                            aiEnabled ? 'Claude AI intelligently combines all 6 algorithms' : 'Advanced mathematical ensemble predictions'
+                                        )
+                                    ),
+                                    !isLoadingHistory ? React.createElement('button', {
+                                        onClick: async () => {
+                                            if (aiEnabled) {
+                                                await generateClaudeHybridSelection();
+                                            } else if (window.generateAdvancedQuickSelection) {
+                                                const newSelection = await window.generateAdvancedQuickSelection(historicalStats);
+                                                setQuickSelectionSets(newSelection);
+                                            }
+                                        },
+                                        className: 'btn btn-secondary text-sm'
+                                    }, '🔄 Regenerate') : null
+                                ),
+                                
+                                isLoadingHistory ? React.createElement('div', { className: 'text-center py-8' },
+                                    React.createElement('div', { className: 'loading-spinner mx-auto mb-2' }),
+                                    React.createElement('p', null, 'Loading historical data and generating selections...')
+                                ) : quickSelectionSets.length > 0 ? React.createElement('div', { className: 'space-y-4' },
+                                    quickSelectionSets.map((selection, index) => 
+                                        React.createElement('div', { 
+                                            key: index,
+                                            className: `p-4 rounded-lg border-2 ${selection.isHybrid ? 'claude-selection' : 'border-blue-200 bg-blue-50'} ${
+                                                selection.confidence >= 85 ? 'confidence-high' : 
+                                                selection.confidence >= 75 ? 'confidence-medium' : 'confidence-low'
+                                            }`
+                                        },
+                                            React.createElement('div', { className: 'flex items-start justify-between mb-3' },
+                                                React.createElement('div', null,
+                                                    React.createElement('h4', { className: 'font-semibold text-sm' }, selection.name),
+                                                    selection.isHybrid ? React.createElement('span', { className: 'claude-badge mt-1' }, 'HYBRID AI') : null
+                                                ),
+                                                React.createElement('span', { 
+                                                    className: `px-2 py-1 rounded text-xs font-medium ${
+                                                        selection.confidence >= 85 ? 'bg-green-100 text-green-800' : 
+                                                        selection.confidence >= 75 ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                                                    }`
+                                                }, selection.strategy)
+                                            ),
+                                            
+                                            React.createElement('div', { className: 'flex items-center gap-4 mb-3' },
+                                                React.createElement('div', { className: 'flex gap-2' },
+                                                    selection.numbers.map(num => 
+                                                        React.createElement('span', { 
+                                                            key: num, 
+                                                            className: 'number-display'
+                                                        }, num)
+                                                    )
+                                                ),
+                                                React.createElement('span', { className: 'powerball-display' }, 
+                                                    `PB: ${selection.powerball}`
+                                                )
+                                            ),
+                                            
+                                            React.createElement('p', { className: 'text-xs text-gray-600' }, selection.description),
+                                            
+                                            React.createElement('div', { className: 'mt-2 text-xs text-gray-500' },
+                                                `Method: ${selection.algorithmDetail || selection.technicalAnalysis}`
+                                            )
+                                        )
+                                    )
+                                ) : React.createElement('div', { className: 'text-center py-8 text-gray-500' },
+                                    React.createElement('p', null, 'No selections generated yet. Click regenerate to create predictions.')
+                                )
+                            )
+                        );
+
+                    case 'calculator':
+                        return React.createElement('div', { className: 'space-y-6' },
+                            // Manual Selection
+                            React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '🎯 Manual Number Selection'),
+                                
+                                // Current Selection Display
+                                React.createElement('div', { className: 'mb-6' },
+                                    React.createElement('h4', { className: 'text-sm font-medium mb-2' }, 'Your Selection:'),
+                                    React.createElement('div', { className: 'flex items-center gap-4 mb-4' },
+                                        React.createElement('div', { className: 'flex gap-2' },
+                                            selectedNumbers.length > 0 ? selectedNumbers.map(num => 
+                                                React.createElement('span', { 
+                                                    key: num, 
+                                                    className: 'number-display'
+                                                }, num)
+                                            ) : React.createElement('span', { className: 'text-gray-400' }, 'Select 5 numbers')
+                                        ),
+                                        React.createElement('div', null,
+                                            powerball ? React.createElement('span', { className: 'powerball-display' }, `PB: ${powerball}`) :
+                                            React.createElement('span', { className: 'text-gray-400' }, 'Select Powerball')
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'flex gap-2' },
+                                        React.createElement('button', {
+                                            onClick: quickPick,
+                                            className: 'btn btn-primary'
+                                        }, '🎲 Quick Pick'),
+                                        React.createElement('button', {
+                                            onClick: clearSelection,
+                                            className: 'btn btn-secondary'
+                                        }, '🗑️ Clear'),
+                                        selectedNumbers.length === 5 && powerball ? React.createElement('button', {
+                                            onClick: () => {
+                                                const ticket = `${selectedNumbers.join(', ')} | PB: ${powerball}`;
+                                                navigator.clipboard.writeText(ticket);
+                                                alert('Selection copied to clipboard!');
+                                            },
+                                            className: 'btn btn-secondary'
+                                        }, '📋 Copy') : null
+                                    )
+                                ),
+
+                                // Number Grid
+                                React.createElement('div', null,
+                                    React.createElement('h4', { className: 'text-sm font-medium mb-2' }, 'Main Numbers (1-69):'),
+                                    React.createElement('div', { className: 'grid grid-cols-10 gap-2 mb-6' },
+                                        Array.from({ length: 69 }, (_, i) => i + 1).map(num =>
+                                            React.createElement('button', {
+                                                key: num,
+                                                onClick: () => toggleNumber(num),
+                                                className: `w-10 h-10 text-sm border rounded ${
+                                                    selectedNumbers.includes(num) 
+                                                        ? 'bg-blue-500 text-white border-blue-500' 
+                                                        : 'bg-white border-gray-300 hover:bg-gray-50'
+                                                } ${selectedNumbers.length >= 5 && !selectedNumbers.includes(num) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`
+                                            }, num)
+                                        )
+                                    ),
+
+                                    React.createElement('h4', { className: 'text-sm font-medium mb-2' }, 'Powerball (1-26):'),
+                                    React.createElement('div', { className: 'grid grid-cols-13 gap-2' },
+                                        Array.from({ length: 26 }, (_, i) => i + 1).map(num =>
+                                            React.createElement('button', {
+                                                key: num,
+                                                onClick: () => setPowerball(num),
+                                                className: `w-10 h-10 text-sm border rounded ${
+                                                    powerball === num 
+                                                        ? 'bg-red-500 text-white border-red-500' 
+                                                        : 'bg-white border-gray-300 hover:bg-gray-50'
+                                                } cursor-pointer`
+                                            }, num)
+                                        )
+                                    )
+                                )
+                            )
+                        );
+
+                    case 'analysis':
+                        return React.createElement('div', { className: 'space-y-6' },
+                            // Data Status
+                            React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '📊 Data Analysis & Statistics'),
+                                
+                                React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-4' },
+                                    React.createElement('div', { className: 'p-3 bg-gray-50 rounded-lg' },
+                                        React.createElement('h4', { className: 'font-medium text-sm mb-1' }, 'Live Data Status'),
+                                        React.createElement('p', { className: 'text-xs' }, liveDataAvailable ? '✅ Connected' : '❌ Unavailable'),
+                                        React.createElement('p', { className: 'text-xs text-gray-600' }, lastUpdated ? `Updated: ${lastUpdated}` : 'Not updated')
+                                    ),
+                                    React.createElement('div', { className: 'p-3 bg-gray-50 rounded-lg' },
+                                        React.createElement('h4', { className: 'font-medium text-sm mb-1' }, 'Historical Data'),
+                                        React.createElement('p', { className: 'text-xs' }, historicalDataAvailable ? '✅ Available' : '❌ Limited'),
+                                        React.createElement('p', { className: 'text-xs text-gray-600' }, 
+                                            historicalStats ? `${historicalStats.totalDrawings} drawings` : 'No data'
+                                        )
+                                    )
+                                ),
+
+                                // Hot/Cold Numbers
+                                historicalStats && historicalStats.hotNumbers ? React.createElement('div', { className: 'space-y-4' },
+                                    React.createElement('div', null,
+                                        React.createElement('h4', { className: 'font-medium text-sm mb-2' }, '🔥 Hot Numbers (Most Frequent)'),
+                                        React.createElement('div', { className: 'flex flex-wrap gap-2' },
+                                            historicalStats.hotNumbers.slice(0, 15).map(num =>
+                                                React.createElement('span', { 
+                                                    key: num, 
+                                                    className: 'px-2 py-1 bg-red-100 text-red-800 rounded text-xs'
+                                                }, num)
+                                            )
+                                        )
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('h4', { className: 'font-medium text-sm mb-2' }, '❄️ Cold Numbers (Least Frequent)'),
+                                        React.createElement('div', { className: 'flex flex-wrap gap-2' },
+                                            historicalStats.coldNumbers ? historicalStats.coldNumbers.slice(0, 15).map(num =>
+                                                React.createElement('span', { 
+                                                    key: num, 
+                                                    className: 'px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs'
+                                                }, num)
+                                            ) : React.createElement('span', { className: 'text-gray-500 text-xs' }, 'Data not available')
+                                        )
+                                    )
+                                ) : React.createElement('p', { className: 'text-gray-500 text-sm' }, 'Statistical analysis will appear here when historical data is loaded.')
+                            ),
+
+                            // System Performance
+                            systemPerformance ? React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '⚙️ System Performance'),
+                                React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
+                                    React.createElement('div', { className: 'text-center' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-blue-600' }, systemPerformance.averageHitRate + '%'),
+                                        React.createElement('div', { className: 'text-xs text-gray-600' }, 'Avg Hit Rate')
+                                    ),
+                                    React.createElement('div', { className: 'text-center' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-green-600' }, systemPerformance.predictionsGenerated),
+                                        React.createElement('div', { className: 'text-xs text-gray-600' }, 'Predictions')
+                                    ),
+                                    React.createElement('div', { className: 'text-center' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-purple-600' }, aiEnabled ? 'HYBRID' : 'LOCAL'),
+                                        React.createElement('div', { className: 'text-xs text-gray-600' }, 'Mode')
+                                    ),
+                                    React.createElement('div', { className: 'text-center' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-orange-600' }, systemPerformance.status.toUpperCase()),
+                                        React.createElement('div', { className: 'text-xs text-gray-600' }, 'Status')
+                                    )
+                                )
+                            ) : null
+                        );
+
+                    default:
+                        return React.createElement('div', { className: 'text-center py-8' },
+                            React.createElement('p', null, 'Select a tab to view content')
+                        );
+                }
+            };
+
             return React.createElement('div', { style: { maxWidth: '1280px', margin: '0 auto', padding: '1.5rem' } },
                 // Header with enhanced status
                 React.createElement('div', { 
@@ -1508,3 +1795,86 @@
                                 ),
                                 React.createElement('div', { style: { opacity: 0.7, fontSize: '0.75rem' } },
                                     liveDataAvailable && currentJackpot ? `Cash Value: ${currentJackpot.cashFormatted} • ` : 'For current jackpot amount • ',
+                                    nextDrawDate || 'Next drawing info unavailable'
+                                )
+                            )
+                        ),
+                        React.createElement('div', { style: { textAlign: 'right' } },
+                            React.createElement('button', {
+                                onClick: fetchLatestPowerballData,
+                                disabled: isUpdating,
+                                style: {
+                                    background: 'rgba(255,255,255,0.2)',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '0.5rem',
+                                    cursor: isUpdating ? 'not-allowed' : 'pointer',
+                                    opacity: isUpdating ? 0.7 : 1
+                                }
+                            },
+                                isUpdating ? React.createElement('span', { className: 'loading-spinner' }) : '🔄',
+                                ' Refresh'
+                            )
+                        )
+                    )
+                ),
+
+                // Status Message
+                dataStatus ? React.createElement('div', { 
+                    className: `mb-4 p-3 rounded-lg text-sm ${
+                        dataStatus.includes('✅') ? 'success-banner' :
+                        dataStatus.includes('❌') ? 'error-banner' : 'warning-banner'
+                    }`
+                }, dataStatus) : null,
+
+                // Navigation Tabs
+                React.createElement('div', { className: 'mb-6' },
+                    React.createElement('div', { className: 'flex border-b border-gray-200' },
+                        [
+                            { id: 'quick-selection', label: '🤖🧮 AI Hybrid', icon: aiEnabled ? '🤖🧮' : '🧮' },
+                            { id: 'calculator', label: '🎯 Calculator', icon: '🎯' },
+                            { id: 'analysis', label: '📊 Analysis', icon: '📊' }
+                        ].map(tab =>
+                            React.createElement('button', {
+                                key: tab.id,
+                                onClick: () => setActiveTab(tab.id),
+                                className: `px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                                    activeTab === tab.id 
+                                        ? 'border-blue-500 text-blue-600' 
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                }`
+                            },
+                                tab.icon, ' ', tab.label
+                            )
+                        )
+                    )
+                ),
+
+                // Tab Content
+                renderTabContent(),
+
+                // Footer
+                React.createElement('div', { className: 'mt-8 text-center text-xs text-gray-500' },
+                    React.createElement('p', null, 
+                        '🎰 Claude AI + 6 Algorithms Hybrid Lottery System • Educational purposes only • Play responsibly'
+                    ),
+                    React.createElement('p', { className: 'mt-1' },
+                        'System Status: ',
+                        React.createElement('span', { 
+                            className: liveDataAvailable ? 'text-green-600' : 'text-orange-600'
+                        }, liveDataAvailable ? 'Live Data Connected' : 'Offline Mode'),
+                        ' • AI Status: ',
+                        React.createElement('span', { 
+                            className: aiEnabled ? 'text-purple-600' : 'text-gray-600'
+                        }, aiEnabled ? 'Claude Hybrid Active' : 'Local Algorithms Only')
+                    )
+                )
+            );
+        }
+
+        // Render the app
+        ReactDOM.render(React.createElement(AdvancedLotterySystem), document.getElementById('root'));
+    </script>
+</body>
+</html>
