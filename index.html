@@ -725,14 +725,46 @@
             try {
                 const predictions = generateAdvancedOptimizedNumbers(historicalStats, 5);
                 
+                // Enhanced strategy descriptions with algorithm details
+                const enhancedDescriptions = [
+                    {
+                        name: "🎯 Top Algorithm Composite",
+                        description: "Pure consensus from all 6 algorithms: EWMA frequency analysis, pair relationships, gap patterns, neural network insights, sum optimization, and Markov chain dependencies",
+                        algorithmDetail: "Highest composite scores across all mathematical models"
+                    },
+                    {
+                        name: "⚖️ Balanced Range Distribution", 
+                        description: "Mathematically distributed across low (1-23), mid (24-46), and high (47-69) ranges to avoid clustering. Based on historical range analysis patterns",
+                        algorithmDetail: "Range optimization with statistical distribution targeting"
+                    },
+                    {
+                        name: "🔗 Pattern-Based Hybrid",
+                        description: "Combines top individual performers with numbers that have strong pair relationships. Uses both frequency analysis and co-occurrence patterns",
+                        algorithmDetail: "Individual scoring + pair frequency analysis fusion"
+                    },
+                    {
+                        name: "🔄 Contrarian Analysis",
+                        description: "Strategic mix of hot numbers with overdue 'cold' numbers to break common patterns. Uses gap analysis and anti-trend methodology",
+                        algorithmDetail: "Pattern-breaking with overdue number integration"
+                    },
+                    {
+                        name: "🧮 Mathematical Distribution",
+                        description: "Enhanced randomization within mathematical constraints: optimal sum ranges, controlled spacing, and statistical distribution principles",
+                        algorithmDetail: "Controlled randomness with mathematical optimization"
+                    }
+                ];
+                
                 return predictions.map((prediction, index) => ({
                     id: index + 1,
-                    name: prediction.strategy,
-                    description: prediction.analysis,
+                    name: enhancedDescriptions[index]?.name || prediction.strategy,
+                    description: enhancedDescriptions[index]?.description || prediction.analysis,
+                    algorithmDetail: enhancedDescriptions[index]?.algorithmDetail || "Advanced algorithm analysis",
                     numbers: prediction.numbers,
                     powerball: prediction.powerball,
-                    strategy: `🎯 ${prediction.confidence}%`,
-                    confidence: prediction.confidence
+                    strategy: `${prediction.confidence}% Confidence`,
+                    confidence: prediction.confidence,
+                    actualStrategy: prediction.strategy,
+                    technicalAnalysis: prediction.analysis
                 }));
                 
             } catch (error) {
@@ -1416,7 +1448,7 @@
                                 </p>
                                 
                                 {/* Display enhanced quick selections */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
                                     {quickSelectionSets.slice(0, 5).map(selection => (
                                         <div
                                             key={selection.id}
@@ -1436,9 +1468,39 @@
                                                     {selection.strategy}
                                                 </span>
                                             </div>
-                                            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                            
+                                            {/* Algorithm Detail */}
+                                            <div style={{ 
+                                                fontSize: '0.625rem', 
+                                                color: '#7c3aed', 
+                                                background: '#f3e8ff', 
+                                                padding: '0.25rem 0.5rem', 
+                                                borderRadius: '0.25rem',
+                                                marginBottom: '0.5rem',
+                                                fontWeight: 500
+                                            }}>
+                                                🔬 {selection.algorithmDetail}
+                                            </div>
+                                            
+                                            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem', lineHeight: 1.4 }}>
                                                 {selection.description}
                                             </p>
+                                            
+                                            {/* Technical Analysis */}
+                                            {selection.technicalAnalysis && (
+                                                <div style={{ 
+                                                    fontSize: '0.625rem', 
+                                                    color: '#6b7280', 
+                                                    background: '#f9fafb', 
+                                                    padding: '0.25rem 0.5rem', 
+                                                    borderRadius: '0.25rem',
+                                                    marginBottom: '0.75rem',
+                                                    fontFamily: 'monospace'
+                                                }}>
+                                                    📊 {selection.technicalAnalysis}
+                                                </div>
+                                            )}
+                                            
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
                                                 {selection.numbers.map(num => (
                                                     <span
@@ -1469,7 +1531,7 @@
                                                         border: 'none', cursor: 'pointer'
                                                     }}
                                                 >
-                                                    ✓ Use
+                                                    ✓ Use These Numbers
                                                 </button>
                                                 <button
                                                     onClick={() => {
@@ -1482,7 +1544,7 @@
                                                         border: 'none', cursor: 'pointer'
                                                     }}
                                                 >
-                                                    📋 Copy
+                                                    📋 Copy Numbers
                                                 </button>
                                             </div>
                                         </div>
