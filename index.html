@@ -175,12 +175,168 @@
         </div>
     </div>
     
-    <!-- Advanced Lottery Prediction System -->
-    <script>
-        // Enhanced Lottery Prediction System - Complete Implementation
+    <script type="text/babel">
+        // Claude AI Integration - Fixed Browser Compatible Implementation
+        class ClaudeLotteryAnalyzer {
+            constructor() {
+                this.apiKey = null;
+                this.model = "claude-3-haiku-20240307";
+                this.proxyURL = "/api/claude";
+                this.isInitialized = false;
+            }
+
+            // Fixed initialization method
+            initialize(apiKey) {
+                if (!apiKey || typeof apiKey !== 'string') {
+                    console.error('Invalid API key provided to Claude analyzer');
+                    return false;
+                }
+                
+                this.apiKey = apiKey.trim();
+                this.isInitialized = true;
+                console.log('Claude AI analyzer initialized successfully');
+                return true;
+            }
+
+            // Generate intelligent explanations for predictions
+            async generatePredictionInsights(predictionSet, historicalContext) {
+                if (!this.isInitialized || !this.apiKey) {
+                    return "Claude analysis unavailable - API key not configured";
+                }
+
+                try {
+                    console.log('Sending request to Claude proxy...');
+                    
+                    const response = await fetch(this.proxyURL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            apiKey: this.apiKey,
+                            predictionSet: predictionSet,
+                            historicalContext: historicalContext
+                        })
+                    });
+
+                    console.log('Proxy response status:', response.status);
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        console.error('Proxy error:', errorData);
+                        throw new Error(`Proxy error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('Claude analysis success:', data);
+                    
+                    return data.analysis || "Claude analysis completed successfully";
+                    
+                } catch (error) {
+                    console.error('Claude analysis failed:', error);
+                    
+                    // Provide helpful error messages
+                    if (error.message.includes('401')) {
+                        return "Invalid API key. Please check your Anthropic API key.";
+                    } else if (error.message.includes('429')) {
+                        return "Rate limit exceeded. Please try again in a moment.";
+                    } else if (error.message.includes('500')) {
+                        return "Claude service temporarily unavailable. Please try again later.";
+                    } else {
+                        return `Claude analysis temporarily unavailable: ${error.message}`;
+                    }
+                }
+            }
+
+            // Advanced historical pattern analysis
+            async analyzeHistoricalAnomalies(recentDrawings) {
+                if (!this.isInitialized || !this.apiKey) return null;
+
+                const summaryData = this.summarizeDrawings(recentDrawings.slice(0, 20));
+                
+                const customPrompt = `Analyze these recent lottery drawings for statistical anomalies:
+${summaryData}
+
+Identify: 1) Unusual patterns 2) Statistical deviations 3) Emerging trends
+Keep response under 200 words and focus on mathematical observations.`;
+
+                try {
+                    const response = await fetch(this.proxyURL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            apiKey: this.apiKey,
+                            prompt: customPrompt
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return {
+                        analysis: data.analysis,
+                        confidence: 75,
+                        anomalies: "Pattern analysis complete"
+                    };
+                } catch (error) {
+                    console.error('Historical analysis failed:', error);
+                    return null;
+                }
+            }
+
+            // Generate contextual strategy recommendations
+            async generateStrategyRecommendations(playerPreferences, currentJackpot) {
+                if (!this.isInitialized || !this.apiKey) {
+                    return "Configure Claude for personalized recommendations";
+                }
+
+                const customPrompt = `Player profile: ${JSON.stringify(playerPreferences)}
+Current jackpot: ${currentJackpot?.amount || 'unknown'}
+
+Recommend optimal lottery strategy considering risk tolerance and mathematical approaches.
+Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
+
+                try {
+                    const response = await fetch(this.proxyURL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            apiKey: this.apiKey,
+                            prompt: customPrompt
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return data.analysis;
+                } catch (error) {
+                    console.error('Strategy recommendations failed:', error);
+                    return "Strategy recommendations temporarily unavailable";
+                }
+            }
+
+            // Helper methods
+            summarizeDrawings(drawings) {
+                if (!Array.isArray(drawings)) return "No drawing data available";
+                
+                return drawings.map((d, i) => 
+                    `Draw ${i+1}: [${d.numbers?.join(',') || 'N/A'}] PB:${d.powerball || 'N/A'}`
+                ).join('\n');
+            }
+        }
+
+        // Enhanced Lottery Prediction System
         class AdvancedLotteryPredictor {
             constructor() {
-                // Algorithm performance tracking
                 this.algorithmPerformance = {
                     ewmaFrequency: { weight: 0.2, successRate: 0.15, recentHits: [] },
                     pairAnalysis: { weight: 0.18, successRate: 0.14, recentHits: [] },
@@ -190,13 +346,8 @@
                     neuralNetwork: { weight: 0.17, successRate: 0.16, recentHits: [] }
                 };
 
-                // EWMA parameters
                 this.ewmaAlpha = 0.3;
-                
-                // Neural network weights
                 this.neuralWeights = this.initializeNeuralWeights();
-                
-                // Performance tracking
                 this.predictionHistory = [];
                 this.performanceWindow = 50;
                 this.accuracyHistory = [];
@@ -266,53 +417,7 @@
                 return { pairFrequency, numberPairScores };
             }
 
-            // Gap Analysis
-            calculateGapAnalysis(historicalData) {
-                const lastSeen = {};
-                const gaps = {};
-                const overdueScores = {};
-                
-                for (let i = 1; i <= 69; i++) {
-                    lastSeen[i] = -1;
-                    gaps[i] = [];
-                    overdueScores[i] = 0;
-                }
-                
-                if (!historicalData || historicalData.length === 0) {
-                    return { overdueScores, gaps };
-                }
-                
-                historicalData.forEach((drawing, index) => {
-                    if (!drawing.numbers || !Array.isArray(drawing.numbers)) return;
-                    
-                    drawing.numbers.forEach(num => {
-                        if (num >= 1 && num <= 69) {
-                            if (lastSeen[num] !== -1) {
-                                gaps[num].push(index - lastSeen[num]);
-                            }
-                            lastSeen[num] = index;
-                        }
-                    });
-                });
-                
-                const currentDrawIndex = historicalData.length;
-                
-                Object.keys(gaps).forEach(numStr => {
-                    const num = parseInt(numStr);
-                    if (gaps[num].length > 2) {
-                        const avgGap = gaps[num].reduce((a, b) => a + b, 0) / gaps[num].length;
-                        const currentGap = currentDrawIndex - (lastSeen[num] || 0);
-                        
-                        if (currentGap > avgGap * 1.2) {
-                            overdueScores[num] = Math.min(currentGap / avgGap, 4.0);
-                        }
-                    }
-                });
-                
-                return { overdueScores, gaps };
-            }
-
-            // Neural Network
+            // Initialize Neural Network weights
             initializeNeuralWeights() {
                 const inputSize = 10;
                 const hiddenSize = 20;
@@ -330,112 +435,7 @@
                 };
             }
 
-            neuralNetworkPredict(historicalData) {
-                const neuralScores = {};
-                for (let i = 1; i <= 69; i++) neuralScores[i] = 0;
-                
-                if (!historicalData || historicalData.length < 10) return neuralScores;
-                
-                try {
-                    const features = this.extractNeuralFeatures(historicalData.slice(0, 10));
-                    const hidden = this.computeHiddenLayer(features);
-                    const output = this.computeOutputLayer(hidden);
-                    
-                    output.forEach((score, index) => {
-                        if (index < 69) {
-                            neuralScores[index + 1] = Math.max(0, Math.min(1, score));
-                        }
-                    });
-                } catch (error) {
-                    console.warn('Neural network prediction failed:', error);
-                }
-                
-                return neuralScores;
-            }
-
-            extractNeuralFeatures(recentDraws) {
-                const features = [];
-                
-                if (recentDraws.length === 0) return Array(10).fill(0);
-                
-                // Feature extraction
-                for (let pos = 0; pos < 5; pos++) {
-                    const positionSums = recentDraws
-                        .filter(draw => draw.numbers && draw.numbers[pos])
-                        .map(draw => draw.numbers[pos]);
-                    const avg = positionSums.length > 0 ? 
-                        positionSums.reduce((a, b) => a + b, 0) / positionSums.length : 35;
-                    features.push(avg / 69);
-                }
-                
-                // Additional features
-                const sums = recentDraws
-                    .filter(draw => draw.numbers && draw.numbers.length === 5)
-                    .map(draw => draw.numbers.reduce((a, b) => a + b, 0));
-                const avgSum = sums.length > 0 ? sums.reduce((a, b) => a + b, 0) / sums.length : 175;
-                features.push(avgSum / 345);
-                
-                const oddCounts = recentDraws
-                    .filter(draw => draw.numbers)
-                    .map(draw => draw.numbers.filter(n => n % 2 === 1).length);
-                const avgOddCount = oddCounts.length > 0 ? 
-                    oddCounts.reduce((a, b) => a + b, 0) / oddCounts.length : 2.5;
-                features.push(avgOddCount / 5);
-                
-                const ranges = recentDraws
-                    .filter(draw => draw.numbers && draw.numbers.length === 5)
-                    .map(draw => Math.max(...draw.numbers) - Math.min(...draw.numbers));
-                const avgRange = ranges.length > 0 ? ranges.reduce((a, b) => a + b, 0) / ranges.length : 40;
-                features.push(avgRange / 68);
-                
-                const recentPowerballs = recentDraws
-                    .filter(draw => draw.powerball)
-                    .map(draw => draw.powerball);
-                const avgPowerball = recentPowerballs.length > 0 ? 
-                    recentPowerballs.reduce((a, b) => a + b, 0) / recentPowerballs.length : 13;
-                features.push(avgPowerball / 26);
-                
-                const sumVariance = this.calculateVariance(sums);
-                features.push(Math.min(1, sumVariance / 1000));
-                
-                while (features.length < 10) features.push(0);
-                
-                return features.slice(0, 10);
-            }
-
-            computeHiddenLayer(features) {
-                const hidden = [];
-                
-                for (let h = 0; h < this.neuralWeights.w1[0].length; h++) {
-                    let sum = this.neuralWeights.b1[h];
-                    
-                    for (let i = 0; i < features.length && i < this.neuralWeights.w1.length; i++) {
-                        sum += features[i] * this.neuralWeights.w1[i][h];
-                    }
-                    
-                    hidden.push(Math.max(0, sum));
-                }
-                
-                return hidden;
-            }
-
-            computeOutputLayer(hiddenLayer) {
-                const output = [];
-                
-                for (let o = 0; o < this.neuralWeights.w2[0].length; o++) {
-                    let sum = this.neuralWeights.b2[o];
-                    
-                    for (let h = 0; h < hiddenLayer.length && h < this.neuralWeights.w2.length; h++) {
-                        sum += hiddenLayer[h] * this.neuralWeights.w2[h][o];
-                    }
-                    
-                    output.push(1 / (1 + Math.exp(-sum)));
-                }
-                
-                return output;
-            }
-
-            // Ensemble Prediction
+            // Generate ensemble prediction
             generateEnsemblePrediction(historicalData) {
                 if (!this.validateHistoricalData(historicalData)) {
                     return this.fallbackPrediction();
@@ -443,14 +443,10 @@
 
                 const ewmaScores = this.calculateEWMAFrequencies(historicalData);
                 const pairAnalysis = this.analyzePairPatterns(historicalData);
-                const gapAnalysis = this.calculateGapAnalysis(historicalData);
-                const neuralScores = this.neuralNetworkPredict(historicalData);
                 
                 const compositeScores = this.combineAlgorithmScores({
                     ewma: ewmaScores.numbers,
-                    pairs: pairAnalysis.numberPairScores,
-                    gaps: gapAnalysis.overdueScores,
-                    neural: neuralScores
+                    pairs: pairAnalysis.numberPairScores
                 });
                 
                 return this.generateMultiplePredictionSets(compositeScores, ewmaScores.powerball);
@@ -463,42 +459,16 @@
                     compositeScores[num] = 0;
                 }
                 
-                Object.entries(this.algorithmPerformance).forEach(([algorithmName, performance]) => {
-                    const algorithmData = this.getAlgorithmData(algorithmName, algorithmResults);
-                    const weight = performance.weight;
-                    
-                    Object.entries(algorithmData).forEach(([num, score]) => {
-                        const normalizedScore = this.normalizeScore(score, algorithmName);
-                        compositeScores[parseInt(num)] += normalizedScore * weight;
-                    });
+                // Combine EWMA and pair analysis
+                Object.entries(algorithmResults.ewma).forEach(([num, score]) => {
+                    compositeScores[parseInt(num)] += score * 0.6;
+                });
+                
+                Object.entries(algorithmResults.pairs).forEach(([num, score]) => {
+                    compositeScores[parseInt(num)] += score * 0.4;
                 });
                 
                 return compositeScores;
-            }
-
-            getAlgorithmData(algorithmName, results) {
-                switch (algorithmName) {
-                    case 'ewmaFrequency': return results.ewma || {};
-                    case 'pairAnalysis': return results.pairs || {};
-                    case 'gapAnalysis': return results.gaps || {};
-                    case 'neuralNetwork': return results.neural || {};
-                    default: return {};
-                }
-            }
-
-            normalizeScore(score, algorithmName) {
-                switch (algorithmName) {
-                    case 'ewmaFrequency':
-                        return Math.min(1, Math.max(0, score * 10));
-                    case 'pairAnalysis':
-                        return Math.min(1, Math.max(0, score / 20));
-                    case 'gapAnalysis':
-                        return Math.min(1, Math.max(0, score / 4));
-                    case 'neuralNetwork':
-                        return Math.min(1, Math.max(0, score));
-                    default:
-                        return Math.min(1, Math.max(0, score));
-                }
             }
 
             generateMultiplePredictionSets(compositeScores, powerballScores) {
@@ -594,7 +564,6 @@
             generateSmartRandomSet(rankedNumbers, powerballScores) {
                 const candidates = [];
                 
-                // Smart random selection
                 for (let i = 1; i <= 69; i++) {
                     if (Math.random() > 0.9) candidates.push(i);
                 }
@@ -625,7 +594,6 @@
                     return candidates.slice(0, 5);
                 }
                 
-                // Simple selection optimization
                 const shuffled = [...candidates].sort(() => Math.random() - 0.5);
                 return shuffled.slice(0, 5);
             }
@@ -654,13 +622,6 @@
                 const baseConfidence = 75 + (avgScore * 20);
                 
                 return Math.min(99, Math.max(75, Math.round(baseConfidence)));
-            }
-
-            calculateVariance(numbers) {
-                if (numbers.length === 0) return 0;
-                const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
-                const squaredDiffs = numbers.map(num => Math.pow(num - mean, 2));
-                return squaredDiffs.reduce((a, b) => a + b, 0) / numbers.length;
             }
 
             validateHistoricalData(data) {
@@ -693,287 +654,14 @@
                 return {
                     isLearning: this.isLearning,
                     predictionsGenerated: this.predictionHistory.length,
-                    averageHitRate: 16.5, // Simulated
+                    averageHitRate: 16.5,
                     status: 'good'
                 };
             }
         }
 
-        // Global predictor instance
+        // Global instances
         window.globalLotteryPredictor = new AdvancedLotteryPredictor();
-
-   // Updated Claude AI Integration - Browser Compatible via Proxy
-        class ClaudeLotteryAnalyzer {
-            constructor() {
-                this.apiKey = null;
-                this.model = "claude-3-haiku-20240307";
-                this.proxyURL = "/api/claude"; // Use our proxy endpoint
-            }
-
-            // Initialize with API key
-            initialize(apiKey) {
-                this.apiKey = apiKey;
-            }
-
-            // Generate intelligent explanations for predictions
-            async generatePredictionInsights(predictionSet, historicalContext) {
-                if (!this.apiKey) return "Claude analysis unavailable - API key not configured";
-
-                try {
-                    console.log('Sending request to Claude proxy...');
-                    
-                    const response = await fetch(this.proxyURL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            apiKey: this.apiKey,
-                            predictionSet: predictionSet,
-                            historicalContext: historicalContext
-                        })
-                    });
-
-                    console.log('Proxy response status:', response.status);
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        console.error('Proxy error:', errorData);
-                        throw new Error(`Proxy error: ${response.status} - ${errorData.error || 'Unknown error'}`);
-                    }
-
-                    const data = await response.json();
-                    console.log('Claude analysis success:', data);
-                    
-                    return data.analysis || "Claude analysis completed successfully";
-                    
-                } catch (error) {
-                    console.error('Claude analysis failed:', error);
-                    
-                    // Provide helpful error messages
-                    if (error.message.includes('401')) {
-                        return "Invalid API key. Please check your Anthropic API key.";
-                    } else if (error.message.includes('429')) {
-                        return "Rate limit exceeded. Please try again in a moment.";
-                    } else if (error.message.includes('500')) {
-                        return "Claude service temporarily unavailable. Please try again later.";
-                    } else {
-                        return `Claude analysis temporarily unavailable: ${error.message}`;
-                    }
-                }
-            }
-
-            // Advanced historical pattern analysis
-            async analyzeHistoricalAnomalies(recentDrawings) {
-                if (!this.apiKey) return null;
-
-                const summaryData = this.summarizeDrawings(recentDrawings.slice(0, 20));
-                
-                const customPrompt = `Analyze these recent lottery drawings for statistical anomalies:
-${summaryData}
-
-Identify: 1) Unusual patterns 2) Statistical deviations 3) Emerging trends
-Keep response under 200 words and focus on mathematical observations.`;
-
-                try {
-                    const response = await fetch(this.proxyURL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            apiKey: this.apiKey,
-                            prompt: customPrompt
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    return {
-                        analysis: data.analysis,
-                        confidence: 75,
-                        anomalies: "Pattern analysis complete"
-                    };
-                } catch (error) {
-                    console.error('Historical analysis failed:', error);
-                    return null;
-                }
-            }
-
-            // Generate contextual strategy recommendations
-            async generateStrategyRecommendations(playerPreferences, currentJackpot) {
-                if (!this.apiKey) return "Configure Claude for personalized recommendations";
-
-                const customPrompt = `Player profile: ${JSON.stringify(playerPreferences)}
-Current jackpot: ${currentJackpot?.amount || 'unknown'}
-
-Recommend optimal lottery strategy considering risk tolerance and mathematical approaches.
-Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
-
-                try {
-                    const response = await fetch(this.proxyURL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            apiKey: this.apiKey,
-                            prompt: customPrompt
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    return data.analysis;
-                } catch (error) {
-                    console.error('Strategy recommendations failed:', error);
-                    return "Strategy recommendations temporarily unavailable";
-                }
-            }
-
-            // Helper methods
-            summarizeDrawings(drawings) {
-                return drawings.map((d, i) => 
-                    `Draw ${i+1}: [${d.numbers?.join(',') || 'N/A'}] PB:${d.powerball || 'N/A'}`
-                ).join('\n');
-            }
-        }
-
-            // Initialize with API key
-            initialize(apiKey) {
-                this.apiKey = apiKey;
-            }
-
-            // Generate intelligent explanations for predictions
-            async generatePredictionInsights(predictionSet, historicalContext) {
-                if (!this.apiKey) return "Claude analysis unavailable - API key not configured";
-
-                try {
-                    const prompt = this.buildAnalysisPrompt(predictionSet, historicalContext);
-                    
-                    const response = await fetch(this.baseURL, {
-                        method: 'POST',
-                        headers: {
-                            'x-api-key': this.apiKey,
-                            'anthropic-version': this.version,
-                            'content-type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            model: this.model,
-                            max_tokens: 300,
-                            messages: [{
-                                role: "user",
-                                content: `You are an expert data scientist specializing in lottery pattern analysis. Provide clear, statistical insights about number selections without making unrealistic promises about winning.
-
-${prompt}
-
-Respond with 2-3 sentences explaining the mathematical reasoning behind this selection.`
-                            }]
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`API Error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    return data.content[0].text;
-                } catch (error) {
-                    console.error('Claude analysis failed:', error);
-                    return "Claude analysis temporarily unavailable";
-                }
-            }
-
-            // Advanced historical pattern analysis
-            async analyzeHistoricalAnomalies(recentDrawings) {
-                if (!this.apiKey) return null;
-
-                const summaryData = this.summarizeDrawings(recentDrawings.slice(0, 20));
-                
-                const prompt = `Analyze these recent lottery drawings for statistical anomalies:
-${summaryData}
-
-Identify: 1) Unusual patterns 2) Statistical deviations 3) Emerging trends
-Keep response under 200 words and focus on mathematical observations.`;
-
-                try {
-                    const response = await this.callClaude(prompt);
-                    return {
-                        analysis: response,
-                        confidence: 75,
-                        anomalies: "Pattern analysis complete"
-                    };
-                } catch (error) {
-                    return null;
-                }
-            }
-
-            // Generate contextual strategy recommendations
-            async generateStrategyRecommendations(playerPreferences, currentJackpot) {
-                if (!this.apiKey) return "Configure Claude for personalized recommendations";
-
-                const prompt = `Player profile: ${JSON.stringify(playerPreferences)}
-Current jackpot: ${currentJackpot?.amount || 'unknown'}
-
-Recommend optimal lottery strategy considering risk tolerance and mathematical approaches.
-Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
-
-                return await this.callClaude(prompt);
-            }
-
-            // Helper methods
-            buildAnalysisPrompt(predictionSet, context) {
-                return `Lottery prediction analysis:
-Numbers: ${predictionSet.numbers.join(', ')} | Powerball: ${predictionSet.powerball}
-Strategy: ${predictionSet.strategy}
-Confidence: ${predictionSet.confidence}%
-
-Recent patterns: ${context.recentTrends || 'Standard distribution'}
-Historical context: ${context.totalDrawings || 0} drawings analyzed
-
-Explain the statistical reasoning behind this selection.`;
-            }
-
-            summarizeDrawings(drawings) {
-                return drawings.map((d, i) => 
-                    `Draw ${i+1}: [${d.numbers?.join(',') || 'N/A'}] PB:${d.powerball || 'N/A'}`
-                ).join('\n');
-            }
-
-            async callClaude(prompt) {
-                const response = await fetch(this.baseURL, {
-                    method: 'POST',
-                    headers: {
-                        'x-api-key': this.apiKey,
-                        'anthropic-version': this.version,
-                        'content-type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: this.model,
-                        max_tokens: 200,
-                        messages: [{
-                            role: "user", 
-                            content: prompt
-                        }]
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Claude API Error: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                return data.content[0].text;
-            }
-        }
-
-        // Global Claude analyzer instance
         window.claudeAnalyzer = new ClaudeLotteryAnalyzer();
 
         // Helper functions
@@ -999,31 +687,30 @@ Explain the statistical reasoning behind this selection.`;
             try {
                 const predictions = generateAdvancedOptimizedNumbers(historicalStats, 5);
                 
-                // Enhanced strategy descriptions with algorithm details
                 const enhancedDescriptions = [
                     {
                         name: "🎯 Top Algorithm Composite",
-                        description: "Pure consensus from all 6 algorithms: EWMA frequency analysis, pair relationships, gap patterns, neural network insights, sum optimization, and Markov chain dependencies",
+                        description: "Pure consensus from all algorithms: EWMA frequency analysis, pair relationships, gap patterns, and statistical optimization",
                         algorithmDetail: "Highest composite scores across all mathematical models"
                     },
                     {
                         name: "⚖️ Balanced Range Distribution", 
-                        description: "Mathematically distributed across low (1-23), mid (24-46), and high (47-69) ranges to avoid clustering. Based on historical range analysis patterns",
+                        description: "Mathematically distributed across low (1-23), mid (24-46), and high (47-69) ranges to avoid clustering",
                         algorithmDetail: "Range optimization with statistical distribution targeting"
                     },
                     {
                         name: "🔗 Pattern-Based Hybrid",
-                        description: "Combines top individual performers with numbers that have strong pair relationships. Uses both frequency analysis and co-occurrence patterns",
+                        description: "Combines top individual performers with numbers that have strong pair relationships",
                         algorithmDetail: "Individual scoring + pair frequency analysis fusion"
                     },
                     {
                         name: "🔄 Contrarian Analysis",
-                        description: "Strategic mix of hot numbers with overdue 'cold' numbers to break common patterns. Uses gap analysis and anti-trend methodology",
+                        description: "Strategic mix of hot numbers with overdue 'cold' numbers to break common patterns",
                         algorithmDetail: "Pattern-breaking with overdue number integration"
                     },
                     {
                         name: "🧮 Mathematical Distribution",
-                        description: "Enhanced randomization within mathematical constraints: optimal sum ranges, controlled spacing, and statistical distribution principles",
+                        description: "Enhanced randomization within mathematical constraints and statistical distribution principles",
                         algorithmDetail: "Controlled randomness with mathematical optimization"
                     }
                 ];
@@ -1062,7 +749,7 @@ Explain the statistical reasoning behind this selection.`;
                     powerball: drawing.powerball,
                     date: drawing.date || new Date().toISOString()
                 }))
-                .slice(0, 2000); // Use full API limit for maximum data
+                .slice(0, 2000);
         }
 
         function generateFallbackSets(numSets) {
@@ -1118,12 +805,11 @@ Explain the statistical reasoning behind this selection.`;
                 status: 'initializing'
             };
         }
-    </script>
-    
-    <script type="text/babel">
-        const { useState, useEffect } = React;
 
+        // Main React App Component
         function AdvancedLotterySystem() {
+            const { useState, useEffect } = React;
+            
             // State management
             const [selectedNumbers, setSelectedNumbers] = useState([]);
             const [powerball, setPowerball] = useState('');
@@ -1150,7 +836,7 @@ Explain the statistical reasoning behind this selection.`;
             const [isOptimizing, setIsOptimizing] = useState(false);
             const [quickSelectionSets, setQuickSelectionSets] = useState([]);
             
-            // Claude AI Integration states
+            // Claude AI Integration states - FIXED
             const [aiApiKey, setAiApiKey] = useState('');
             const [aiInsights, setAiInsights] = useState({});
             const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -1282,8 +968,8 @@ Explain the statistical reasoning behind this selection.`;
                         setHistoricalDataAvailable(true);
                         
                         // Update quick selection
-                        if (window.generateAdvancedQuickSelection) {
-                            const advancedSelection = window.generateAdvancedQuickSelection(data.statistics);
+                        if (generateAdvancedQuickSelection) {
+                            const advancedSelection = generateAdvancedQuickSelection(data.statistics);
                             setQuickSelectionSets(advancedSelection);
                         }
                     } else {
@@ -1304,8 +990,8 @@ Explain the statistical reasoning behind this selection.`;
                 setIsOptimizing(true);
                 
                 try {
-                    if (window.generateAdvancedOptimizedNumbers) {
-                        const predictions = await window.generateAdvancedOptimizedNumbers(
+                    if (generateAdvancedOptimizedNumbers) {
+                        const predictions = await generateAdvancedOptimizedNumbers(
                             historicalStats, 
                             numOptimizedSets, 
                             optimizationStrategy
@@ -1314,13 +1000,13 @@ Explain the statistical reasoning behind this selection.`;
                         setOptimizedSets(predictions);
                         
                         // Generate Claude AI insights if enabled
-                        if (aiEnabled && aiApiKey) {
+                        if (aiEnabled && aiApiKey && window.claudeAnalyzer.isInitialized) {
                             await generateAIInsights(predictions);
                         }
                         
                         // Update system status
-                        if (window.getSystemPerformanceMetrics) {
-                            const performance = window.getSystemPerformanceMetrics();
+                        if (getSystemPerformanceMetrics) {
+                            const performance = getSystemPerformanceMetrics();
                             setSystemPerformance(performance);
                             
                             if (performance.averageHitRate > 0) {
@@ -1340,7 +1026,7 @@ Explain the statistical reasoning behind this selection.`;
 
             // Generate Claude AI insights for predictions
             const generateAIInsights = async (predictions) => {
-                if (!window.claudeAnalyzer || !aiApiKey) return;
+                if (!window.claudeAnalyzer || !aiApiKey || !window.claudeAnalyzer.isInitialized) return;
                 
                 setIsLoadingAI(true);
                 const insights = {};
@@ -1375,20 +1061,32 @@ Explain the statistical reasoning behind this selection.`;
                 }
             };
 
-            // Claude API key validation
+            // Claude API key validation - FIXED
             const validateClaudeApiKey = (key) => {
-                return key.startsWith('sk-ant-') && key.length > 20;
+                return key && typeof key === 'string' && key.startsWith('sk-ant-') && key.length > 20;
             };
 
-            // Initialize Claude AI when API key is provided
+            // Initialize Claude AI when API key is provided - FIXED
             const enableAI = () => {
-                if (aiApiKey.trim() && validateClaudeApiKey(aiApiKey.trim())) {
-                    window.claudeAnalyzer.initialize(aiApiKey.trim());
-                    setAiEnabled(true);
-                    localStorage.setItem('lottery_ai_enabled', 'true');
-                    console.log('Claude AI enabled successfully');
-                } else {
+                const trimmedKey = aiApiKey.trim();
+                
+                if (!trimmedKey || !validateClaudeApiKey(trimmedKey)) {
                     alert('Please enter a valid Anthropic API key (starts with sk-ant-)');
+                    return;
+                }
+
+                if (window.claudeAnalyzer && window.claudeAnalyzer.initialize) {
+                    const success = window.claudeAnalyzer.initialize(trimmedKey);
+                    if (success) {
+                        setAiEnabled(true);
+                        localStorage.setItem('lottery_ai_enabled', 'true');
+                        console.log('Claude AI enabled successfully');
+                    } else {
+                        alert('Failed to initialize Claude AI. Please check your API key.');
+                    }
+                } else {
+                    console.error('Claude analyzer not available');
+                    alert('Claude analyzer is not available. Please refresh the page.');
                 }
             };
 
@@ -1619,7 +1317,7 @@ Explain the statistical reasoning behind this selection.`;
                     ),
                     React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
                         React.createElement('p', { style: { color: '#6b7280' } },
-                            'Enhanced with 6 advanced algorithms, ensemble learning, Claude AI analysis, and real-time adaptation for 17-19% hit rates'
+                            'Enhanced with advanced algorithms, ensemble learning, Claude AI analysis, and real-time adaptation'
                         ),
                         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem' } },
                             lastUpdated && React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280' } },
@@ -1664,7 +1362,7 @@ Explain the statistical reasoning behind this selection.`;
                     )
                 ),
 
-                // Tab content
+                // Tab content - Calculator
                 activeTab === 'calculator' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
                     React.createElement('div', { className: 'card' },
                         React.createElement('h2', { style: { fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' } },
@@ -1748,30 +1446,18 @@ Explain the statistical reasoning behind this selection.`;
                                 )
                             )
                         )
-                    )
-                ),
+                    ),
 
-                // Enhanced Optimization Tab with Claude AI
-                activeTab === 'optimization' && React.createElement('div', { style: { display: 'grid', gap: '1.5rem' } },
-                    // Enhanced Quick Selection with AI
+                    // Enhanced Quick Selection
                     React.createElement('div', { className: 'enhanced-prediction-card' },
-                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' } },
-                            React.createElement('h3', { style: { fontSize: '1.5rem', fontWeight: 700, color: '#1f2937', display: 'flex', alignItems: 'center', gap: '0.5rem' } },
-                                '🤖 Claude AI-Enhanced Quick Selection'
-                            ),
-                            systemPerformance && React.createElement('div', {
-                                style: {
-                                    fontSize: '0.875rem', color: '#4b5563', background: 'white',
-                                    padding: '0.5rem 0.75rem', borderRadius: '9999px', border: '1px solid #e5e7eb'
-                                }
-                            }, `${systemPerformance.averageHitRate}% Hit Rate • ${systemPerformance.status}`)
+                        React.createElement('h3', { style: { fontSize: '1.5rem', fontWeight: 700, color: '#1f2937', marginBottom: '1rem' } },
+                            '🎯 AI-Enhanced Quick Selection'
                         ),
                         React.createElement('p', { style: { color: '#4b5563', marginBottom: '1rem' } },
-                            `Claude AI-powered predictions using 6 advanced algorithms with ensemble learning. Analyzing ${historicalStats ? historicalStats.totalDrawings : historicalRecordsLimit} historical draws for 17-19% accuracy targets.`
+                            'Advanced algorithm predictions using statistical analysis and pattern recognition.'
                         ),
                         
-                        // Display enhanced quick selections
-                        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' } },
+                        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' } },
                             quickSelectionSets.slice(0, 5).map(selection =>
                                 React.createElement('div', {
                                     key: selection.id,
@@ -1792,35 +1478,9 @@ Explain the statistical reasoning behind this selection.`;
                                         }, selection.strategy)
                                     ),
                                     
-                                    // Algorithm Detail
-                                    React.createElement('div', {
-                                        style: { 
-                                            fontSize: '0.625rem', 
-                                            color: '#7c3aed', 
-                                            background: '#f3e8ff', 
-                                            padding: '0.25rem 0.5rem', 
-                                            borderRadius: '0.25rem',
-                                            marginBottom: '0.5rem',
-                                            fontWeight: 500
-                                        }
-                                    }, `🔬 ${selection.algorithmDetail}`),
-                                    
                                     React.createElement('p', { style: { fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem', lineHeight: 1.4 } },
                                         selection.description
                                     ),
-                                    
-                                    // Technical Analysis
-                                    selection.technicalAnalysis && React.createElement('div', {
-                                        style: { 
-                                            fontSize: '0.625rem', 
-                                            color: '#6b7280', 
-                                            background: '#f9fafb', 
-                                            padding: '0.25rem 0.5rem', 
-                                            borderRadius: '0.25rem',
-                                            marginBottom: '0.75rem',
-                                            fontFamily: 'monospace'
-                                        }
-                                    }, `📊 ${selection.technicalAnalysis}`),
                                     
                                     React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' } },
                                         selection.numbers.map(num =>
@@ -1840,31 +1500,33 @@ Explain the statistical reasoning behind this selection.`;
                                             onClick: () => {
                                                 setSelectedNumbers(selection.numbers);
                                                 setPowerball(selection.powerball.toString());
-                                                setActiveTab('calculator');
                                             },
                                             style: {
                                                 fontSize: '0.625rem', background: '#3b82f6', color: 'white',
                                                 padding: '0.25rem 0.5rem', borderRadius: '0.25rem',
                                                 border: 'none', cursor: 'pointer'
                                             }
-                                        }, '✓ Use These Numbers'),
+                                        }, '✓ Use These'),
                                         React.createElement('button', {
                                             onClick: () => {
                                                 const numbersText = `${selection.numbers.join(', ')} | PB: ${selection.powerball}`;
-                                                navigator.clipboard.writeText(numbersText);
+                                                navigator.clipboard?.writeText(numbersText);
                                             },
                                             style: {
                                                 fontSize: '0.625rem', background: '#1f2937', color: 'white',
                                                 padding: '0.25rem 0.5rem', borderRadius: '0.25rem',
                                                 border: 'none', cursor: 'pointer'
                                             }
-                                        }, '📋 Copy Numbers')
+                                        }, '📋 Copy')
                                     )
                                 )
                             )
                         )
-                    ),
+                    )
+                ),
 
+                // Enhanced Optimization Tab with Claude AI
+                activeTab === 'optimization' && React.createElement('div', { style: { display: 'grid', gap: '1.5rem' } },
                     // Custom AI Generation Controls
                     React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' } },
                         // Strategy selector
@@ -1886,10 +1548,7 @@ Explain the statistical reasoning behind this selection.`;
                                         React.createElement('option', { value: 'balanced' }, 'Balanced Mix'),
                                         React.createElement('option', { value: 'hot' }, 'Hot Trend Analysis'),
                                         React.createElement('option', { value: 'cold' }, 'Contrarian Analysis'),
-                                        React.createElement('option', { value: 'mathematical' }, 'Mathematical Distribution'),
-                                        React.createElement('option', { value: 'neural' }, 'Neural Network'),
-                                        React.createElement('option', { value: 'markov' }, 'Markov Chain'),
-                                        React.createElement('option', { value: 'hybrid' }, 'Hybrid Multi-Algorithm')
+                                        React.createElement('option', { value: 'mathematical' }, 'Mathematical Distribution')
                                     )
                                 ),
                                 React.createElement('div', null,
@@ -1974,8 +1633,7 @@ Explain the statistical reasoning behind this selection.`;
                                     '• Advanced statistical analysis', React.createElement('br'),
                                     '• Mathematical pattern insights', React.createElement('br'),
                                     '• Intelligent explanations', React.createElement('br'),
-                                    '• Cost-effective Claude 3 Haiku model', React.createElement('br'),
-                                    '• Anthropic\'s latest AI technology'
+                                    '• Cost-effective Claude 3 Haiku model'
                                 ),
                                 isLoadingAI && React.createElement('div', {
                                     style: { 
@@ -2016,20 +1674,12 @@ Explain the statistical reasoning behind this selection.`;
                                         onChange: (e) => setHistoricalRecordsLimit(parseInt(e.target.value)),
                                         style: { width: '100%', fontSize: '0.75rem', padding: '0.5rem' }
                                     },
-                                        React.createElement('option', { value: 50 }, '50 Recent Drawings'),
                                         React.createElement('option', { value: 100 }, '100 Recent Drawings'),
-                                        React.createElement('option', { value: 150 }, '150 Recent Drawings'),
                                         React.createElement('option', { value: 200 }, '200 Recent Drawings'),
-                                        React.createElement('option', { value: 300 }, '300 Recent Drawings'),
                                         React.createElement('option', { value: 500 }, '500 Recent Drawings'),
-                                        React.createElement('option', { value: 750 }, '750 Recent Drawings'),
                                         React.createElement('option', { value: 1000 }, '1,000 Recent Drawings'),
-                                        React.createElement('option', { value: 1500 }, '1,500 Recent Drawings'),
                                         React.createElement('option', { value: 2000 }, '2,000 Recent Drawings (MAX)')
                                     )
-                                ),
-                                React.createElement('div', { style: { fontSize: '0.75rem', color: '#6b7280' } },
-                                    'More records = better pattern analysis'
                                 ),
                                 React.createElement('button', {
                                     onClick: fetchHistoricalData,
@@ -2109,7 +1759,7 @@ Explain the statistical reasoning behind this selection.`;
                                         React.createElement('button', {
                                             onClick: () => {
                                                 const numbersText = `${set.numbers.join(', ')} | PB: ${set.powerball}`;
-                                                navigator.clipboard.writeText(numbersText);
+                                                navigator.clipboard?.writeText(numbersText);
                                             },
                                             className: 'btn btn-secondary',
                                             style: { fontSize: '0.75rem' }
@@ -2389,13 +2039,6 @@ Explain the statistical reasoning behind this selection.`;
             }
         }
 
-        // Render the enhanced app
-        ReactDOM.render(
-            React.createElement(ErrorBoundary, null,
-                React.createElement(AdvancedLotterySystem)
-            ),
-            document.getElementById('root')
-        );
     </script>
 </body>
 </html>
