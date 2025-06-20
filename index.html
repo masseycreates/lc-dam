@@ -65,6 +65,27 @@
             }
         }
 
+        // Utility function for API calls with timeout
+        async function fetchWithTimeout(url, options = {}, timeout = 5000) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                return response;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timeout');
+                }
+                throw error;
+            }
+        }
+
         // Main Application Component
         function LotteryApp() {
             const { useState, useEffect } = React;
@@ -77,45 +98,72 @@
             const [apiStatus, setApiStatus] = useState('Testing...');
             const [aiApiKey, setAiApiKey] = useState('');
             const [aiEnabled, setAiEnabled] = useState(false);
+            const [loadingStep, setLoadingStep] = useState('Initializing...');
 
             useEffect(() => {
+                // Set a maximum loading time - force load the app even if APIs fail
+                const maxLoadingTime = setTimeout(() => {
+                    console.log('⏰ Maximum loading time reached, forcing app load');
+                    setApiStatus('⚠️ API Timeout');
+                    setIsLoading(false);
+                }, 10000); // 10 seconds max
+
+                const initializeApp = async () => {
+                    try {
+                        setLoadingStep('Testing API connection...');
+                        await testApiConnection();
+                        
+                        setLoadingStep('Loading jackpot data...');
+                        await loadJackpotData();
+                        
+                        setLoadingStep('System ready!');
+                        clearTimeout(maxLoadingTime);
+                        setIsLoading(false);
+                    } catch (error) {
+                        console.warn('Initialization error:', error);
+                        setApiStatus('⚠️ Limited Mode');
+                        clearTimeout(maxLoadingTime);
+                        setIsLoading(false);
+                    }
+                };
+
                 initializeApp();
+
+                return () => clearTimeout(maxLoadingTime);
             }, []);
 
-            const initializeApp = async () => {
-                document.getElementById('loading-progress').textContent = 'Testing API connection...';
-                
+            const testApiConnection = async () => {
                 try {
-                    // Test API connection
-                    const response = await fetch('/api/test');
+                    const response = await fetchWithTimeout('/api/test', {}, 3000);
                     const data = await response.json();
                     
                     if (data.success) {
                         setApiStatus('✅ API Connected');
-                        document.getElementById('loading-progress').textContent = 'Loading jackpot data...';
-                        await loadJackpotData();
+                        return true;
                     } else {
-                        setApiStatus('⚠️ API Limited');
+                        setApiStatus('⚠️ API Issues');
+                        return false;
                     }
                 } catch (error) {
                     console.warn('API test failed:', error);
                     setApiStatus('⚠️ API Offline');
+                    return false;
                 }
-                
-                setIsLoading(false);
             };
 
             const loadJackpotData = async () => {
                 try {
-                    const response = await fetch('/api/powerball');
+                    const response = await fetchWithTimeout('/api/powerball', {}, 5000);
                     const data = await response.json();
                     
                     if (data.success && data.jackpot) {
                         setCurrentJackpot(data.jackpot);
+                        return true;
                     }
                 } catch (error) {
                     console.warn('Jackpot data failed:', error);
                 }
+                return false;
             };
 
             const generateQuickPick = () => {
@@ -135,14 +183,14 @@
                 }
 
                 try {
-                    const response = await fetch('/api/claude', {
+                    const response = await fetchWithTimeout('/api/claude', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             apiKey: aiApiKey,
                             analysisType: 'predictionInsights'
                         })
-                    });
+                    }, 8000);
 
                     const data = await response.json();
                     
@@ -157,6 +205,47 @@
                 }
             };
 
+            const generateAdvancedNumbers = async () => {
+                if (!aiEnabled) {
+                    // Generate using local algorithms
+                    generateQuickPick();
+                    return;
+                }
+
+                try {
+                    const response = await fetchWithTimeout('/api/claude', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            apiKey: aiApiKey,
+                            analysisType: 'hybridSelection',
+                            requestedSets: 1
+                        })
+                    }, 10000);
+
+                    const data = await response.json();
+                    
+                    if (data.success && data.claudeSelections && data.claudeSelections.length > 0) {
+                        const selection = data.claudeSelections[0];
+                        setSelectedNumbers(selection.numbers);
+                        setPowerball(selection.powerball);
+                    } else {
+                        generateQuickPick(); // Fallback
+                    }
+                } catch (error) {
+                    console.warn('Claude generation failed:', error);
+                    generateQuickPick(); // Fallback
+                }
+            };
+
+            // Update loading progress in real-time
+            useEffect(() => {
+                const progressElement = document.getElementById('loading-progress');
+                if (progressElement && isLoading) {
+                    progressElement.textContent = loadingStep;
+                }
+            }, [loadingStep, isLoading]);
+
             if (isLoading) {
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600 text-white">
@@ -164,7 +253,10 @@
                             <div className="text-6xl mb-4 animate-bounce">🎰</div>
                             <div className="text-2xl font-bold mb-2">Claude AI + 6 Algorithms</div>
                             <div className="text-lg opacity-80">Advanced Lottery Intelligence System</div>
-                            <div className="mt-4 text-sm opacity-60">Loading...</div>
+                            <div className="mt-4 text-sm opacity-60">{loadingStep}</div>
+                            <div className="mt-2 text-xs opacity-40">
+                                Loading will complete automatically in a few seconds...
+                            </div>
                         </div>
                     </div>
                 );
@@ -225,7 +317,9 @@
                         {activeTab === 'generator' && (
                             <div className="space-y-6">
                                 <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
-                                    <h2 className="text-xl font-bold mb-4">🎲 Quick Pick Generator</h2>
+                                    <h2 className="text-xl font-bold mb-4">
+                                        {aiEnabled ? '🤖🧮 Hybrid AI Generator' : '🎲 Quick Pick Generator'}
+                                    </h2>
                                     
                                     {selectedNumbers.length > 0 && (
                                         <div className="mb-4 p-4 bg-blue-50 rounded-lg">
@@ -245,12 +339,19 @@
                                         </div>
                                     )}
 
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-3 flex-wrap">
                                         <button
-                                            onClick={generateQuickPick}
+                                            onClick={aiEnabled ? generateAdvancedNumbers : generateQuickPick}
                                             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                         >
-                                            🎲 Generate Quick Pick
+                                            {aiEnabled ? '🤖🧮 Generate Hybrid' : '🎲 Generate Quick Pick'}
+                                        </button>
+                                        
+                                        <button
+                                            onClick={generateQuickPick}
+                                            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                        >
+                                            🎲 Random Quick Pick
                                         </button>
                                         
                                         {selectedNumbers.length > 0 && (
@@ -259,7 +360,7 @@
                                                     const ticket = `${selectedNumbers.join(', ')} | PB: ${powerball}`;
                                                     navigator.clipboard?.writeText(ticket) || alert(`Numbers: ${ticket}`);
                                                 }}
-                                                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                                             >
                                                 📋 Copy Numbers
                                             </button>
@@ -367,7 +468,7 @@
                         {activeTab === 'tools' && (
                             <div className="space-y-6">
                                 <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
-                                    <h2 className="text-xl font-bold mb-4">🔧 System Tools</h2>
+                                    <h2 className="text-xl font-bold mb-4">🔧 System Tools & Diagnostics</h2>
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <button
@@ -401,6 +502,16 @@
                                             <div className="text-lg font-semibold">🔄 Reload App</div>
                                             <div className="text-sm text-gray-600">Refresh application</div>
                                         </button>
+                                    </div>
+
+                                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                                        <h3 className="font-semibold mb-2">📊 Current Status</h3>
+                                        <div className="text-sm space-y-1">
+                                            <div>API Status: {apiStatus}</div>
+                                            <div>Jackpot Data: {currentJackpot ? '✅ Available' : '❌ Unavailable'}</div>
+                                            <div>Claude AI: {aiEnabled ? '🤖 Active' : '⭕ Disabled'}</div>
+                                            <div>Last Load: {new Date().toLocaleTimeString()}</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
