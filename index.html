@@ -845,10 +845,134 @@
             };
         }
 
-        // Export functions globally
-        window.generateAdvancedOptimizedNumbers = generateAdvancedOptimizedNumbers;
-        window.generateAdvancedQuickSelection = generateAdvancedQuickSelection;
-        window.getSystemPerformanceMetrics = getSystemPerformanceMetrics;
+        // Enhanced AI Integration Module
+        class ChatGPTLotteryAnalyzer {
+            constructor() {
+                this.apiKey = null; // Will be set by user
+                this.model = "gpt-4o-mini"; // Cost-effective model
+                this.baseURL = "https://api.openai.com/v1/chat/completions";
+            }
+
+            // Initialize with API key
+            initialize(apiKey) {
+                this.apiKey = apiKey;
+            }
+
+            // Generate intelligent explanations for predictions
+            async generatePredictionInsights(predictionSet, historicalContext) {
+                if (!this.apiKey) return "AI analysis unavailable - API key not configured";
+
+                try {
+                    const prompt = this.buildAnalysisPrompt(predictionSet, historicalContext);
+                    
+                    const response = await fetch(this.baseURL, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this.apiKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: this.model,
+                            messages: [{
+                                role: "system",
+                                content: "You are an expert data scientist specializing in lottery pattern analysis. Provide clear, statistical insights about number selections without making unrealistic promises about winning."
+                            }, {
+                                role: "user",
+                                content: prompt
+                            }],
+                            max_tokens: 300,
+                            temperature: 0.7
+                        })
+                    });
+
+                    const data = await response.json();
+                    return data.choices[0].message.content;
+                } catch (error) {
+                    console.error('ChatGPT analysis failed:', error);
+                    return "AI analysis temporarily unavailable";
+                }
+            }
+
+            // Advanced historical pattern analysis
+            async analyzeHistoricalAnomalies(recentDrawings) {
+                if (!this.apiKey) return null;
+
+                const summaryData = this.summarizeDrawings(recentDrawings.slice(0, 20));
+                
+                const prompt = `
+                Analyze these recent lottery drawings for statistical anomalies:
+                ${summaryData}
+                
+                Identify: 1) Unusual patterns 2) Statistical deviations 3) Emerging trends
+                Respond in JSON format with insights and confidence scores.
+                `;
+
+                try {
+                    const response = await this.callChatGPT(prompt);
+                    return JSON.parse(response);
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            // Generate contextual strategy recommendations
+            async generateStrategyRecommendations(playerPreferences, currentJackpot) {
+                if (!this.apiKey) return "Configure AI for personalized recommendations";
+
+                const prompt = `
+                Player profile: ${JSON.stringify(playerPreferences)}
+                Current jackpot: ${currentJackpot?.amount || 'unknown'}
+                
+                Recommend optimal lottery strategy considering risk tolerance and mathematical approaches.
+                Focus on statistical methods, not luck-based advice.
+                `;
+
+                return await this.callChatGPT(prompt);
+            }
+
+            // Helper methods
+            buildAnalysisPrompt(predictionSet, context) {
+                return `
+                Lottery prediction analysis:
+                Numbers: ${predictionSet.numbers.join(', ')} | Powerball: ${predictionSet.powerball}
+                Strategy: ${predictionSet.strategy}
+                Confidence: ${predictionSet.confidence}%
+                
+                Recent patterns: ${context.recentTrends || 'Standard distribution'}
+                Historical context: ${context.totalDrawings || 0} drawings analyzed
+                
+                Explain the statistical reasoning behind this selection in 2-3 sentences.
+                `;
+            }
+
+            summarizeDrawings(drawings) {
+                return drawings.map((d, i) => 
+                    `Draw ${i+1}: [${d.numbers.join(',')}] PB:${d.powerball}`
+                ).join('\n');
+            }
+
+            async callChatGPT(prompt) {
+                const response = await fetch(this.baseURL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: this.model,
+                        messages: [{ role: "user", content: prompt }],
+                        max_tokens: 200,
+                        temperature: 0.3
+                    })
+                });
+                
+                const data = await response.json();
+                return data.choices[0].message.content;
+            }
+        }
+
+        // Global AI analyzer instance
+        window.chatGPTAnalyzer = new ChatGPTLotteryAnalyzer();
     </script>
     
     <script type="text/babel">
@@ -874,12 +998,18 @@
             const [isLoadingHistory, setIsLoadingHistory] = useState(false);
             const [historicalRecordsLimit, setHistoricalRecordsLimit] = useState(500);
             
-            // Enhanced prediction states
+            // Enhanced prediction states with AI
             const [optimizationStrategy, setOptimizationStrategy] = useState('ensemble');
             const [numOptimizedSets, setNumOptimizedSets] = useState(5);
             const [optimizedSets, setOptimizedSets] = useState([]);
             const [isOptimizing, setIsOptimizing] = useState(false);
             const [quickSelectionSets, setQuickSelectionSets] = useState([]);
+            
+            // AI Integration states
+            const [aiApiKey, setAiApiKey] = useState('');
+            const [aiInsights, setAiInsights] = useState({});
+            const [isLoadingAI, setIsLoadingAI] = useState(false);
+            const [aiEnabled, setAiEnabled] = useState(false);
             
             // Performance tracking
             const [systemPerformance, setSystemPerformance] = useState(null);
@@ -1024,7 +1154,7 @@
                 setIsLoadingHistory(false);
             };
 
-            // Enhanced optimization function
+            // Enhanced optimization function with AI
             const generateAdvancedPredictions = async () => {
                 setIsOptimizing(true);
                 
@@ -1037,6 +1167,11 @@
                         );
                         
                         setOptimizedSets(predictions);
+                        
+                        // Generate AI insights if enabled
+                        if (aiEnabled && aiApiKey) {
+                            await generateAIInsights(predictions);
+                        }
                         
                         // Update system status
                         if (window.getSystemPerformanceMetrics) {
@@ -1057,6 +1192,54 @@
                     setIsOptimizing(false);
                 }
             };
+
+            // Generate AI insights for predictions
+            const generateAIInsights = async (predictions) => {
+                if (!window.claudeAnalyzer || !aiApiKey) return;
+                
+                setIsLoadingAI(true);
+                const insights = {};
+                
+                try {
+                    for (let i = 0; i < Math.min(predictions.length, 3); i++) {
+                        const prediction = predictions[i];
+                        const context = {
+                            recentTrends: "Analyzing recent patterns",
+                            totalDrawings: historicalStats?.totalDrawings || 0
+                        };
+                        
+                        const insight = await window.claudeAnalyzer.generatePredictionInsights(
+                            prediction, 
+                            context
+                        );
+                        
+                        insights[i] = insight;
+                    }
+                    
+                    setAiInsights(insights);
+                } catch (error) {
+                    console.error('AI insights failed:', error);
+                } finally {
+                    setIsLoadingAI(false);
+                }
+            };
+
+            // Initialize AI when API key is provided
+            const enableAI = () => {
+                if (aiApiKey.trim()) {
+                    window.claudeAnalyzer.initialize(aiApiKey.trim());
+                    setAiEnabled(true);
+                    localStorage.setItem('lottery_ai_enabled', 'true');
+                }
+            };
+
+            // Load AI settings on startup
+            useEffect(() => {
+                const savedAIEnabled = localStorage.getItem('lottery_ai_enabled');
+                if (savedAIEnabled === 'true') {
+                    setAiEnabled(true);
+                }
+            }, []);
 
             // Fallback optimization
             const generateBasicOptimization = () => {
@@ -1612,6 +1795,87 @@
                                     </button>
                                 </div>
 
+                                {/* Claude AI Configuration */}
+                                <div className="card" style={{ background: aiEnabled ? '#f0fdf4' : '#fefce8' }}>
+                                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+                                        🤖 Claude AI Analysis
+                                    </h3>
+                                    {!aiEnabled ? (
+                                        <div style={{ display: 'grid', gap: '0.75rem' }}>
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' }}>
+                                                    Anthropic API Key:
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    value={aiApiKey}
+                                                    onChange={(e) => setAiApiKey(e.target.value)}
+                                                    placeholder="sk-ant-..."
+                                                    style={{ 
+                                                        width: '100%', 
+                                                        fontSize: '0.75rem', 
+                                                        padding: '0.5rem',
+                                                        border: '1px solid #d1d5db',
+                                                        borderRadius: '0.25rem'
+                                                    }}
+                                                />
+                                            </div>
+                                            <div style={{ fontSize: '0.625rem', color: '#6b7280' }}>
+                                                Get your API key from console.anthropic.com
+                                            </div>
+                                            <button
+                                                onClick={enableAI}
+                                                disabled={!aiApiKey.trim()}
+                                                className="btn btn-primary"
+                                                style={{ fontSize: '0.75rem', width: '100%' }}
+                                            >
+                                                🧠 Enable Claude Analysis
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'grid', gap: '0.75rem' }}>
+                                            <div style={{ 
+                                                fontSize: '0.75rem', 
+                                                color: '#059669', 
+                                                background: '#dcfce7', 
+                                                padding: '0.5rem', 
+                                                borderRadius: '0.25rem',
+                                                textAlign: 'center'
+                                            }}>
+                                                ✅ Claude AI Enabled
+                                            </div>
+                                            <div style={{ fontSize: '0.625rem', color: '#6b7280' }}>
+                                                • Advanced statistical analysis<br/>
+                                                • Mathematical pattern insights<br/>
+                                                • Intelligent explanations<br/>
+                                                • Cost-effective Claude Haiku model
+                                            </div>
+                                            {isLoadingAI && (
+                                                <div style={{ 
+                                                    fontSize: '0.625rem', 
+                                                    color: '#3b82f6',
+                                                    textAlign: 'center',
+                                                    padding: '0.5rem'
+                                                }}>
+                                                    <span className="loading-spinner" style={{ marginRight: '0.5rem' }}></span>
+                                                    Claude analyzing patterns...
+                                                </div>
+                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    setAiEnabled(false);
+                                                    setAiApiKey('');
+                                                    localStorage.removeItem('lottery_ai_enabled');
+                                                }}
+                                                className="btn btn-secondary"
+                                                style={{ fontSize: '0.625rem', width: '100%' }}
+                                            >
+                                                Disable AI
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Historical settings */}
                                 <div className="card">
                                     <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' }}>
@@ -1775,6 +2039,51 @@
                                                         📋 Copy
                                                     </button>
                                                 </div>
+                                                
+                                                {/* Claude AI Insights */}
+                                                {aiEnabled && aiInsights[index] && (
+                                                    <div style={{
+                                                        marginTop: '0.75rem',
+                                                        padding: '0.75rem',
+                                                        background: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)',
+                                                        border: '1px solid #a855f7',
+                                                        borderRadius: '0.5rem',
+                                                        fontSize: '0.75rem',
+                                                        lineHeight: 1.4
+                                                    }}>
+                                                        <div style={{ 
+                                                            fontSize: '0.625rem', 
+                                                            fontWeight: 600, 
+                                                            color: '#7c3aed', 
+                                                            marginBottom: '0.5rem',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.25rem'
+                                                        }}>
+                                                            🤖 Claude Analysis
+                                                        </div>
+                                                        <div style={{ color: '#6b21a8' }}>
+                                                            {aiInsights[index]}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* AI Loading State */}
+                                                {aiEnabled && isLoadingAI && index < 3 && (
+                                                    <div style={{
+                                                        marginTop: '0.75rem',
+                                                        padding: '0.75rem',
+                                                        background: '#f8fafc',
+                                                        border: '1px solid #e2e8f0',
+                                                        borderRadius: '0.5rem',
+                                                        fontSize: '0.75rem',
+                                                        textAlign: 'center',
+                                                        color: '#64748b'
+                                                    }}>
+                                                        <span className="loading-spinner" style={{ marginRight: '0.5rem' }}></span>
+                                                        Generating AI insights...
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
