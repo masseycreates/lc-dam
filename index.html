@@ -756,7 +756,7 @@
                     powerball: drawing.powerball,
                     date: drawing.date || new Date().toISOString()
                 }))
-                .slice(0, 200);
+                .slice(0, 2000); // Use full API limit for maximum data
         }
 
         function generateFallbackSets(numSets) {
@@ -840,7 +840,7 @@
             // Historical analysis
             const [historicalStats, setHistoricalStats] = useState(null);
             const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-            const [historicalRecordsLimit, setHistoricalRecordsLimit] = useState(150);
+            const [historicalRecordsLimit, setHistoricalRecordsLimit] = useState(500);
             
             // Enhanced prediction states
             const [optimizationStrategy, setOptimizationStrategy] = useState('ensemble');
@@ -1614,7 +1614,11 @@
                                         React.createElement('option', { value: 150 }, '150 Recent Drawings'),
                                         React.createElement('option', { value: 200 }, '200 Recent Drawings'),
                                         React.createElement('option', { value: 300 }, '300 Recent Drawings'),
-                                        React.createElement('option', { value: 500 }, '500 Recent Drawings')
+                                        React.createElement('option', { value: 500 }, '500 Recent Drawings'),
+                                        React.createElement('option', { value: 750 }, '750 Recent Drawings'),
+                                        React.createElement('option', { value: 1000 }, '1,000 Recent Drawings'),
+                                        React.createElement('option', { value: 1500 }, '1,500 Recent Drawings'),
+                                        React.createElement('option', { value: 2000 }, '2,000 Recent Drawings (MAX)'))
                                     )
                                 ),
                                 React.createElement('div', { style: { fontSize: '0.75rem', color: '#6b7280' } },
