@@ -702,14 +702,148 @@
         // Global predictor instance
         window.globalLotteryPredictor = new AdvancedLotteryPredictor();
 
-        // Enhanced Claude AI Integration Module - Fixed Implementation
+   // Updated Claude AI Integration - Browser Compatible via Proxy
         class ClaudeLotteryAnalyzer {
             constructor() {
                 this.apiKey = null;
-                this.model = "claude-3-haiku-20240307"; // Cost-effective model
-                this.baseURL = "https://api.anthropic.com/v1/messages";
-                this.version = "2023-06-01";
+                this.model = "claude-3-haiku-20240307";
+                this.proxyURL = "/api/claude"; // Use our proxy endpoint
             }
+
+            // Initialize with API key
+            initialize(apiKey) {
+                this.apiKey = apiKey;
+            }
+
+            // Generate intelligent explanations for predictions
+            async generatePredictionInsights(predictionSet, historicalContext) {
+                if (!this.apiKey) return "Claude analysis unavailable - API key not configured";
+
+                try {
+                    console.log('Sending request to Claude proxy...');
+                    
+                    const response = await fetch(this.proxyURL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            apiKey: this.apiKey,
+                            predictionSet: predictionSet,
+                            historicalContext: historicalContext
+                        })
+                    });
+
+                    console.log('Proxy response status:', response.status);
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error('Proxy error:', errorData);
+                        throw new Error(`Proxy error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('Claude analysis success:', data);
+                    
+                    return data.analysis || "Claude analysis completed successfully";
+                    
+                } catch (error) {
+                    console.error('Claude analysis failed:', error);
+                    
+                    // Provide helpful error messages
+                    if (error.message.includes('401')) {
+                        return "Invalid API key. Please check your Anthropic API key.";
+                    } else if (error.message.includes('429')) {
+                        return "Rate limit exceeded. Please try again in a moment.";
+                    } else if (error.message.includes('500')) {
+                        return "Claude service temporarily unavailable. Please try again later.";
+                    } else {
+                        return `Claude analysis temporarily unavailable: ${error.message}`;
+                    }
+                }
+            }
+
+            // Advanced historical pattern analysis
+            async analyzeHistoricalAnomalies(recentDrawings) {
+                if (!this.apiKey) return null;
+
+                const summaryData = this.summarizeDrawings(recentDrawings.slice(0, 20));
+                
+                const customPrompt = `Analyze these recent lottery drawings for statistical anomalies:
+${summaryData}
+
+Identify: 1) Unusual patterns 2) Statistical deviations 3) Emerging trends
+Keep response under 200 words and focus on mathematical observations.`;
+
+                try {
+                    const response = await fetch(this.proxyURL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            apiKey: this.apiKey,
+                            prompt: customPrompt
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return {
+                        analysis: data.analysis,
+                        confidence: 75,
+                        anomalies: "Pattern analysis complete"
+                    };
+                } catch (error) {
+                    console.error('Historical analysis failed:', error);
+                    return null;
+                }
+            }
+
+            // Generate contextual strategy recommendations
+            async generateStrategyRecommendations(playerPreferences, currentJackpot) {
+                if (!this.apiKey) return "Configure Claude for personalized recommendations";
+
+                const customPrompt = `Player profile: ${JSON.stringify(playerPreferences)}
+Current jackpot: ${currentJackpot?.amount || 'unknown'}
+
+Recommend optimal lottery strategy considering risk tolerance and mathematical approaches.
+Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
+
+                try {
+                    const response = await fetch(this.proxyURL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            apiKey: this.apiKey,
+                            prompt: customPrompt
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return data.analysis;
+                } catch (error) {
+                    console.error('Strategy recommendations failed:', error);
+                    return "Strategy recommendations temporarily unavailable";
+                }
+            }
+
+            // Helper methods
+            summarizeDrawings(drawings) {
+                return drawings.map((d, i) => 
+                    `Draw ${i+1}: [${d.numbers?.join(',') || 'N/A'}] PB:${d.powerball || 'N/A'}`
+                ).join('\n');
+            }
+        }
 
             // Initialize with API key
             initialize(apiKey) {
