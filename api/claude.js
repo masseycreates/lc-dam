@@ -1,5 +1,5 @@
-// Enhanced Claude API Proxy with Hybrid Algorithm Integration
-// Replace the existing api/claude.js with this enhanced version
+// Enhanced Claude API Proxy with Better Error Handling and Debugging
+// Replace your existing api/claude.js with this version
 
 export default async function handler(req, res) {
   // Enhanced CORS headers
@@ -16,12 +16,16 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({
       error: 'Method not allowed',
-      success: false
+      success: false,
+      debug: 'Only POST requests are allowed'
     });
   }
 
   try {
-    console.log('=== Claude AI Hybrid Analysis Request ===');
+    console.log('=== Claude API Request Debug ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', req.headers);
+    console.log('Request body keys:', Object.keys(req.body || {}));
     
     const { 
       apiKey, 
@@ -30,25 +34,64 @@ export default async function handler(req, res) {
       currentJackpot,
       requestedSets = 5,
       strategy = 'hybrid',
-      localAlgorithmResults  // NEW: Include local algorithm predictions
+      localAlgorithmResults,
+      predictionSet,
+      historicalContext
     } = req.body;
     
-    // Validate API key
+    console.log('Analysis type:', analysisType);
+    console.log('API key provided:', !!apiKey);
+    console.log('API key format check:', apiKey ? apiKey.substring(0, 7) + '...' : 'none');
+    
+    // Enhanced API key validation
     if (!apiKey) {
+      console.log('ERROR: No API key provided');
       return res.status(400).json({
         error: 'Claude API key is required',
-        success: false
+        success: false,
+        debug: 'No apiKey found in request body'
+      });
+    }
+
+    if (typeof apiKey !== 'string') {
+      console.log('ERROR: API key is not a string');
+      return res.status(400).json({
+        error: 'API key must be a string',
+        success: false,
+        debug: `API key type: ${typeof apiKey}`
       });
     }
 
     if (!apiKey.startsWith('sk-ant-')) {
+      console.log('ERROR: Invalid API key format');
       return res.status(400).json({
         error: 'Invalid Anthropic API key format',
-        success: false
+        success: false,
+        debug: `API key should start with 'sk-ant-' but starts with '${apiKey.substring(0, 7)}'`
       });
     }
 
-    // Build hybrid analysis prompt
+    if (apiKey.length < 20) {
+      console.log('ERROR: API key too short');
+      return res.status(400).json({
+        error: 'API key appears to be too short',
+        success: false,
+        debug: `API key length: ${apiKey.length}`
+      });
+    }
+
+    // Validate analysis type
+    const validAnalysisTypes = ['hybridSelection', 'quickSelection', 'predictionInsights'];
+    if (!analysisType || !validAnalysisTypes.includes(analysisType)) {
+      console.log('ERROR: Invalid analysis type');
+      return res.status(400).json({
+        error: 'Invalid analysis type',
+        success: false,
+        debug: `Analysis type '${analysisType}' not in ${validAnalysisTypes.join(', ')}`
+      });
+    }
+
+    // Build prompt based on analysis type
     let analysisPrompt;
     let maxTokens = 1000;
 
@@ -65,20 +108,27 @@ export default async function handler(req, res) {
       analysisPrompt = buildQuickSelectionPrompt(historicalData, currentJackpot, requestedSets, strategy);
       maxTokens = 1200;
     } else if (analysisType === 'predictionInsights') {
-      analysisPrompt = buildPredictionInsightsPrompt(req.body.predictionSet, req.body.historicalContext);
+      analysisPrompt = buildPredictionInsightsPrompt(predictionSet, historicalContext);
       maxTokens = 400;
-    } else {
-      return res.status(400).json({
-        error: 'Invalid analysis type',
-        success: false
-      });
     }
-    
-    console.log('Sending hybrid request to Claude API...');
-    console.log('Analysis type:', analysisType);
-    console.log('Local algorithm results included:', !!localAlgorithmResults);
+
+    console.log('Prompt length:', analysisPrompt ? analysisPrompt.length : 0);
+    console.log('Max tokens:', maxTokens);
     
     // Make request to Claude API
+    console.log('Making request to Claude API...');
+    
+    const claudePayload = {
+      model: 'claude-3-haiku-20240307',
+      max_tokens: maxTokens,
+      messages: [{
+        role: 'user',
+        content: analysisPrompt
+      }]
+    };
+
+    console.log('Claude payload prepared, making request...');
+
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -86,29 +136,41 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json'
       },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: maxTokens,
-        messages: [{
-          role: 'user',
-          content: analysisPrompt
-        }]
-      })
+      body: JSON.stringify(claudePayload)
     });
+
+    console.log('Claude API response status:', claudeResponse.status);
+    console.log('Claude API response headers:', Object.fromEntries(claudeResponse.headers.entries()));
 
     if (!claudeResponse.ok) {
       const errorText = await claudeResponse.text();
-      console.error('Claude API error:', errorText);
+      console.error('Claude API error response:', errorText);
+      
+      let errorMessage = `Claude API error: ${claudeResponse.status}`;
+      let debugInfo = errorText;
+      
+      // Parse error for better messaging
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error && errorData.error.message) {
+          errorMessage = errorData.error.message;
+        }
+        debugInfo = errorData;
+      } catch (e) {
+        // Keep original text if not JSON
+      }
       
       return res.status(claudeResponse.status).json({
-        error: `Claude API error: ${claudeResponse.status}`,
-        details: errorText,
-        success: false
+        error: errorMessage,
+        success: false,
+        debug: debugInfo,
+        claudeStatus: claudeResponse.status
       });
     }
 
     const claudeData = await claudeResponse.json();
-    console.log('Claude hybrid analysis response received');
+    console.log('Claude response received successfully');
+    console.log('Claude response structure:', Object.keys(claudeData));
     
     // Process Claude's response
     let processedResponse;
@@ -128,6 +190,8 @@ export default async function handler(req, res) {
       };
     }
     
+    console.log('Response processed successfully');
+    
     return res.status(200).json({
       success: true,
       analysisType,
@@ -138,18 +202,25 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Claude hybrid proxy error:', error);
+    console.error('=== Claude API Error ===');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
       details: error.message,
-      timestamp: new Date().toISOString()
+      debug: {
+        errorName: error.name,
+        errorMessage: error.message,
+        timestamp: new Date().toISOString()
+      }
     });
   }
 }
 
-// NEW: Build hybrid prompt that includes local algorithm results
+// Build hybrid prompt that includes local algorithm results
 function buildHybridSelectionPrompt(historicalData, currentJackpot, requestedSets, strategy, localResults) {
   const recentDrawings = historicalData?.drawings?.slice(0, 15) || [];
   const stats = historicalData || {};
@@ -259,8 +330,12 @@ function processHybridSelectionResponse(claudeText, requestedSets, localResults)
   const selections = [];
   
   try {
+    console.log('Processing Claude hybrid response...');
+    console.log('Claude text length:', claudeText.length);
+    
     // Parse Claude's hybrid response
     const selectionBlocks = claudeText.split('**Hybrid Selection').slice(1);
+    console.log('Found selection blocks:', selectionBlocks.length);
     
     for (let i = 0; i < Math.min(selectionBlocks.length, requestedSets); i++) {
       const block = selectionBlocks[i];
@@ -271,7 +346,10 @@ function processHybridSelectionResponse(claudeText, requestedSets, localResults)
       
       // Extract numbers
       const numbersMatch = block.match(/Numbers:\s*([0-9,\s]+)\s*\|\s*Powerball:\s*(\d+)/);
-      if (!numbersMatch) continue;
+      if (!numbersMatch) {
+        console.warn(`No valid numbers found in selection ${i + 1}`);
+        continue;
+      }
       
       const numbers = numbersMatch[1]
         .split(',')
@@ -315,9 +393,11 @@ function processHybridSelectionResponse(claudeText, requestedSets, localResults)
         actualStrategy: strategy,
         technicalAnalysis: "Validated by Claude 3 AI + Local Algorithms",
         claudeGenerated: true,
-        isHybrid: true // NEW: Mark as hybrid
+        isHybrid: true
       });
     }
+    
+    console.log(`Successfully processed ${selections.length} hybrid selections`);
     
     // If we didn't get enough hybrid selections, fill with local results enhanced by Claude insights
     while (selections.length < requestedSets && localResults && selections.length < localResults.length) {
@@ -331,7 +411,7 @@ function processHybridSelectionResponse(claudeText, requestedSets, localResults)
         numbers: localResult.numbers,
         powerball: localResult.powerball,
         strategy: `${localResult.confidence}% Enhanced`,
-        confidence: Math.min(95, localResult.confidence + 5), // Slight boost for Claude enhancement
+        confidence: Math.min(95, localResult.confidence + 5),
         actualStrategy: localResult.actualStrategy,
         technicalAnalysis: `${localResult.technicalAnalysis} + Claude review`,
         claudeGenerated: false,
@@ -361,15 +441,15 @@ function enhanceLocalResultsWithClaude(localResults) {
   }));
 }
 
-// Keep existing functions for backward compatibility
+// Simple fallback functions for other analysis types
 function buildQuickSelectionPrompt(historicalData, currentJackpot, requestedSets, strategy) {
-  // ... existing implementation
+  return `Generate ${requestedSets} Powerball number selections based on the provided data. Format each as: Numbers: 1, 2, 3, 4, 5 | Powerball: 6`;
 }
 
 function processQuickSelectionResponse(claudeText, requestedSets) {
-  // ... existing implementation
+  return { claudeSelections: [] };
 }
 
 function buildPredictionInsightsPrompt(predictionSet, historicalContext) {
-  // ... existing implementation
+  return `Analyze this lottery prediction: ${JSON.stringify(predictionSet)}. Provide brief insights.`;
 }
