@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Lottery Intelligence System - Enhanced</title>
+    <title>Advanced Lottery Intelligence System - Enhanced with Claude AI</title>
     
     <!-- React Libraries -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -702,6 +702,146 @@
         // Global predictor instance
         window.globalLotteryPredictor = new AdvancedLotteryPredictor();
 
+        // Enhanced Claude AI Integration Module - Fixed Implementation
+        class ClaudeLotteryAnalyzer {
+            constructor() {
+                this.apiKey = null;
+                this.model = "claude-3-haiku-20240307"; // Cost-effective model
+                this.baseURL = "https://api.anthropic.com/v1/messages";
+                this.version = "2023-06-01";
+            }
+
+            // Initialize with API key
+            initialize(apiKey) {
+                this.apiKey = apiKey;
+            }
+
+            // Generate intelligent explanations for predictions
+            async generatePredictionInsights(predictionSet, historicalContext) {
+                if (!this.apiKey) return "Claude analysis unavailable - API key not configured";
+
+                try {
+                    const prompt = this.buildAnalysisPrompt(predictionSet, historicalContext);
+                    
+                    const response = await fetch(this.baseURL, {
+                        method: 'POST',
+                        headers: {
+                            'x-api-key': this.apiKey,
+                            'anthropic-version': this.version,
+                            'content-type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: this.model,
+                            max_tokens: 300,
+                            messages: [{
+                                role: "user",
+                                content: `You are an expert data scientist specializing in lottery pattern analysis. Provide clear, statistical insights about number selections without making unrealistic promises about winning.
+
+${prompt}
+
+Respond with 2-3 sentences explaining the mathematical reasoning behind this selection.`
+                            }]
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return data.content[0].text;
+                } catch (error) {
+                    console.error('Claude analysis failed:', error);
+                    return "Claude analysis temporarily unavailable";
+                }
+            }
+
+            // Advanced historical pattern analysis
+            async analyzeHistoricalAnomalies(recentDrawings) {
+                if (!this.apiKey) return null;
+
+                const summaryData = this.summarizeDrawings(recentDrawings.slice(0, 20));
+                
+                const prompt = `Analyze these recent lottery drawings for statistical anomalies:
+${summaryData}
+
+Identify: 1) Unusual patterns 2) Statistical deviations 3) Emerging trends
+Keep response under 200 words and focus on mathematical observations.`;
+
+                try {
+                    const response = await this.callClaude(prompt);
+                    return {
+                        analysis: response,
+                        confidence: 75,
+                        anomalies: "Pattern analysis complete"
+                    };
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            // Generate contextual strategy recommendations
+            async generateStrategyRecommendations(playerPreferences, currentJackpot) {
+                if (!this.apiKey) return "Configure Claude for personalized recommendations";
+
+                const prompt = `Player profile: ${JSON.stringify(playerPreferences)}
+Current jackpot: ${currentJackpot?.amount || 'unknown'}
+
+Recommend optimal lottery strategy considering risk tolerance and mathematical approaches.
+Focus on statistical methods, not luck-based advice. Keep under 150 words.`;
+
+                return await this.callClaude(prompt);
+            }
+
+            // Helper methods
+            buildAnalysisPrompt(predictionSet, context) {
+                return `Lottery prediction analysis:
+Numbers: ${predictionSet.numbers.join(', ')} | Powerball: ${predictionSet.powerball}
+Strategy: ${predictionSet.strategy}
+Confidence: ${predictionSet.confidence}%
+
+Recent patterns: ${context.recentTrends || 'Standard distribution'}
+Historical context: ${context.totalDrawings || 0} drawings analyzed
+
+Explain the statistical reasoning behind this selection.`;
+            }
+
+            summarizeDrawings(drawings) {
+                return drawings.map((d, i) => 
+                    `Draw ${i+1}: [${d.numbers?.join(',') || 'N/A'}] PB:${d.powerball || 'N/A'}`
+                ).join('\n');
+            }
+
+            async callClaude(prompt) {
+                const response = await fetch(this.baseURL, {
+                    method: 'POST',
+                    headers: {
+                        'x-api-key': this.apiKey,
+                        'anthropic-version': this.version,
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: this.model,
+                        max_tokens: 200,
+                        messages: [{
+                            role: "user", 
+                            content: prompt
+                        }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Claude API Error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.content[0].text;
+            }
+        }
+
+        // Global Claude analyzer instance
+        window.claudeAnalyzer = new ClaudeLotteryAnalyzer();
+
         // Helper functions
         function generateAdvancedOptimizedNumbers(historicalStats, numSets = 5, strategy = 'ensemble') {
             try {
@@ -844,135 +984,6 @@
                 status: 'initializing'
             };
         }
-
-        // Enhanced AI Integration Module
-        class ChatGPTLotteryAnalyzer {
-            constructor() {
-                this.apiKey = null; // Will be set by user
-                this.model = "gpt-4o-mini"; // Cost-effective model
-                this.baseURL = "https://api.openai.com/v1/chat/completions";
-            }
-
-            // Initialize with API key
-            initialize(apiKey) {
-                this.apiKey = apiKey;
-            }
-
-            // Generate intelligent explanations for predictions
-            async generatePredictionInsights(predictionSet, historicalContext) {
-                if (!this.apiKey) return "AI analysis unavailable - API key not configured";
-
-                try {
-                    const prompt = this.buildAnalysisPrompt(predictionSet, historicalContext);
-                    
-                    const response = await fetch(this.baseURL, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${this.apiKey}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            model: this.model,
-                            messages: [{
-                                role: "system",
-                                content: "You are an expert data scientist specializing in lottery pattern analysis. Provide clear, statistical insights about number selections without making unrealistic promises about winning."
-                            }, {
-                                role: "user",
-                                content: prompt
-                            }],
-                            max_tokens: 300,
-                            temperature: 0.7
-                        })
-                    });
-
-                    const data = await response.json();
-                    return data.choices[0].message.content;
-                } catch (error) {
-                    console.error('ChatGPT analysis failed:', error);
-                    return "AI analysis temporarily unavailable";
-                }
-            }
-
-            // Advanced historical pattern analysis
-            async analyzeHistoricalAnomalies(recentDrawings) {
-                if (!this.apiKey) return null;
-
-                const summaryData = this.summarizeDrawings(recentDrawings.slice(0, 20));
-                
-                const prompt = `
-                Analyze these recent lottery drawings for statistical anomalies:
-                ${summaryData}
-                
-                Identify: 1) Unusual patterns 2) Statistical deviations 3) Emerging trends
-                Respond in JSON format with insights and confidence scores.
-                `;
-
-                try {
-                    const response = await this.callChatGPT(prompt);
-                    return JSON.parse(response);
-                } catch (error) {
-                    return null;
-                }
-            }
-
-            // Generate contextual strategy recommendations
-            async generateStrategyRecommendations(playerPreferences, currentJackpot) {
-                if (!this.apiKey) return "Configure AI for personalized recommendations";
-
-                const prompt = `
-                Player profile: ${JSON.stringify(playerPreferences)}
-                Current jackpot: ${currentJackpot?.amount || 'unknown'}
-                
-                Recommend optimal lottery strategy considering risk tolerance and mathematical approaches.
-                Focus on statistical methods, not luck-based advice.
-                `;
-
-                return await this.callChatGPT(prompt);
-            }
-
-            // Helper methods
-            buildAnalysisPrompt(predictionSet, context) {
-                return `
-                Lottery prediction analysis:
-                Numbers: ${predictionSet.numbers.join(', ')} | Powerball: ${predictionSet.powerball}
-                Strategy: ${predictionSet.strategy}
-                Confidence: ${predictionSet.confidence}%
-                
-                Recent patterns: ${context.recentTrends || 'Standard distribution'}
-                Historical context: ${context.totalDrawings || 0} drawings analyzed
-                
-                Explain the statistical reasoning behind this selection in 2-3 sentences.
-                `;
-            }
-
-            summarizeDrawings(drawings) {
-                return drawings.map((d, i) => 
-                    `Draw ${i+1}: [${d.numbers.join(',')}] PB:${d.powerball}`
-                ).join('\n');
-            }
-
-            async callChatGPT(prompt) {
-                const response = await fetch(this.baseURL, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${this.apiKey}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: this.model,
-                        messages: [{ role: "user", content: prompt }],
-                        max_tokens: 200,
-                        temperature: 0.3
-                    })
-                });
-                
-                const data = await response.json();
-                return data.choices[0].message.content;
-            }
-        }
-
-        // Global AI analyzer instance
-        window.chatGPTAnalyzer = new ChatGPTLotteryAnalyzer();
     </script>
     
     <script type="text/babel">
@@ -1005,7 +1016,7 @@
             const [isOptimizing, setIsOptimizing] = useState(false);
             const [quickSelectionSets, setQuickSelectionSets] = useState([]);
             
-            // AI Integration states
+            // Claude AI Integration states
             const [aiApiKey, setAiApiKey] = useState('');
             const [aiInsights, setAiInsights] = useState({});
             const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -1154,7 +1165,7 @@
                 setIsLoadingHistory(false);
             };
 
-            // Enhanced optimization function with AI
+            // Enhanced optimization function with Claude AI
             const generateAdvancedPredictions = async () => {
                 setIsOptimizing(true);
                 
@@ -1168,7 +1179,7 @@
                         
                         setOptimizedSets(predictions);
                         
-                        // Generate AI insights if enabled
+                        // Generate Claude AI insights if enabled
                         if (aiEnabled && aiApiKey) {
                             await generateAIInsights(predictions);
                         }
@@ -1193,7 +1204,7 @@
                 }
             };
 
-            // Generate AI insights for predictions
+            // Generate Claude AI insights for predictions
             const generateAIInsights = async (predictions) => {
                 if (!window.claudeAnalyzer || !aiApiKey) return;
                 
@@ -1214,22 +1225,36 @@
                         );
                         
                         insights[i] = insight;
+                        
+                        // Add small delay to avoid rate limiting
+                        if (i < 2) await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                     
                     setAiInsights(insights);
                 } catch (error) {
-                    console.error('AI insights failed:', error);
+                    console.error('Claude insights failed:', error);
+                    setAiInsights({
+                        0: "Claude analysis temporarily unavailable. Please check your API key and try again."
+                    });
                 } finally {
                     setIsLoadingAI(false);
                 }
             };
 
-            // Initialize AI when API key is provided
+            // Claude API key validation
+            const validateClaudeApiKey = (key) => {
+                return key.startsWith('sk-ant-') && key.length > 20;
+            };
+
+            // Initialize Claude AI when API key is provided
             const enableAI = () => {
-                if (aiApiKey.trim()) {
+                if (aiApiKey.trim() && validateClaudeApiKey(aiApiKey.trim())) {
                     window.claudeAnalyzer.initialize(aiApiKey.trim());
                     setAiEnabled(true);
                     localStorage.setItem('lottery_ai_enabled', 'true');
+                    console.log('Claude AI enabled successfully');
+                } else {
+                    alert('Please enter a valid Anthropic API key (starts with sk-ant-)');
                 }
             };
 
@@ -1363,928 +1388,834 @@
                     coldNumbers,
                     totalDrawings: recordCount,
                     dataSource: 'Simulated Data',
-                    drawings: [] // Add empty drawings array
+                    drawings: []
                 };
             };
 
-            return (
-                <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1.5rem' }}>
-                    {/* Header with enhanced status */}
-                    <div className={liveDataAvailable ? 'gradient-bg' : 'gradient-bg-unavailable'} style={{
+            return React.createElement('div', { style: { maxWidth: '1280px', margin: '0 auto', padding: '1.5rem' } },
+                // Header with enhanced status
+                React.createElement('div', { 
+                    className: liveDataAvailable ? 'gradient-bg' : 'gradient-bg-unavailable',
+                    style: {
                         position: 'sticky', top: 0, zIndex: 50, marginBottom: '1.5rem',
                         borderRadius: '0.75rem', padding: '1.5rem',
                         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'white' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{
-                                    background: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '50%'
-                                }}>
-                                    {liveDataAvailable ? '🎯' : '⚠️'}
-                                </div>
-                                <div>
-                                    <div style={{ opacity: 0.8, fontSize: '0.875rem', fontWeight: 500 }}>
-                                        {liveDataAvailable ? 'Enhanced Powerball Intelligence' : 'Enhanced System - Data Unavailable'}
-                                    </div>
-                                    <div style={{ fontSize: '1.875rem', fontWeight: 700 }}>
-                                        {liveDataAvailable && currentJackpot ? currentJackpot.formatted : 'Visit powerball.com'}
-                                    </div>
-                                    <div style={{ opacity: 0.7, fontSize: '0.75rem' }}>
-                                        {liveDataAvailable && currentJackpot ? `Cash Value: ${currentJackpot.cashFormatted} • ` : 'For current jackpot amount • '}
-                                        Next Drawing: {nextDrawDate || 'TBD'}
-                                    </div>
-                                </div>
-                            </div>
-                            {/* System performance indicator */}
-                            {systemPerformance && (
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{
-                                        background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '8px'
-                                    }}>
-                                        <div style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}>AI System Status</div>
-                                        <div style={{ fontSize: '1.125rem', fontFamily: 'monospace' }}>
-                                            {systemPerformance.averageHitRate}% Hit Rate
-                                        </div>
-                                        <div style={{ opacity: 0.7, fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                                            {systemPerformance.predictionsGenerated} predictions • {systemPerformance.status}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    }
+                },
+                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'white' } },
+                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem' } },
+                            React.createElement('div', { style: { background: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '50%' } },
+                                liveDataAvailable ? '🎯' : '⚠️'
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('div', { style: { opacity: 0.8, fontSize: '0.875rem', fontWeight: 500 } },
+                                    liveDataAvailable ? 'Enhanced Powerball Intelligence' : 'Enhanced System - Data Unavailable'
+                                ),
+                                React.createElement('div', { style: { fontSize: '1.875rem', fontWeight: 700 } },
+                                    liveDataAvailable && currentJackpot ? currentJackpot.formatted : 'Visit powerball.com'
+                                ),
+                                React.createElement('div', { style: { opacity: 0.7, fontSize: '0.75rem' } },
+                                    liveDataAvailable && currentJackpot ? `Cash Value: ${currentJackpot.cashFormatted} • ` : 'For current jackpot amount • ',
+                                    'Next Drawing: ',
+                                    nextDrawDate || 'TBD'
+                                )
+                            )
+                        ),
+                        systemPerformance && React.createElement('div', { style: { textAlign: 'center' } },
+                            React.createElement('div', { style: { background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '8px' } },
+                                React.createElement('div', { style: { fontSize: '0.875rem', marginBottom: '0.25rem' } }, 'AI System Status'),
+                                React.createElement('div', { style: { fontSize: '1.125rem', fontFamily: 'monospace' } },
+                                    systemPerformance.averageHitRate + '% Hit Rate'
+                                ),
+                                React.createElement('div', { style: { opacity: 0.7, fontSize: '0.75rem', marginTop: '0.25rem' } },
+                                    systemPerformance.predictionsGenerated + ' predictions • ' + systemPerformance.status
+                                )
+                            )
+                        )
+                    )
+                ),
 
-                    {/* Enhanced status banner */}
-                    {!liveDataAvailable && (
-                        <div className="error-banner">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '1.25rem' }}>🚨</span>
-                                <div>
-                                    <div style={{ fontWeight: 600, color: '#dc2626' }}>
-                                        LIVE DATA UNAVAILABLE - ENHANCED SYSTEM ACTIVE
-                                    </div>
-                                    <div style={{ fontSize: '0.875rem', color: '#7f1d1d', marginTop: '0.25rem' }}>
-                                        Advanced prediction algorithms are active. Visit powerball.com for current jackpot.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                // Enhanced status banner
+                !liveDataAvailable && React.createElement('div', { className: 'error-banner' },
+                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem' } },
+                        React.createElement('span', { style: { fontSize: '1.25rem' } }, '🚨'),
+                        React.createElement('div', null,
+                            React.createElement('div', { style: { fontWeight: 600, color: '#dc2626' } },
+                                'LIVE DATA UNAVAILABLE - ENHANCED SYSTEM ACTIVE'
+                            ),
+                            React.createElement('div', { style: { fontSize: '0.875rem', color: '#7f1d1d', marginTop: '0.25rem' } },
+                                'Advanced prediction algorithms are active. Visit powerball.com for current jackpot.'
+                            )
+                        )
+                    )
+                ),
 
-                    {/* System performance banner */}
-                    {systemPerformance && systemPerformance.averageHitRate > 0 && (
-                        <div className="success-banner">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '1.25rem' }}>🎯</span>
-                                <div>
-                                    <div style={{ fontWeight: 600, color: '#059669' }}>
-                                        ENHANCED AI SYSTEM ACTIVE - {systemPerformance.averageHitRate}% HIT RATE
-                                    </div>
-                                    <div style={{ fontSize: '0.875rem', color: '#047857', marginTop: '0.25rem' }}>
-                                        Advanced algorithms learning from {systemPerformance.predictionsGenerated} predictions. Target: 17-19% accuracy.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                // System performance banner
+                systemPerformance && systemPerformance.averageHitRate > 0 && React.createElement('div', { className: 'success-banner' },
+                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem' } },
+                        React.createElement('span', { style: { fontSize: '1.25rem' } }, '🎯'),
+                        React.createElement('div', null,
+                            React.createElement('div', { style: { fontWeight: 600, color: '#059669' } },
+                                `ENHANCED AI SYSTEM ACTIVE - ${systemPerformance.averageHitRate}% HIT RATE`
+                            ),
+                            React.createElement('div', { style: { fontSize: '0.875rem', color: '#047857', marginTop: '0.25rem' } },
+                                `Advanced algorithms learning from ${systemPerformance.predictionsGenerated} predictions. Target: 17-19% accuracy.`
+                            )
+                        )
+                    )
+                ),
 
-                    {/* Main header */}
-                    <div style={{ marginBottom: '2rem' }}>
-                        <h1 style={{
+                // Main header
+                React.createElement('div', { style: { marginBottom: '2rem' } },
+                    React.createElement('h1', { 
+                        style: {
                             fontSize: '2.25rem', fontWeight: 700, color: '#1f2937', marginBottom: '0.5rem',
                             display: 'flex', alignItems: 'center', gap: '1rem'
-                        }}>
-                            🧠 Advanced Lottery Intelligence System
-                            {systemPerformance && (
-                                <span style={{
-                                    fontSize: '0.875rem',
-                                    background: systemPerformance.status === 'optimal' ? '#22c55e' : 
-                                               systemPerformance.status === 'good' ? '#3b82f6' : '#f59e0b',
-                                    color: 'white', padding: '0.25rem 0.75rem', borderRadius: '9999px'
-                                }}>
-                                    {systemPerformance.status.toUpperCase()}
-                                </span>
-                            )}
-                        </h1>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <p style={{ color: '#6b7280' }}>
-                                Enhanced with 6 advanced algorithms, ensemble learning, and real-time adaptation for 17-19% hit rates
-                            </p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                {lastUpdated && (
-                                    <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                                        Last updated: {lastUpdated}
-                                    </div>
-                                )}
-                                <button
-                                    onClick={fetchLatestPowerballData}
-                                    disabled={isUpdating}
-                                    className={isUpdating ? 'btn btn-secondary' : 'btn btn-primary'}
-                                >
-                                    {isUpdating ? (
-                                        <span>
-                                            <span className="loading-spinner" style={{ marginRight: '0.5rem' }}></span>
-                                            Updating...
-                                        </span>
-                                    ) : (
-                                        '🔄 Update Data'
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                        }
+                    },
+                        '🧠 Advanced Lottery Intelligence System',
+                        systemPerformance && React.createElement('span', {
+                            style: {
+                                fontSize: '0.875rem',
+                                background: systemPerformance.status === 'optimal' ? '#22c55e' : 
+                                           systemPerformance.status === 'good' ? '#3b82f6' : '#f59e0b',
+                                color: 'white', padding: '0.25rem 0.75rem', borderRadius: '9999px'
+                            }
+                        }, systemPerformance.status.toUpperCase())
+                    ),
+                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+                        React.createElement('p', { style: { color: '#6b7280' } },
+                            'Enhanced with 6 advanced algorithms, ensemble learning, Claude AI analysis, and real-time adaptation for 17-19% hit rates'
+                        ),
+                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem' } },
+                            lastUpdated && React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280' } },
+                                'Last updated: ' + lastUpdated
+                            ),
+                            React.createElement('button', {
+                                onClick: fetchLatestPowerballData,
+                                disabled: isUpdating,
+                                className: isUpdating ? 'btn btn-secondary' : 'btn btn-primary'
+                            },
+                                isUpdating ? React.createElement('span', null,
+                                    React.createElement('span', { className: 'loading-spinner', style: { marginRight: '0.5rem' } }),
+                                    'Updating...'
+                                ) : '🔄 Update Data'
+                            )
+                        )
+                    )
+                ),
 
-                    {/* Enhanced tabs */}
-                    <div style={{
+                // Enhanced tabs
+                React.createElement('div', {
+                    style: {
                         background: '#f3f4f6', padding: '0.25rem', borderRadius: '8px', marginBottom: '1.5rem',
                         display: 'flex', gap: '0.25rem'
-                    }}>
-                        {[
-                            { id: 'calculator', label: 'Basic Calculator', icon: '🧮' },
-                            { id: 'optimization', label: 'AI Optimization', icon: '🎯' },
-                            { id: 'taxes', label: 'Tax Analysis', icon: '💰' }
-                        ].map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                style={{
-                                    padding: '0.5rem 1rem', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                                    background: activeTab === tab.id ? '#9333ea' : 'white',
-                                    color: activeTab === tab.id ? 'white' : '#4b5563',
-                                    transition: 'all 0.2s', fontSize: '0.875rem'
-                                }}
-                            >
-                                {tab.icon} {tab.label}
-                            </button>
-                        ))}
-                    </div>
+                    }
+                },
+                    [
+                        { id: 'calculator', label: 'Basic Calculator', icon: '🧮' },
+                        { id: 'optimization', label: 'Claude AI Optimization', icon: '🤖' },
+                        { id: 'taxes', label: 'Tax Analysis', icon: '💰' }
+                    ].map(tab => 
+                        React.createElement('button', {
+                            key: tab.id,
+                            onClick: () => setActiveTab(tab.id),
+                            style: {
+                                padding: '0.5rem 1rem', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                                background: activeTab === tab.id ? '#9333ea' : 'white',
+                                color: activeTab === tab.id ? 'white' : '#4b5563',
+                                transition: 'all 0.2s', fontSize: '0.875rem'
+                            }
+                        }, `${tab.icon} ${tab.label}`)
+                    )
+                ),
 
-                    {/* Tab content */}
-                    {activeTab === 'calculator' && (
-                        <div style={{ display: 'grid', gap: '2rem' }}>
-                            <div className="card">
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' }}>
-                                    🎯 Manual Number Selection
-                                </h2>
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <h3 style={{ fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>
-                                        Select 5 main numbers (1-69):
-                                    </h3>
-                                    <div style={{
-                                        display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '0.5rem',
-                                        marginBottom: '1rem'
-                                    }}>
-                                        {Array.from({length: 69}, (_, i) => i + 1).map(num => (
-                                            <button
-                                                key={num}
-                                                onClick={() => toggleNumber(num)}
-                                                disabled={!selectedNumbers.includes(num) && selectedNumbers.length >= 5}
-                                                style={{
-                                                    width: '2rem', height: '2rem', fontSize: '0.75rem', borderRadius: '4px',
-                                                    border: selectedNumbers.includes(num) ? '1px solid #9333ea' : '1px solid #d1d5db',
-                                                    background: selectedNumbers.includes(num) ? '#9333ea' : 'white',
-                                                    color: selectedNumbers.includes(num) ? 'white' : '#1f2937',
-                                                    cursor: (!selectedNumbers.includes(num) && selectedNumbers.length >= 5) ? 'not-allowed' : 'pointer',
-                                                    opacity: (!selectedNumbers.includes(num) && selectedNumbers.length >= 5) ? 0.5 : 1,
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                {num}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                                    <div>
-                                        <label style={{ display: 'block', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>
-                                            Powerball (1-26):
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="26"
-                                            value={powerball}
-                                            onChange={(e) => setPowerball(e.target.value)}
-                                            style={{
-                                                width: '5rem', padding: '0.5rem', border: '1px solid #d1d5db',
-                                                borderRadius: '0.25rem', fontSize: '0.875rem'
-                                            }}
-                                            placeholder="1-26"
-                                        />
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button onClick={quickPick} className="btn btn-purple">
-                                            🎲 Quick Pick
-                                        </button>
-                                        <button onClick={clearSelection} className="btn btn-secondary">
-                                            🗑️ Clear
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <div className="card" style={{ background: '#f9fafb' }}>
-                                    <h3 style={{ fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>
-                                        Your Selection:
-                                    </h3>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        {selectedNumbers.map(num => (
-                                            <span key={num} className="number-display">{num}</span>
-                                        ))}
-                                        {powerball && <span className="powerball-display">{powerball}</span>}
-                                    </div>
-                                    {selectedNumbers.length === 5 && powerball && (
-                                        <div style={{
-                                            marginTop: '0.5rem', padding: '0.75rem', background: '#fefce8',
-                                            borderRadius: '4px'
-                                        }}>
-                                            <p style={{ fontWeight: 600, color: '#92400e' }}>
-                                                Probability: 1 in 292,201,338 (0.0000034%)
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                // Tab content
+                activeTab === 'calculator' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
+                    React.createElement('div', { className: 'card' },
+                        React.createElement('h2', { style: { fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem' } },
+                            '🎯 Manual Number Selection'
+                        ),
+                        React.createElement('div', { style: { marginBottom: '1rem' } },
+                            React.createElement('h3', { style: { fontWeight: 600, color: '#374151', marginBottom: '0.5rem' } },
+                                'Select 5 main numbers (1-69):'
+                            ),
+                            React.createElement('div', {
+                                style: {
+                                    display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '0.5rem',
+                                    marginBottom: '1rem'
+                                }
+                            },
+                                Array.from({length: 69}, (_, i) => i + 1).map(num =>
+                                    React.createElement('button', {
+                                        key: num,
+                                        onClick: () => toggleNumber(num),
+                                        disabled: !selectedNumbers.includes(num) && selectedNumbers.length >= 5,
+                                        style: {
+                                            width: '2rem', height: '2rem', fontSize: '0.75rem', borderRadius: '4px',
+                                            border: selectedNumbers.includes(num) ? '1px solid #9333ea' : '1px solid #d1d5db',
+                                            background: selectedNumbers.includes(num) ? '#9333ea' : 'white',
+                                            color: selectedNumbers.includes(num) ? 'white' : '#1f2937',
+                                            cursor: (!selectedNumbers.includes(num) && selectedNumbers.length >= 5) ? 'not-allowed' : 'pointer',
+                                            opacity: (!selectedNumbers.includes(num) && selectedNumbers.length >= 5) ? 0.5 : 1,
+                                            transition: 'all 0.2s'
+                                        }
+                                    }, num)
+                                )
+                            )
+                        ),
+                        
+                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' } },
+                            React.createElement('div', null,
+                                React.createElement('label', { style: { display: 'block', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' } },
+                                    'Powerball (1-26):'
+                                ),
+                                React.createElement('input', {
+                                    type: 'number',
+                                    min: '1',
+                                    max: '26',
+                                    value: powerball,
+                                    onChange: (e) => setPowerball(e.target.value),
+                                    style: {
+                                        width: '5rem', padding: '0.5rem', border: '1px solid #d1d5db',
+                                        borderRadius: '0.25rem', fontSize: '0.875rem'
+                                    },
+                                    placeholder: '1-26'
+                                })
+                            ),
+                            React.createElement('div', { style: { display: 'flex', gap: '0.5rem' } },
+                                React.createElement('button', { onClick: quickPick, className: 'btn btn-purple' },
+                                    '🎲 Quick Pick'
+                                ),
+                                React.createElement('button', { onClick: clearSelection, className: 'btn btn-secondary' },
+                                    '🗑️ Clear'
+                                )
+                            )
+                        ),
+                        
+                        React.createElement('div', { className: 'card', style: { background: '#f9fafb' } },
+                            React.createElement('h3', { style: { fontWeight: 600, color: '#374151', marginBottom: '0.5rem' } },
+                                'Your Selection:'
+                            ),
+                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' } },
+                                selectedNumbers.map(num =>
+                                    React.createElement('span', { key: num, className: 'number-display' }, num)
+                                ),
+                                powerball && React.createElement('span', { className: 'powerball-display' }, powerball)
+                            ),
+                            selectedNumbers.length === 5 && powerball && React.createElement('div', {
+                                style: {
+                                    marginTop: '0.5rem', padding: '0.75rem', background: '#fefce8',
+                                    borderRadius: '4px'
+                                }
+                            },
+                                React.createElement('p', { style: { fontWeight: 600, color: '#92400e' } },
+                                    'Probability: 1 in 292,201,338 (0.0000034%)'
+                                )
+                            )
+                        )
+                    )
+                ),
 
-                    {/* Enhanced Optimization Tab */}
-                    {activeTab === 'optimization' && (
-                        <div style={{ display: 'grid', gap: '1.5rem' }}>
-                            {/* Enhanced Quick Selection with AI */}
-                            <div className="enhanced-prediction-card">
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1f2937', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        🚀 AI-Enhanced Quick Selection
-                                    </h3>
-                                    {systemPerformance && (
-                                        <div style={{
-                                            fontSize: '0.875rem', color: '#4b5563', background: 'white',
-                                            padding: '0.5rem 0.75rem', borderRadius: '9999px', border: '1px solid #e5e7eb'
-                                        }}>
-                                            {systemPerformance.averageHitRate}% Hit Rate • {systemPerformance.status}
-                                        </div>
-                                    )}
-                                </div>
-                                <p style={{ color: '#4b5563', marginBottom: '1rem' }}>
-                                    AI-powered predictions using 6 advanced algorithms with ensemble learning. Analyzing {historicalStats ? historicalStats.totalDrawings : historicalRecordsLimit} historical draws for 17-19% accuracy targets.
-                                </p>
-                                
-                                {/* Display enhanced quick selections */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
-                                    {quickSelectionSets.slice(0, 5).map(selection => (
-                                        <div
-                                            key={selection.id}
-                                            className={`card ${selection.confidence >= 90 ? 'confidence-high' : selection.confidence >= 80 ? 'confidence-medium' : 'confidence-low'}`}
-                                            style={{ background: 'white', padding: '1rem' }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                                                <h4 style={{ fontWeight: 600, color: '#1f2937', fontSize: '0.875rem' }}>
-                                                    {selection.name}
-                                                </h4>
-                                                <span style={{
-                                                    fontSize: '0.75rem',
-                                                    background: selection.confidence >= 90 ? '#dcfce7' : selection.confidence >= 80 ? '#dbeafe' : '#fef3c7',
-                                                    color: selection.confidence >= 90 ? '#059669' : selection.confidence >= 80 ? '#1d4ed8' : '#d97706',
-                                                    padding: '0.25rem 0.5rem', borderRadius: '0.25rem'
-                                                }}>
-                                                    {selection.strategy}
-                                                </span>
-                                            </div>
-                                            
-                                            {/* Algorithm Detail */}
-                                            <div style={{ 
+                // Enhanced Optimization Tab with Claude AI
+                activeTab === 'optimization' && React.createElement('div', { style: { display: 'grid', gap: '1.5rem' } },
+                    // Enhanced Quick Selection with AI
+                    React.createElement('div', { className: 'enhanced-prediction-card' },
+                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' } },
+                            React.createElement('h3', { style: { fontSize: '1.5rem', fontWeight: 700, color: '#1f2937', display: 'flex', alignItems: 'center', gap: '0.5rem' } },
+                                '🤖 Claude AI-Enhanced Quick Selection'
+                            ),
+                            systemPerformance && React.createElement('div', {
+                                style: {
+                                    fontSize: '0.875rem', color: '#4b5563', background: 'white',
+                                    padding: '0.5rem 0.75rem', borderRadius: '9999px', border: '1px solid #e5e7eb'
+                                }
+                            }, `${systemPerformance.averageHitRate}% Hit Rate • ${systemPerformance.status}`)
+                        ),
+                        React.createElement('p', { style: { color: '#4b5563', marginBottom: '1rem' } },
+                            `Claude AI-powered predictions using 6 advanced algorithms with ensemble learning. Analyzing ${historicalStats ? historicalStats.totalDrawings : historicalRecordsLimit} historical draws for 17-19% accuracy targets.`
+                        ),
+                        
+                        // Display enhanced quick selections
+                        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' } },
+                            quickSelectionSets.slice(0, 5).map(selection =>
+                                React.createElement('div', {
+                                    key: selection.id,
+                                    className: `card ${selection.confidence >= 90 ? 'confidence-high' : selection.confidence >= 80 ? 'confidence-medium' : 'confidence-low'}`,
+                                    style: { background: 'white', padding: '1rem' }
+                                },
+                                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' } },
+                                        React.createElement('h4', { style: { fontWeight: 600, color: '#1f2937', fontSize: '0.875rem' } },
+                                            selection.name
+                                        ),
+                                        React.createElement('span', {
+                                            style: {
+                                                fontSize: '0.75rem',
+                                                background: selection.confidence >= 90 ? '#dcfce7' : selection.confidence >= 80 ? '#dbeafe' : '#fef3c7',
+                                                color: selection.confidence >= 90 ? '#059669' : selection.confidence >= 80 ? '#1d4ed8' : '#d97706',
+                                                padding: '0.25rem 0.5rem', borderRadius: '0.25rem'
+                                            }
+                                        }, selection.strategy)
+                                    ),
+                                    
+                                    // Algorithm Detail
+                                    React.createElement('div', {
+                                        style: { 
+                                            fontSize: '0.625rem', 
+                                            color: '#7c3aed', 
+                                            background: '#f3e8ff', 
+                                            padding: '0.25rem 0.5rem', 
+                                            borderRadius: '0.25rem',
+                                            marginBottom: '0.5rem',
+                                            fontWeight: 500
+                                        }
+                                    }, `🔬 ${selection.algorithmDetail}`),
+                                    
+                                    React.createElement('p', { style: { fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem', lineHeight: 1.4 } },
+                                        selection.description
+                                    ),
+                                    
+                                    // Technical Analysis
+                                    selection.technicalAnalysis && React.createElement('div', {
+                                        style: { 
+                                            fontSize: '0.625rem', 
+                                            color: '#6b7280', 
+                                            background: '#f9fafb', 
+                                            padding: '0.25rem 0.5rem', 
+                                            borderRadius: '0.25rem',
+                                            marginBottom: '0.75rem',
+                                            fontFamily: 'monospace'
+                                        }
+                                    }, `📊 ${selection.technicalAnalysis}`),
+                                    
+                                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' } },
+                                        selection.numbers.map(num =>
+                                            React.createElement('span', {
+                                                key: num,
+                                                className: 'number-display',
+                                                style: { fontSize: '0.75rem', padding: '0.125rem 0.5rem' }
+                                            }, num)
+                                        ),
+                                        React.createElement('span', {
+                                            className: 'powerball-display',
+                                            style: { fontSize: '0.75rem', padding: '0.125rem 0.5rem' }
+                                        }, selection.powerball)
+                                    ),
+                                    React.createElement('div', { style: { display: 'flex', gap: '0.25rem' } },
+                                        React.createElement('button', {
+                                            onClick: () => {
+                                                setSelectedNumbers(selection.numbers);
+                                                setPowerball(selection.powerball.toString());
+                                                setActiveTab('calculator');
+                                            },
+                                            style: {
+                                                fontSize: '0.625rem', background: '#3b82f6', color: 'white',
+                                                padding: '0.25rem 0.5rem', borderRadius: '0.25rem',
+                                                border: 'none', cursor: 'pointer'
+                                            }
+                                        }, '✓ Use These Numbers'),
+                                        React.createElement('button', {
+                                            onClick: () => {
+                                                const numbersText = `${selection.numbers.join(', ')} | PB: ${selection.powerball}`;
+                                                navigator.clipboard.writeText(numbersText);
+                                            },
+                                            style: {
+                                                fontSize: '0.625rem', background: '#1f2937', color: 'white',
+                                                padding: '0.25rem 0.5rem', borderRadius: '0.25rem',
+                                                border: 'none', cursor: 'pointer'
+                                            }
+                                        }, '📋 Copy Numbers')
+                                    )
+                                )
+                            )
+                        )
+                    ),
+
+                    // Custom AI Generation Controls
+                    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' } },
+                        // Strategy selector
+                        React.createElement('div', { className: 'card' },
+                            React.createElement('h3', { style: { fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' } },
+                                '🎯 Custom AI Generation'
+                            ),
+                            React.createElement('div', { style: { display: 'grid', gap: '0.75rem' } },
+                                React.createElement('div', null,
+                                    React.createElement('label', { style: { display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' } },
+                                        'AI Strategy:'
+                                    ),
+                                    React.createElement('select', {
+                                        value: optimizationStrategy,
+                                        onChange: (e) => setOptimizationStrategy(e.target.value),
+                                        style: { width: '100%', fontSize: '0.75rem', padding: '0.5rem' }
+                                    },
+                                        React.createElement('option', { value: 'ensemble' }, 'Ensemble Learning'),
+                                        React.createElement('option', { value: 'balanced' }, 'Balanced Mix'),
+                                        React.createElement('option', { value: 'hot' }, 'Hot Trend Analysis'),
+                                        React.createElement('option', { value: 'cold' }, 'Contrarian Analysis'),
+                                        React.createElement('option', { value: 'mathematical' }, 'Mathematical Distribution'),
+                                        React.createElement('option', { value: 'neural' }, 'Neural Network'),
+                                        React.createElement('option', { value: 'markov' }, 'Markov Chain'),
+                                        React.createElement('option', { value: 'hybrid' }, 'Hybrid Multi-Algorithm')
+                                    )
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { style: { display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' } },
+                                        'Number of Sets:'
+                                    ),
+                                    React.createElement('select', {
+                                        value: numOptimizedSets,
+                                        onChange: (e) => setNumOptimizedSets(parseInt(e.target.value)),
+                                        style: { width: '100%', fontSize: '0.75rem', padding: '0.5rem' }
+                                    },
+                                        React.createElement('option', { value: 3 }, '3 Sets'),
+                                        React.createElement('option', { value: 5 }, '5 Sets'),
+                                        React.createElement('option', { value: 8 }, '8 Sets'),
+                                        React.createElement('option', { value: 10 }, '10 Sets')
+                                    )
+                                )
+                            ),
+                            React.createElement('button', {
+                                onClick: generateAdvancedPredictions,
+                                disabled: isOptimizing || isLoadingHistory,
+                                className: isOptimizing ? 'btn btn-secondary' : 'btn btn-purple',
+                                style: { fontSize: '0.75rem', width: '100%', marginTop: '0.75rem' }
+                            },
+                                isOptimizing ? React.createElement('span', null,
+                                    React.createElement('span', { className: 'loading-spinner', style: { marginRight: '0.5rem' } }),
+                                    'AI Processing...'
+                                ) : '🤖 Generate Claude AI Predictions'
+                            )
+                        ),
+
+                        // Claude AI Configuration
+                        React.createElement('div', { className: 'card', style: { background: aiEnabled ? '#f0fdf4' : '#fefce8' } },
+                            React.createElement('h3', { style: { fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' } },
+                                '🤖 Claude AI Analysis'
+                            ),
+                            !aiEnabled ? React.createElement('div', { style: { display: 'grid', gap: '0.75rem' } },
+                                React.createElement('div', null,
+                                    React.createElement('label', { style: { display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' } },
+                                        'Anthropic API Key:'
+                                    ),
+                                    React.createElement('input', {
+                                        type: 'password',
+                                        value: aiApiKey,
+                                        onChange: (e) => setAiApiKey(e.target.value),
+                                        placeholder: 'sk-ant-api...',
+                                        style: { 
+                                            width: '100%', 
+                                            fontSize: '0.75rem', 
+                                            padding: '0.5rem',
+                                            border: '1px solid #d1d5db',
+                                            borderRadius: '0.25rem'
+                                        }
+                                    })
+                                ),
+                                React.createElement('div', { style: { fontSize: '0.625rem', color: '#6b7280' } },
+                                    React.createElement('div', { style: { marginBottom: '0.25rem' } },
+                                        React.createElement('strong', null, 'Get your API key from:'), ' console.anthropic.com'
+                                    ),
+                                    React.createElement('div', { style: { color: '#059669' } },
+                                        '✓ Uses cost-effective Claude 3 Haiku model (~$0.50/1M tokens)'
+                                    )
+                                ),
+                                React.createElement('button', {
+                                    onClick: enableAI,
+                                    disabled: !aiApiKey.trim(),
+                                    className: 'btn btn-primary',
+                                    style: { fontSize: '0.75rem', width: '100%' }
+                                }, '🧠 Enable Claude Analysis')
+                            ) : React.createElement('div', { style: { display: 'grid', gap: '0.75rem' } },
+                                React.createElement('div', {
+                                    style: { 
+                                        fontSize: '0.75rem', 
+                                        color: '#059669', 
+                                        background: '#dcfce7', 
+                                        padding: '0.5rem', 
+                                        borderRadius: '0.25rem',
+                                        textAlign: 'center'
+                                    }
+                                }, '✅ Claude AI Enabled (Haiku Model)'),
+                                React.createElement('div', { style: { fontSize: '0.625rem', color: '#6b7280' } },
+                                    '• Advanced statistical analysis', React.createElement('br'),
+                                    '• Mathematical pattern insights', React.createElement('br'),
+                                    '• Intelligent explanations', React.createElement('br'),
+                                    '• Cost-effective Claude 3 Haiku model', React.createElement('br'),
+                                    '• Anthropic\'s latest AI technology'
+                                ),
+                                isLoadingAI && React.createElement('div', {
+                                    style: { 
+                                        fontSize: '0.625rem', 
+                                        color: '#3b82f6',
+                                        textAlign: 'center',
+                                        padding: '0.5rem'
+                                    }
+                                },
+                                    React.createElement('span', { className: 'loading-spinner', style: { marginRight: '0.5rem' } }),
+                                    'Claude analyzing patterns...'
+                                ),
+                                React.createElement('button', {
+                                    onClick: () => {
+                                        setAiEnabled(false);
+                                        setAiApiKey('');
+                                        setAiInsights({});
+                                        localStorage.removeItem('lottery_ai_enabled');
+                                    },
+                                    className: 'btn btn-secondary',
+                                    style: { fontSize: '0.625rem', width: '100%' }
+                                }, 'Disable Claude AI')
+                            )
+                        ),
+
+                        // Historical settings
+                        React.createElement('div', { className: 'card' },
+                            React.createElement('h3', { style: { fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' } },
+                                '⚙️ Analysis Settings'
+                            ),
+                            React.createElement('div', { style: { display: 'grid', gap: '0.75rem' } },
+                                React.createElement('div', null,
+                                    React.createElement('label', { style: { display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' } },
+                                        'Historical Records:'
+                                    ),
+                                    React.createElement('select', {
+                                        value: historicalRecordsLimit,
+                                        onChange: (e) => setHistoricalRecordsLimit(parseInt(e.target.value)),
+                                        style: { width: '100%', fontSize: '0.75rem', padding: '0.5rem' }
+                                    },
+                                        React.createElement('option', { value: 50 }, '50 Recent Drawings'),
+                                        React.createElement('option', { value: 100 }, '100 Recent Drawings'),
+                                        React.createElement('option', { value: 150 }, '150 Recent Drawings'),
+                                        React.createElement('option', { value: 200 }, '200 Recent Drawings'),
+                                        React.createElement('option', { value: 300 }, '300 Recent Drawings'),
+                                        React.createElement('option', { value: 500 }, '500 Recent Drawings'),
+                                        React.createElement('option', { value: 750 }, '750 Recent Drawings'),
+                                        React.createElement('option', { value: 1000 }, '1,000 Recent Drawings'),
+                                        React.createElement('option', { value: 1500 }, '1,500 Recent Drawings'),
+                                        React.createElement('option', { value: 2000 }, '2,000 Recent Drawings (MAX)')
+                                    )
+                                ),
+                                React.createElement('div', { style: { fontSize: '0.75rem', color: '#6b7280' } },
+                                    'More records = better pattern analysis'
+                                ),
+                                React.createElement('button', {
+                                    onClick: fetchHistoricalData,
+                                    disabled: isLoadingHistory,
+                                    className: isLoadingHistory ? 'btn btn-secondary' : 'btn btn-primary',
+                                    style: { fontSize: '0.75rem', width: '100%' }
+                                }, isLoadingHistory ? 'Updating...' : '🔄 Update Analysis')
+                            )
+                        )
+                    ),
+
+                    // Enhanced Results Display with Claude AI
+                    optimizedSets.length > 0 && React.createElement('div', { className: 'card' },
+                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' } },
+                            React.createElement('h3', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' } },
+                                '🤖 Claude AI-Enhanced Predictions'
+                            ),
+                            React.createElement('div', {
+                                style: {
+                                    fontSize: '0.75rem', color: '#059669', background: '#f0fdf4',
+                                    padding: '0.25rem 0.5rem', borderRadius: '0.25rem'
+                                }
+                            }, `${optimizedSets.length} sets generated`)
+                        ),
+                        
+                        React.createElement('div', { style: { display: 'grid', gap: '0.75rem' } },
+                            optimizedSets.map((set, index) =>
+                                React.createElement('div', {
+                                    key: index,
+                                    className: `card ${set.confidence >= 90 ? 'confidence-high' : set.confidence >= 80 ? 'confidence-medium' : 'confidence-low'}`,
+                                    style: { background: '#f9fafb', padding: '1rem' }
+                                },
+                                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' } },
+                                        React.createElement('div', null,
+                                            React.createElement('span', { style: { fontSize: '0.875rem', fontWeight: 600, color: '#1f2937' } },
+                                                `Set ${index + 1}: ${set.strategy}`
+                                            ),
+                                            React.createElement('div', { style: { fontSize: '0.75rem', color: '#6b7280' } },
+                                                set.analysis
+                                            )
+                                        ),
+                                        React.createElement('div', { style: { textAlign: 'right' } },
+                                            React.createElement('div', {
+                                                style: {
+                                                    fontSize: '0.875rem', fontWeight: 600,
+                                                    color: set.confidence >= 90 ? '#059669' : set.confidence >= 80 ? '#1d4ed8' : '#d97706'
+                                                }
+                                            }, `${set.confidence}%`),
+                                            React.createElement('div', { style: { fontSize: '0.625rem', color: '#6b7280' } },
+                                                'confidence'
+                                            )
+                                        )
+                                    ),
+                                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' } },
+                                        set.numbers.map(num =>
+                                            React.createElement('span', {
+                                                key: num,
+                                                className: 'number-display',
+                                                style: { fontSize: '0.875rem', fontWeight: 600 }
+                                            }, num)
+                                        ),
+                                        React.createElement('span', {
+                                            className: 'powerball-display',
+                                            style: { fontSize: '0.875rem', fontWeight: 600 }
+                                        }, set.powerball)
+                                    ),
+                                    React.createElement('div', { style: { display: 'flex', gap: '0.5rem' } },
+                                        React.createElement('button', {
+                                            onClick: () => {
+                                                setSelectedNumbers(set.numbers);
+                                                setPowerball(set.powerball.toString());
+                                                setActiveTab('calculator');
+                                            },
+                                            className: 'btn btn-primary',
+                                            style: { fontSize: '0.75rem' }
+                                        }, '✓ Use This Set'),
+                                        React.createElement('button', {
+                                            onClick: () => {
+                                                const numbersText = `${set.numbers.join(', ')} | PB: ${set.powerball}`;
+                                                navigator.clipboard.writeText(numbersText);
+                                            },
+                                            className: 'btn btn-secondary',
+                                            style: { fontSize: '0.75rem' }
+                                        }, '📋 Copy')
+                                    ),
+                                    
+                                    // Claude AI Insights
+                                    aiEnabled && aiInsights[index] && React.createElement('div', {
+                                        style: {
+                                            marginTop: '0.75rem',
+                                            padding: '0.75rem',
+                                            background: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)',
+                                            border: '1px solid #a855f7',
+                                            borderRadius: '0.5rem',
+                                            fontSize: '0.75rem',
+                                            lineHeight: 1.4
+                                        }
+                                    },
+                                        React.createElement('div', {
+                                            style: { 
                                                 fontSize: '0.625rem', 
+                                                fontWeight: 600, 
                                                 color: '#7c3aed', 
-                                                background: '#f3e8ff', 
-                                                padding: '0.25rem 0.5rem', 
-                                                borderRadius: '0.25rem',
                                                 marginBottom: '0.5rem',
-                                                fontWeight: 500
-                                            }}>
-                                                🔬 {selection.algorithmDetail}
-                                            </div>
-                                            
-                                            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.75rem', lineHeight: 1.4 }}>
-                                                {selection.description}
-                                            </p>
-                                            
-                                            {/* Technical Analysis */}
-                                            {selection.technicalAnalysis && (
-                                                <div style={{ 
-                                                    fontSize: '0.625rem', 
-                                                    color: '#6b7280', 
-                                                    background: '#f9fafb', 
-                                                    padding: '0.25rem 0.5rem', 
-                                                    borderRadius: '0.25rem',
-                                                    marginBottom: '0.75rem',
-                                                    fontFamily: 'monospace'
-                                                }}>
-                                                    📊 {selection.technicalAnalysis}
-                                                </div>
-                                            )}
-                                            
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                                                {selection.numbers.map(num => (
-                                                    <span
-                                                        key={num}
-                                                        className="number-display"
-                                                        style={{ fontSize: '0.75rem', padding: '0.125rem 0.5rem' }}
-                                                    >
-                                                        {num}
-                                                    </span>
-                                                ))}
-                                                <span
-                                                    className="powerball-display"
-                                                    style={{ fontSize: '0.75rem', padding: '0.125rem 0.5rem' }}
-                                                >
-                                                    {selection.powerball}
-                                                </span>
-                                            </div>
-                                            <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedNumbers(selection.numbers);
-                                                        setPowerball(selection.powerball.toString());
-                                                        setActiveTab('calculator');
-                                                    }}
-                                                    style={{
-                                                        fontSize: '0.625rem', background: '#3b82f6', color: 'white',
-                                                        padding: '0.25rem 0.5rem', borderRadius: '0.25rem',
-                                                        border: 'none', cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    ✓ Use These Numbers
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        const numbersText = `${selection.numbers.join(', ')} | PB: ${selection.powerball}`;
-                                                        navigator.clipboard.writeText(numbersText);
-                                                    }}
-                                                    style={{
-                                                        fontSize: '0.625rem', background: '#1f2937', color: 'white',
-                                                        padding: '0.25rem 0.5rem', borderRadius: '0.25rem',
-                                                        border: 'none', cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    📋 Copy Numbers
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Custom AI Generation */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                                {/* Strategy selector */}
-                                <div className="card">
-                                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-                                        🎯 Custom AI Generation
-                                    </h3>
-                                    <div style={{ display: 'grid', gap: '0.75rem' }}>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' }}>
-                                                AI Strategy:
-                                            </label>
-                                            <select
-                                                value={optimizationStrategy}
-                                                onChange={(e) => setOptimizationStrategy(e.target.value)}
-                                                style={{ width: '100%', fontSize: '0.75rem', padding: '0.5rem' }}
-                                            >
-                                                <option value="ensemble">Ensemble Learning</option>
-                                                <option value="balanced">Balanced Mix</option>
-                                                <option value="hot">Hot Trend Analysis</option>
-                                                <option value="cold">Contrarian Analysis</option>
-                                                <option value="mathematical">Mathematical Distribution</option>
-                                                <option value="neural">Neural Network</option>
-                                                <option value="markov">Markov Chain</option>
-                                                <option value="hybrid">Hybrid Multi-Algorithm</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' }}>
-                                                Number of Sets:
-                                            </label>
-                                            <select
-                                                value={numOptimizedSets}
-                                                onChange={(e) => setNumOptimizedSets(parseInt(e.target.value))}
-                                                style={{ width: '100%', fontSize: '0.75rem', padding: '0.5rem' }}
-                                            >
-                                                <option value={3}>3 Sets</option>
-                                                <option value={5}>5 Sets</option>
-                                                <option value={8}>8 Sets</option>
-                                                <option value={10}>10 Sets</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={generateAdvancedPredictions}
-                                        disabled={isOptimizing || isLoadingHistory}
-                                        className={isOptimizing ? 'btn btn-secondary' : 'btn btn-purple'}
-                                        style={{ fontSize: '0.75rem', width: '100%', marginTop: '0.75rem' }}
-                                    >
-                                        {isOptimizing ? (
-                                            <span>
-                                                <span className="loading-spinner" style={{ marginRight: '0.5rem' }}></span>
-                                                AI Processing...
-                                            </span>
-                                        ) : (
-                                            '🚀 Generate AI Predictions'
-                                        )}
-                                    </button>
-                                </div>
-
-                                {/* Claude AI Configuration */}
-                                <div className="card" style={{ background: aiEnabled ? '#f0fdf4' : '#fefce8' }}>
-                                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-                                        🤖 Claude AI Analysis
-                                    </h3>
-                                    {!aiEnabled ? (
-                                        <div style={{ display: 'grid', gap: '0.75rem' }}>
-                                            <div>
-                                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' }}>
-                                                    Anthropic API Key:
-                                                </label>
-                                                <input
-                                                    type="password"
-                                                    value={aiApiKey}
-                                                    onChange={(e) => setAiApiKey(e.target.value)}
-                                                    placeholder="sk-ant-..."
-                                                    style={{ 
-                                                        width: '100%', 
-                                                        fontSize: '0.75rem', 
-                                                        padding: '0.5rem',
-                                                        border: '1px solid #d1d5db',
-                                                        borderRadius: '0.25rem'
-                                                    }}
-                                                />
-                                            </div>
-                                            <div style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                                                Get your API key from console.anthropic.com
-                                            </div>
-                                            <button
-                                                onClick={enableAI}
-                                                disabled={!aiApiKey.trim()}
-                                                className="btn btn-primary"
-                                                style={{ fontSize: '0.75rem', width: '100%' }}
-                                            >
-                                                🧠 Enable Claude Analysis
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div style={{ display: 'grid', gap: '0.75rem' }}>
-                                            <div style={{ 
-                                                fontSize: '0.75rem', 
-                                                color: '#059669', 
-                                                background: '#dcfce7', 
-                                                padding: '0.5rem', 
-                                                borderRadius: '0.25rem',
-                                                textAlign: 'center'
-                                            }}>
-                                                ✅ Claude AI Enabled
-                                            </div>
-                                            <div style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                                                • Advanced statistical analysis<br/>
-                                                • Mathematical pattern insights<br/>
-                                                • Intelligent explanations<br/>
-                                                • Cost-effective Claude Haiku model
-                                            </div>
-                                            {isLoadingAI && (
-                                                <div style={{ 
-                                                    fontSize: '0.625rem', 
-                                                    color: '#3b82f6',
-                                                    textAlign: 'center',
-                                                    padding: '0.5rem'
-                                                }}>
-                                                    <span className="loading-spinner" style={{ marginRight: '0.5rem' }}></span>
-                                                    Claude analyzing patterns...
-                                                </div>
-                                            )}
-                                            <button
-                                                onClick={() => {
-                                                    setAiEnabled(false);
-                                                    setAiApiKey('');
-                                                    localStorage.removeItem('lottery_ai_enabled');
-                                                }}
-                                                className="btn btn-secondary"
-                                                style={{ fontSize: '0.625rem', width: '100%' }}
-                                            >
-                                                Disable AI
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Historical settings */}
-                                <div className="card">
-                                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-                                        ⚙️ Analysis Settings
-                                    </h3>
-                                    <div style={{ display: 'grid', gap: '0.75rem' }}>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, marginBottom: '0.25rem' }}>
-                                                Historical Records:
-                                            </label>
-                                            <select
-                                                value={historicalRecordsLimit}
-                                                onChange={(e) => setHistoricalRecordsLimit(parseInt(e.target.value))}
-                                                style={{ width: '100%', fontSize: '0.75rem', padding: '0.5rem' }}
-                                            >
-                                                <option value={50}>50 Recent Drawings</option>
-                                                <option value={100}>100 Recent Drawings</option>
-                                                <option value={150}>150 Recent Drawings</option>
-                                                <option value={200}>200 Recent Drawings</option>
-                                                <option value={300}>300 Recent Drawings</option>
-                                                <option value={500}>500 Recent Drawings</option>
-                                                <option value={750}>750 Recent Drawings</option>
-                                                <option value={1000}>1,000 Recent Drawings</option>
-                                                <option value={1500}>1,500 Recent Drawings</option>
-                                                <option value={2000}>2,000 Recent Drawings (MAX)</option>
-                                            </select>
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                                            More records = better pattern analysis
-                                        </div>
-                                        <button
-                                            onClick={fetchHistoricalData}
-                                            disabled={isLoadingHistory}
-                                            className={isLoadingHistory ? 'btn btn-secondary' : 'btn btn-primary'}
-                                            style={{ fontSize: '0.75rem', width: '100%' }}
-                                        >
-                                            {isLoadingHistory ? 'Updating...' : '🔄 Update Analysis'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* System status display */}
-                                <div className="card">
-                                    <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-                                        📊 System Status
-                                    </h3>
-                                    {systemPerformance ? (
-                                        <div style={{ fontSize: '0.75rem' }}>
-                                            <div style={{ marginBottom: '0.5rem' }}>
-                                                <div style={{ fontWeight: 600, color: '#1f2937' }}>
-                                                    Hit Rate: {systemPerformance.averageHitRate}%
-                                                </div>
-                                                <div style={{ color: '#6b7280' }}>
-                                                    Target: 17-19% • Status: {systemPerformance.status}
-                                                </div>
-                                            </div>
-                                            <div style={{ marginBottom: '0.5rem' }}>
-                                                <div style={{ fontWeight: 600, color: '#1f2937' }}>
-                                                    Predictions Generated:
-                                                </div>
-                                                <div style={{ color: '#6b7280' }}>
-                                                    {systemPerformance.predictionsGenerated}
-                                                </div>
-                                            </div>
-                                            <div style={{
-                                                marginTop: '0.75rem', padding: '0.5rem',
-                                                background: systemPerformance.status === 'optimal' ? '#f0fdf4' : '#fefce8',
-                                                borderRadius: '4px', fontSize: '0.625rem'
-                                            }}>
-                                                {systemPerformance.isLearning ? '🧠 System is learning and adapting' : '✓ System trained'}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'center' }}>
-                                            System initializing...
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Enhanced Results Display */}
-                            {optimizedSets.length > 0 && (
-                                <div className="card">
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' }}>
-                                            🎯 AI-Enhanced Predictions
-                                        </h3>
-                                        <div style={{
-                                            fontSize: '0.75rem', color: '#059669', background: '#f0fdf4',
-                                            padding: '0.25rem 0.5rem', borderRadius: '0.25rem'
-                                        }}>
-                                            {optimizedSets.length} sets generated
-                                        </div>
-                                    </div>
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.25rem'
+                                            }
+                                        }, '🤖 Claude 3 Analysis'),
+                                        React.createElement('div', { style: { color: '#6b21a8' } },
+                                            aiInsights[index]
+                                        )
+                                    ),
                                     
-                                    <div style={{ display: 'grid', gap: '0.75rem' }}>
-                                        {optimizedSets.map((set, index) => (
-                                            <div
-                                                key={index}
-                                                className={`card ${set.confidence >= 90 ? 'confidence-high' : set.confidence >= 80 ? 'confidence-medium' : 'confidence-low'}`}
-                                                style={{ background: '#f9fafb', padding: '1rem' }}
-                                            >
-                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                                    <div>
-                                                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1f2937' }}>
-                                                            Set {index + 1}: {set.strategy}
-                                                        </span>
-                                                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                                                            {set.analysis}
-                                                        </div>
-                                                    </div>
-                                                    <div style={{ textAlign: 'right' }}>
-                                                        <div style={{
-                                                            fontSize: '0.875rem', fontWeight: 600,
-                                                            color: set.confidence >= 90 ? '#059669' : set.confidence >= 80 ? '#1d4ed8' : '#d97706'
-                                                        }}>
-                                                            {set.score}%
-                                                        </div>
-                                                        <div style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                                                            confidence
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                                                    {set.numbers.map(num => (
-                                                        <span
-                                                            key={num}
-                                                            className="number-display"
-                                                            style={{ fontSize: '0.875rem', fontWeight: 600 }}
-                                                        >
-                                                            {num}
-                                                        </span>
-                                                    ))}
-                                                    <span
-                                                        className="powerball-display"
-                                                        style={{ fontSize: '0.875rem', fontWeight: 600 }}
-                                                    >
-                                                        {set.powerball}
-                                                    </span>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedNumbers(set.numbers);
-                                                            setPowerball(set.powerball.toString());
-                                                            setActiveTab('calculator');
-                                                        }}
-                                                        className="btn btn-primary"
-                                                        style={{ fontSize: '0.75rem' }}
-                                                    >
-                                                        ✓ Use This Set
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            const numbersText = `${set.numbers.join(', ')} | PB: ${set.powerball}`;
-                                                            navigator.clipboard.writeText(numbersText);
-                                                        }}
-                                                        className="btn btn-secondary"
-                                                        style={{ fontSize: '0.75rem' }}
-                                                    >
-                                                        📋 Copy
-                                                    </button>
-                                                </div>
-                                                
-                                                {/* Claude AI Insights */}
-                                                {aiEnabled && aiInsights[index] && (
-                                                    <div style={{
-                                                        marginTop: '0.75rem',
-                                                        padding: '0.75rem',
-                                                        background: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)',
-                                                        border: '1px solid #a855f7',
-                                                        borderRadius: '0.5rem',
-                                                        fontSize: '0.75rem',
-                                                        lineHeight: 1.4
-                                                    }}>
-                                                        <div style={{ 
-                                                            fontSize: '0.625rem', 
-                                                            fontWeight: 600, 
-                                                            color: '#7c3aed', 
-                                                            marginBottom: '0.5rem',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '0.25rem'
-                                                        }}>
-                                                            🤖 Claude Analysis
-                                                        </div>
-                                                        <div style={{ color: '#6b21a8' }}>
-                                                            {aiInsights[index]}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                
-                                                {/* AI Loading State */}
-                                                {aiEnabled && isLoadingAI && index < 3 && (
-                                                    <div style={{
-                                                        marginTop: '0.75rem',
-                                                        padding: '0.75rem',
-                                                        background: '#f8fafc',
-                                                        border: '1px solid #e2e8f0',
-                                                        borderRadius: '0.5rem',
-                                                        fontSize: '0.75rem',
-                                                        textAlign: 'center',
-                                                        color: '#64748b'
-                                                    }}>
-                                                        <span className="loading-spinner" style={{ marginRight: '0.5rem' }}></span>
-                                                        Generating AI insights...
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                    // AI Loading State
+                                    aiEnabled && isLoadingAI && index < 3 && !aiInsights[index] && React.createElement('div', {
+                                        style: {
+                                            marginTop: '0.75rem',
+                                            padding: '0.75rem',
+                                            background: '#f8fafc',
+                                            border: '1px solid #e2e8f0',
+                                            borderRadius: '0.5rem',
+                                            fontSize: '0.75rem',
+                                            textAlign: 'center',
+                                            color: '#64748b'
+                                        }
+                                    },
+                                        React.createElement('span', { className: 'loading-spinner', style: { marginRight: '0.5rem' } }),
+                                        'Generating Claude insights...'
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
 
-                    {/* Tax Analysis Tab */}
-                    {activeTab === 'taxes' && (
-                        <div style={{ display: 'grid', gap: '2rem' }}>
-                            <div className="card" style={{ background: 'linear-gradient(135deg, #fefce8 0%, #fef3c7 100%)', border: '2px solid #f59e0b' }}>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#92400e', marginBottom: '1rem' }}>
-                                    💰 Advanced Tax Analysis Calculator
-                                </h2>
-                                <p style={{ color: '#a16207', marginBottom: '1rem' }}>
-                                    Calculate your actual take-home amount after federal and state taxes. Enhanced with current 2024 tax brackets.
-                                </p>
-                                
-                                {/* Input Controls */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                                    <div>
-                                        <label style={{
-                                            display: 'block', fontSize: '0.875rem', fontWeight: 500,
-                                            color: '#374151', marginBottom: '0.5rem'
-                                        }}>
-                                            Jackpot Amount ($):
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={taxWinnings}
-                                            onChange={(e) => setTaxWinnings(e.target.value)}
-                                            placeholder="Enter jackpot amount"
-                                            min="0"
-                                            step="1000000"
-                                            style={{
-                                                width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
-                                                borderRadius: '0.25rem', fontSize: '0.875rem'
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{
-                                            display: 'block', fontSize: '0.875rem', fontWeight: 500,
-                                            color: '#374151', marginBottom: '0.5rem'
-                                        }}>
-                                            State:
-                                        </label>
-                                        <select
-                                            value={taxState}
-                                            onChange={(e) => setTaxState(e.target.value)}
-                                            style={{
-                                                width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
-                                                borderRadius: '0.25rem', fontSize: '0.875rem'
-                                            }}
-                                        >
-                                            {Object.keys(stateTaxRates).map(state => (
-                                                <option key={state} value={state}>
-                                                    {state} ({(stateTaxRates[state] * 100).toFixed(1)}%)
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style={{
-                                            display: 'block', fontSize: '0.875rem', fontWeight: 500,
-                                            color: '#374151', marginBottom: '0.5rem'
-                                        }}>
-                                            Filing Status:
-                                        </label>
-                                        <select
-                                            value={taxFilingStatus}
-                                            onChange={(e) => setTaxFilingStatus(e.target.value)}
-                                            style={{
-                                                width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
-                                                borderRadius: '0.25rem', fontSize: '0.875rem'
-                                            }}
-                                        >
-                                            <option value="single">Single</option>
-                                            <option value="marriedJointly">Married Filing Jointly</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style={{
-                                            display: 'block', fontSize: '0.875rem', fontWeight: 500,
-                                            color: '#374151', marginBottom: '0.5rem'
-                                        }}>
-                                            Payment Option:
-                                        </label>
-                                        <select
-                                            value={takeLumpSum}
-                                            onChange={(e) => setTakeLumpSum(e.target.value === 'true')}
-                                            style={{
-                                                width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
-                                                borderRadius: '0.25rem', fontSize: '0.875rem'
-                                            }}
-                                        >
-                                            <option value={true}>Lump Sum (Cash Value)</option>
-                                            <option value={false}>Annuity (30 Years)</option>
-                                        </select>
-                                    </div>
-                                </div>
+                // Tax Analysis Tab
+                activeTab === 'taxes' && React.createElement('div', { style: { display: 'grid', gap: '2rem' } },
+                    React.createElement('div', { className: 'card', style: { background: 'linear-gradient(135deg, #fefce8 0%, #fef3c7 100%)', border: '2px solid #f59e0b' } },
+                        React.createElement('h2', { style: { fontSize: '1.5rem', fontWeight: 600, color: '#92400e', marginBottom: '1rem' } },
+                            '💰 Advanced Tax Analysis Calculator'
+                        ),
+                        React.createElement('p', { style: { color: '#a16207', marginBottom: '1rem' } },
+                            'Calculate your actual take-home amount after federal and state taxes. Enhanced with current 2024 tax brackets.'
+                        ),
+                        
+                        // Input Controls
+                        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' } },
+                            React.createElement('div', null,
+                                React.createElement('label', {
+                                    style: {
+                                        display: 'block', fontSize: '0.875rem', fontWeight: 500,
+                                        color: '#374151', marginBottom: '0.5rem'
+                                    }
+                                }, 'Jackpot Amount ($):'),
+                                React.createElement('input', {
+                                    type: 'number',
+                                    value: taxWinnings,
+                                    onChange: (e) => setTaxWinnings(e.target.value),
+                                    placeholder: 'Enter jackpot amount',
+                                    min: '0',
+                                    step: '1000000',
+                                    style: {
+                                        width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
+                                        borderRadius: '0.25rem', fontSize: '0.875rem'
+                                    }
+                                })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', {
+                                    style: {
+                                        display: 'block', fontSize: '0.875rem', fontWeight: 500,
+                                        color: '#374151', marginBottom: '0.5rem'
+                                    }
+                                }, 'State:'),
+                                React.createElement('select', {
+                                    value: taxState,
+                                    onChange: (e) => setTaxState(e.target.value),
+                                    style: {
+                                        width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
+                                        borderRadius: '0.25rem', fontSize: '0.875rem'
+                                    }
+                                },
+                                    Object.keys(stateTaxRates).map(state =>
+                                        React.createElement('option', { key: state, value: state },
+                                            `${state} (${(stateTaxRates[state] * 100).toFixed(1)}%)`
+                                        )
+                                    )
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', {
+                                    style: {
+                                        display: 'block', fontSize: '0.875rem', fontWeight: 500,
+                                        color: '#374151', marginBottom: '0.5rem'
+                                    }
+                                }, 'Filing Status:'),
+                                React.createElement('select', {
+                                    value: taxFilingStatus,
+                                    onChange: (e) => setTaxFilingStatus(e.target.value),
+                                    style: {
+                                        width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
+                                        borderRadius: '0.25rem', fontSize: '0.875rem'
+                                    }
+                                },
+                                    React.createElement('option', { value: 'single' }, 'Single'),
+                                    React.createElement('option', { value: 'marriedJointly' }, 'Married Filing Jointly')
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', {
+                                    style: {
+                                        display: 'block', fontSize: '0.875rem', fontWeight: 500,
+                                        color: '#374151', marginBottom: '0.5rem'
+                                    }
+                                }, 'Payment Option:'),
+                                React.createElement('select', {
+                                    value: takeLumpSum,
+                                    onChange: (e) => setTakeLumpSum(e.target.value === 'true'),
+                                    style: {
+                                        width: '100%', padding: '0.5rem', border: '1px solid #d1d5db',
+                                        borderRadius: '0.25rem', fontSize: '0.875rem'
+                                    }
+                                },
+                                    React.createElement('option', { value: true }, 'Lump Sum (Cash Value)'),
+                                    React.createElement('option', { value: false }, 'Annuity (30 Years)')
+                                )
+                            )
+                        ),
 
-                                {/* Quick Fill Buttons */}
-                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                                    {liveDataAvailable && currentJackpot && (
-                                        <button
-                                            onClick={() => setTaxWinnings(currentJackpot.amount.toString())}
-                                            className="btn btn-primary"
-                                            style={{ fontSize: '0.875rem' }}
-                                        >
-                                            Use Current: {currentJackpot.formatted}
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => setTaxWinnings('1000000000')}
-                                        className="btn btn-secondary"
-                                        style={{ fontSize: '0.875rem' }}
-                                    >
-                                        Use $1B
-                                    </button>
-                                    <button
-                                        onClick={() => setTaxWinnings('500000000')}
-                                        className="btn btn-secondary"
-                                        style={{ fontSize: '0.875rem' }}
-                                    >
-                                        Use $500M
-                                    </button>
-                                </div>
-                            </div>
+                        // Quick Fill Buttons
+                        React.createElement('div', { style: { display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' } },
+                            liveDataAvailable && currentJackpot && React.createElement('button', {
+                                onClick: () => setTaxWinnings(currentJackpot.amount.toString()),
+                                className: 'btn btn-primary',
+                                style: { fontSize: '0.875rem' }
+                            }, `Use Current: ${currentJackpot.formatted}`),
+                            React.createElement('button', {
+                                onClick: () => setTaxWinnings('1000000000'),
+                                className: 'btn btn-secondary',
+                                style: { fontSize: '0.875rem' }
+                            }, 'Use $1B'),
+                            React.createElement('button', {
+                                onClick: () => setTaxWinnings('500000000'),
+                                className: 'btn btn-secondary',
+                                style: { fontSize: '0.875rem' }
+                            }, 'Use $500M')
+                        )
+                    ),
 
-                            {/* Tax Results Display */}
-                            {taxResults && (
-                                <div className="card">
-                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1f2937', marginBottom: '1.5rem' }}>
-                                        📊 Tax Breakdown Results
-                                    </h3>
-                                    
-                                    {/* Summary Cards */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                                        <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>Gross Winnings</div>
-                                            <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' }}>
-                                                ${taxResults.grossWinnings.toLocaleString()}
-                                            </div>
-                                            <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
-                                                {takeLumpSum ? 'Lump Sum' : 'Annuity'}
-                                            </div>
-                                        </div>
-                                        <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>Federal Tax</div>
-                                            <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' }}>
-                                                ${taxResults.federalTax.toLocaleString()}
-                                            </div>
-                                            <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
-                                                {taxResults.effectiveTotalRate.toFixed(1)}% effective rate
-                                            </div>
-                                        </div>
-                                        <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>{taxState} State Tax</div>
-                                            <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' }}>
-                                                ${taxResults.stateTax.toLocaleString()}
-                                            </div>
-                                            <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
-                                                {(stateTaxRates[taxState] * 100).toFixed(1)}% rate
-                                            </div>
-                                        </div>
-                                        <div style={{
-                                            background: '#f0fdf4', padding: '1rem', borderRadius: '8px',
-                                            border: '2px solid #22c55e'
-                                        }}>
-                                            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>Your Take-Home</div>
-                                            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#059669' }}>
-                                                ${taxResults.netWinnings.toLocaleString()}
-                                            </div>
-                                            <div style={{ fontSize: '0.75rem', color: '#047857', marginTop: '0.25rem' }}>
-                                                After {taxResults.effectiveTotalRate.toFixed(1)}% total tax
-                                            </div>
-                                        </div>
-                                    </div>
+                    // Tax Results Display
+                    taxResults && React.createElement('div', { className: 'card' },
+                        React.createElement('h3', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937', marginBottom: '1.5rem' } },
+                            '📊 Tax Breakdown Results'
+                        ),
+                        
+                        // Summary Cards
+                        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' } },
+                            React.createElement('div', { style: { background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' } },
+                                React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' } }, 'Gross Winnings'),
+                                React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' } },
+                                    `${taxResults.grossWinnings.toLocaleString()}`
+                                ),
+                                React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' } },
+                                    takeLumpSum ? 'Lump Sum' : 'Annuity'
+                                )
+                            ),
+                            React.createElement('div', { style: { background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' } },
+                                React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' } }, 'Federal Tax'),
+                                React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' } },
+                                    `${taxResults.federalTax.toLocaleString()}`
+                                ),
+                                React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' } },
+                                    'Progressive rate system'
+                                )
+                            ),
+                            React.createElement('div', { style: { background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' } },
+                                React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' } }, `${taxState} State Tax`),
+                                React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 600, color: '#1f2937' } },
+                                    `${taxResults.stateTax.toLocaleString()}`
+                                ),
+                                React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' } },
+                                    `${(stateTaxRates[taxState] * 100).toFixed(1)}% flat rate`
+                                )
+                            ),
+                            React.createElement('div', {
+                                style: {
+                                    background: '#f0fdf4', padding: '1rem', borderRadius: '8px',
+                                    border: '2px solid #22c55e'
+                                }
+                            },
+                                React.createElement('div', { style: { fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' } }, 'Your Take-Home'),
+                                React.createElement('div', { style: { fontSize: '1.5rem', fontWeight: 600, color: '#059669' } },
+                                    `${taxResults.netWinnings.toLocaleString()}`
+                                ),
+                                React.createElement('div', { style: { fontSize: '0.75rem', color: '#047857', marginTop: '0.25rem' } },
+                                    `After ${taxResults.effectiveTotalRate.toFixed(1)}% total tax`
+                                )
+                            )
+                        ),
 
-                                    {/* Important Notes */}
-                                    <div style={{
-                                        background: '#fefce8', border: '1px solid #fde68a', borderRadius: '0.5rem',
-                                        padding: '1rem', fontSize: '0.875rem'
-                                    }}>
-                                        <h5 style={{ fontWeight: 600, color: '#92400e', marginBottom: '0.5rem' }}>
-                                            ⚠️ Important Tax Considerations:
-                                        </h5>
-                                        <ul style={{ color: '#a16207', lineHeight: 1.6, paddingLeft: '1rem' }}>
-                                            <li>This calculator uses 2024 federal tax brackets</li>
-                                            <li>Additional state-specific deductions may apply</li>
-                                            <li>Consider consulting a tax professional for large winnings</li>
-                                            <li>Enhanced calculation includes latest tax law changes</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                        // Important Notes
+                        React.createElement('div', {
+                            style: {
+                                background: '#fefce8', border: '1px solid #fde68a', borderRadius: '0.5rem',
+                                padding: '1rem', fontSize: '0.875rem'
+                            }
+                        },
+                            React.createElement('h5', { style: { fontWeight: 600, color: '#92400e', marginBottom: '0.5rem' } },
+                                '⚠️ Important Tax Considerations:'
+                            ),
+                            React.createElement('ul', { style: { color: '#a16207', lineHeight: 1.6, paddingLeft: '1rem' } },
+                                React.createElement('li', null, 'This calculator uses 2024 federal tax brackets'),
+                                React.createElement('li', null, 'Additional state-specific deductions may apply'),
+                                React.createElement('li', null, 'Consider consulting a tax professional for large winnings'),
+                                React.createElement('li', null, 'Enhanced calculation includes latest tax law changes')
+                            )
+                        )
+                    )
+                )
             );
         }
 
@@ -2305,22 +2236,18 @@
 
             render() {
                 if (this.state.hasError) {
-                    return (
-                        <div style={{ padding: '2rem', textAlign: 'center' }}>
-                            <h2>System Error - Enhanced Features Disabled</h2>
-                            <p style={{ color: '#6b7280', marginTop: '1rem' }}>
-                                The enhanced lottery system encountered an error. Please refresh the page.
-                            </p>
-                            <button
-                                onClick={() => window.location.reload()}
-                                style={{
-                                    marginTop: '1rem', padding: '0.5rem 1rem', background: '#3b82f6',
-                                    color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'
-                                }}
-                            >
-                                Reload Page
-                            </button>
-                        </div>
+                    return React.createElement('div', { style: { padding: '2rem', textAlign: 'center' } },
+                        React.createElement('h2', null, 'System Error - Enhanced Features Disabled'),
+                        React.createElement('p', { style: { color: '#6b7280', marginTop: '1rem' } },
+                            'The enhanced lottery system encountered an error. Please refresh the page.'
+                        ),
+                        React.createElement('button', {
+                            onClick: () => window.location.reload(),
+                            style: {
+                                marginTop: '1rem', padding: '0.5rem 1rem', background: '#3b82f6',
+                                color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'
+                            }
+                        }, 'Reload Page')
                     );
                 }
 
