@@ -213,12 +213,108 @@
             border-radius: 8px;
             padding: 1rem;
         }
+
+        /* Tax Calculator Specific Styles */
+        .tax-breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .tax-breakdown-table th,
+        .tax-breakdown-table td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .tax-breakdown-table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .tax-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tax-summary-item {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .tax-summary-item.negative {
+            border-left-color: #ef4444;
+        }
+
+        .tax-summary-item.positive {
+            border-left-color: #22c55e;
+        }
+
+        .comparison-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0ea5e9;
+        }
+
+        .annuity-card {
+            background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+            border: 2px solid #f59e0b;
+        }
+
+        .lump-sum-card {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid #22c55e;
+        }
+
+        .tax-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .tax-input-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .tax-input-group input,
+        .tax-input-group select {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+
+        .highlight-amount {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .warning-text {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .positive-text {
+            color: #059669;
+            font-weight: 600;
+        }
         
         /* Responsive improvements */
         @media (max-width: 768px) {
             .grid-cols-3 { grid-template-columns: 1fr; }
             .container { padding: 1rem; }
             .selection-grid { grid-template-columns: 1fr; }
+            .tax-summary-grid { grid-template-columns: 1fr; }
+            .tax-breakdown-table { font-size: 0.75rem; }
+            .tax-breakdown-table th, .tax-breakdown-table td { padding: 0.375rem; }
         }
 
         @media (max-height: 800px) {
@@ -1071,9 +1167,169 @@
             }
         }
 
+        // Enhanced Tax Calculator for Lottery Winnings
+        class LotteryTaxCalculator {
+            constructor() {
+                this.currentYear = new Date().getFullYear();
+                
+                // 2024/2025 Federal Tax Brackets (Single Filing)
+                this.federalBrackets = [
+                    { min: 0, max: 11000, rate: 0.10 },
+                    { min: 11000, max: 44725, rate: 0.12 },
+                    { min: 44725, max: 95375, rate: 0.22 },
+                    { min: 95375, max: 182050, rate: 0.24 },
+                    { min: 182050, max: 231250, rate: 0.32 },
+                    { min: 231250, max: 578125, rate: 0.35 },
+                    { min: 578125, max: Infinity, rate: 0.37 }
+                ];
+                
+                // State tax rates (simplified - actual rates may vary by income level)
+                this.stateTaxRates = {
+                    'AL': 0.05, 'AK': 0.00, 'AZ': 0.045, 'AR': 0.066, 'CA': 0.133,
+                    'CO': 0.044, 'CT': 0.0699, 'DE': 0.066, 'FL': 0.00, 'GA': 0.0575,
+                    'HI': 0.11, 'ID': 0.058, 'IL': 0.0495, 'IN': 0.0323, 'IA': 0.0853,
+                    'KS': 0.057, 'KY': 0.05, 'LA': 0.06, 'ME': 0.0715, 'MD': 0.0575,
+                    'MA': 0.05, 'MI': 0.0425, 'MN': 0.0985, 'MS': 0.05, 'MO': 0.054,
+                    'MT': 0.0675, 'NE': 0.0684, 'NV': 0.00, 'NH': 0.05, 'NJ': 0.1075,
+                    'NM': 0.059, 'NY': 0.1090, 'NC': 0.0499, 'ND': 0.029, 'OH': 0.0399,
+                    'OK': 0.05, 'OR': 0.099, 'PA': 0.0307, 'RI': 0.0599, 'SC': 0.07,
+                    'SD': 0.00, 'TN': 0.00, 'TX': 0.00, 'UT': 0.0495, 'VT': 0.0875,
+                    'VA': 0.0575, 'WA': 0.00, 'WV': 0.065, 'WI': 0.0765, 'WY': 0.00
+                };
+                
+                this.stateNames = {
+                    'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
+                    'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia',
+                    'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
+                    'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+                    'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri',
+                    'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey',
+                    'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+                    'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+                    'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont',
+                    'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
+                };
+            }
+            
+            calculateFederalTax(income) {
+                let tax = 0;
+                let taxDetails = [];
+                
+                for (const bracket of this.federalBrackets) {
+                    if (income > bracket.min) {
+                        const taxableInThisBracket = Math.min(income, bracket.max) - bracket.min;
+                        const taxForBracket = taxableInThisBracket * bracket.rate;
+                        tax += taxForBracket;
+                        
+                        if (taxableInThisBracket > 0) {
+                            taxDetails.push({
+                                range: `$${bracket.min.toLocaleString()} - $${bracket.max === Infinity ? '∞' : bracket.max.toLocaleString()}`,
+                                rate: (bracket.rate * 100).toFixed(1) + '%',
+                                taxableAmount: taxableInThisBracket,
+                                tax: taxForBracket
+                            });
+                        }
+                    }
+                }
+                
+                return { total: tax, details: taxDetails };
+            }
+            
+            calculateStateTax(income, state) {
+                const rate = this.stateTaxRates[state] || 0;
+                return income * rate;
+            }
+            
+            calculateTotalTaxes(grossWinnings, state = 'GA', filingStatus = 'single', hasOtherIncome = 0) {
+                // Federal withholding is 24% for lottery winnings over $5,000
+                const federalWithheld = grossWinnings * 0.24;
+                
+                // Calculate actual federal tax owed (including other income)
+                const totalIncome = grossWinnings + hasOtherIncome;
+                const federalTaxCalc = this.calculateFederalTax(totalIncome);
+                const federalTaxOwed = federalTaxCalc.total;
+                
+                // State tax calculation
+                const stateTaxRate = this.stateTaxRates[state] || 0;
+                const stateTaxOwed = this.calculateStateTax(grossWinnings, state);
+                
+                // Calculate refund or additional owed
+                const federalRefundOrOwed = federalWithheld - federalTaxOwed;
+                
+                // Net winnings calculation
+                const totalTaxOwed = federalTaxOwed + stateTaxOwed;
+                const netWinnings = grossWinnings - totalTaxOwed;
+                
+                return {
+                    grossWinnings,
+                    federalWithheld,
+                    federalTaxOwed,
+                    federalTaxDetails: federalTaxCalc.details,
+                    federalRefundOrOwed,
+                    stateTaxRate: stateTaxRate * 100,
+                    stateTaxOwed,
+                    totalTaxOwed,
+                    netWinnings,
+                    effectiveTaxRate: (totalTaxOwed / grossWinnings) * 100
+                };
+            }
+            
+            calculateAnnuityVsLumpSum(jackpotAmount, state = 'GA') {
+                // Annuity calculations (30 payments over 29 years, increasing 5% annually)
+                const annualPayment = jackpotAmount / 30;
+                const firstYearPayment = annualPayment;
+                
+                // Lump sum is typically about 60% of jackpot
+                const lumpSum = jackpotAmount * 0.6;
+                
+                // Calculate taxes for both scenarios
+                const annuityTaxes = this.calculateTotalTaxes(firstYearPayment, state);
+                const lumpSumTaxes = this.calculateTotalTaxes(lumpSum, state);
+                
+                // Project total annuity value (simplified - doesn't account for varying tax brackets each year)
+                let totalAnnuityAfterTax = 0;
+                let currentPayment = firstYearPayment;
+                
+                for (let year = 0; year < 30; year++) {
+                    const yearTaxes = this.calculateTotalTaxes(currentPayment, state);
+                    totalAnnuityAfterTax += yearTaxes.netWinnings;
+                    currentPayment *= 1.05; // 5% annual increase
+                }
+                
+                return {
+                    annuity: {
+                        totalJackpot: jackpotAmount,
+                        firstYearPayment,
+                        firstYearAfterTax: annuityTaxes.netWinnings,
+                        estimatedTotalAfterTax: totalAnnuityAfterTax,
+                        taxesFirstYear: annuityTaxes
+                    },
+                    lumpSum: {
+                        grossAmount: lumpSum,
+                        afterTax: lumpSumTaxes.netWinnings,
+                        taxes: lumpSumTaxes
+                    }
+                };
+            }
+            
+            formatCurrency(amount) {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(amount);
+            }
+            
+            formatPercentage(rate) {
+                return (rate).toFixed(2) + '%';
+            }
+        }
+
         // Global instances
         window.globalLotteryPredictor = new AdvancedLotteryPredictor();
         window.claudeAnalyzer = new HybridClaudeLotteryAnalyzer();
+        window.LotteryTaxCalculator = LotteryTaxCalculator;
         window.currentJackpotData = null;
 
         // Update the global function to use hybrid system
@@ -1248,6 +1504,367 @@
     
     <script type="text/babel">
         const { useState, useEffect } = React;
+
+        // Tax Calculator React Component
+        function TaxCalculatorTab() {
+            const [jackpotAmount, setJackpotAmount] = useState('');
+            const [selectedState, setSelectedState] = useState('GA');
+            const [otherIncome, setOtherIncome] = useState('');
+            const [calculationResults, setCalculationResults] = useState(null);
+            const [calculator] = useState(new window.LotteryTaxCalculator());
+            const [activeCalculation, setActiveCalculation] = useState('simple');
+
+            // Auto-populate jackpot from current data
+            useEffect(() => {
+                if (window.currentJackpotData && window.currentJackpotData.amount) {
+                    setJackpotAmount(window.currentJackpotData.amount.toString());
+                }
+            }, []);
+
+            const calculateTaxes = () => {
+                const grossAmount = parseFloat(jackpotAmount);
+                const income = parseFloat(otherIncome) || 0;
+                
+                if (!grossAmount || grossAmount <= 0) {
+                    alert('Please enter a valid jackpot amount');
+                    return;
+                }
+
+                if (activeCalculation === 'simple') {
+                    const results = calculator.calculateTotalTaxes(grossAmount, selectedState, 'single', income);
+                    setCalculationResults({ type: 'simple', data: results });
+                } else {
+                    const results = calculator.calculateAnnuityVsLumpSum(grossAmount, selectedState);
+                    setCalculationResults({ type: 'comparison', data: results });
+                }
+            };
+
+            const clearCalculation = () => {
+                setCalculationResults(null);
+                setJackpotAmount('');
+                setOtherIncome('');
+            };
+
+            const renderSimpleCalculation = (results) => {
+                return React.createElement('div', { className: 'space-y-6' },
+                    // Summary Cards
+                    React.createElement('div', { className: 'tax-summary-grid' },
+                        React.createElement('div', { className: 'tax-summary-item' },
+                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Gross Winnings'),
+                            React.createElement('div', { className: 'highlight-amount' }, calculator.formatCurrency(results.grossWinnings))
+                        ),
+                        React.createElement('div', { className: 'tax-summary-item negative' },
+                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Total Taxes Owed'),
+                            React.createElement('div', { className: 'highlight-amount warning-text' }, calculator.formatCurrency(results.totalTaxOwed))
+                        ),
+                        React.createElement('div', { className: 'tax-summary-item positive' },
+                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Net After Taxes'),
+                            React.createElement('div', { className: 'highlight-amount positive-text' }, calculator.formatCurrency(results.netWinnings))
+                        ),
+                        React.createElement('div', { className: 'tax-summary-item' },
+                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Effective Tax Rate'),
+                            React.createElement('div', { className: 'highlight-amount' }, calculator.formatPercentage(results.effectiveTaxRate))
+                        )
+                    ),
+
+                    // Tax Breakdown
+                    React.createElement('div', { className: 'card' },
+                        React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '💰 Tax Breakdown'),
+                        
+                        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
+                            // Federal Taxes
+                            React.createElement('div', null,
+                                React.createElement('h5', { className: 'font-semibold mb-3 text-blue-700' }, '🏛️ Federal Taxes'),
+                                React.createElement('div', { className: 'space-y-2 text-sm' },
+                                    React.createElement('div', { className: 'flex justify-between' },
+                                        React.createElement('span', null, 'Withheld (24%):'),
+                                        React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(results.federalWithheld))
+                                    ),
+                                    React.createElement('div', { className: 'flex justify-between' },
+                                        React.createElement('span', null, 'Actually Owed:'),
+                                        React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(results.federalTaxOwed))
+                                    ),
+                                    React.createElement('div', { className: 'flex justify-between border-t pt-2' },
+                                        React.createElement('span', { className: 'font-medium' }, 
+                                            results.federalRefundOrOwed >= 0 ? 'Refund Expected:' : 'Additional Owed:'
+                                        ),
+                                        React.createElement('span', { 
+                                            className: `font-bold ${results.federalRefundOrOwed >= 0 ? 'positive-text' : 'warning-text'}`
+                                        }, calculator.formatCurrency(Math.abs(results.federalRefundOrOwed)))
+                                    )
+                                )
+                            ),
+
+                            // State Taxes
+                            React.createElement('div', null,
+                                React.createElement('h5', { className: 'font-semibold mb-3 text-green-700' }, 
+                                    `🏛️ ${calculator.stateNames[selectedState]} State Taxes`
+                                ),
+                                React.createElement('div', { className: 'space-y-2 text-sm' },
+                                    React.createElement('div', { className: 'flex justify-between' },
+                                        React.createElement('span', null, 'Tax Rate:'),
+                                        React.createElement('span', { className: 'font-medium' }, 
+                                            calculator.formatPercentage(results.stateTaxRate)
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'flex justify-between' },
+                                        React.createElement('span', null, 'State Tax Owed:'),
+                                        React.createElement('span', { className: 'font-medium' }, 
+                                            calculator.formatCurrency(results.stateTaxOwed)
+                                        )
+                                    ),
+                                    results.stateTaxRate === 0 ? React.createElement('div', { className: 'text-green-600 text-xs font-medium' },
+                                        '✅ No state income tax!'
+                                    ) : null
+                                )
+                            )
+                        )
+                    ),
+
+                    // Federal Tax Bracket Breakdown
+                    results.federalTaxDetails.length > 0 ? React.createElement('div', { className: 'card' },
+                        React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '📊 Federal Tax Bracket Breakdown'),
+                        React.createElement('div', { className: 'overflow-x-auto' },
+                            React.createElement('table', { className: 'tax-breakdown-table' },
+                                React.createElement('thead', null,
+                                    React.createElement('tr', null,
+                                        React.createElement('th', null, 'Tax Bracket'),
+                                        React.createElement('th', null, 'Rate'),
+                                        React.createElement('th', null, 'Taxable Amount'),
+                                        React.createElement('th', null, 'Tax Owed')
+                                    )
+                                ),
+                                React.createElement('tbody', null,
+                                    results.federalTaxDetails.map((bracket, index) =>
+                                        React.createElement('tr', { key: index },
+                                            React.createElement('td', null, bracket.range),
+                                            React.createElement('td', null, bracket.rate),
+                                            React.createElement('td', null, calculator.formatCurrency(bracket.taxableAmount)),
+                                            React.createElement('td', { className: 'font-medium' }, calculator.formatCurrency(bracket.tax))
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ) : null
+                );
+            };
+
+            const renderComparisonCalculation = (results) => {
+                const { annuity, lumpSum } = results;
+                
+                return React.createElement('div', { className: 'space-y-6' },
+                    // Overall Comparison
+                    React.createElement('div', { className: 'comparison-card card' },
+                        React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '⚖️ Annuity vs Lump Sum Comparison'),
+                        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
+                            React.createElement('div', { className: 'text-center' },
+                                React.createElement('div', { className: 'text-3xl mb-2' }, '📅'),
+                                React.createElement('div', { className: 'text-lg font-semibold' }, '30-Year Annuity'),
+                                React.createElement('div', { className: 'text-2xl font-bold text-amber-600' }, 
+                                    calculator.formatCurrency(annuity.estimatedTotalAfterTax)
+                                ),
+                                React.createElement('div', { className: 'text-sm text-gray-600' }, 'Estimated Total After Tax')
+                            ),
+                            React.createElement('div', { className: 'text-center' },
+                                React.createElement('div', { className: 'text-3xl mb-2' }, '💰'),
+                                React.createElement('div', { className: 'text-lg font-semibold' }, 'Lump Sum'),
+                                React.createElement('div', { className: 'text-2xl font-bold text-green-600' }, 
+                                    calculator.formatCurrency(lumpSum.afterTax)
+                                ),
+                                React.createElement('div', { className: 'text-sm text-gray-600' }, 'Immediate After Tax')
+                            )
+                        ),
+                        React.createElement('div', { className: 'text-center mt-4 p-3 bg-blue-50 rounded-lg' },
+                            React.createElement('div', { className: 'font-semibold' }, 
+                                annuity.estimatedTotalAfterTax > lumpSum.afterTax ? 
+                                    '📅 Annuity provides more total value' : 
+                                    '💰 Lump sum provides more immediate value'
+                            ),
+                            React.createElement('div', { className: 'text-sm text-gray-600' },
+                                'Difference: ', calculator.formatCurrency(Math.abs(annuity.estimatedTotalAfterTax - lumpSum.afterTax))
+                            )
+                        )
+                    ),
+
+                    // Detailed Breakdown
+                    React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6' },
+                        // Annuity Details
+                        React.createElement('div', { className: 'annuity-card card' },
+                            React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '📅 30-Year Annuity Details'),
+                            React.createElement('div', { className: 'space-y-3' },
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'Total Jackpot:'),
+                                    React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(annuity.totalJackpot))
+                                ),
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'First Year Payment:'),
+                                    React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(annuity.firstYearPayment))
+                                ),
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'First Year After Tax:'),
+                                    React.createElement('span', { className: 'font-medium text-green-600' }, calculator.formatCurrency(annuity.firstYearAfterTax))
+                                ),
+                                React.createElement('div', { className: 'border-t pt-3' },
+                                    React.createElement('div', { className: 'flex justify-between font-bold' },
+                                        React.createElement('span', null, 'Est. Total After Tax:'),
+                                        React.createElement('span', { className: 'text-amber-600' }, calculator.formatCurrency(annuity.estimatedTotalAfterTax))
+                                    )
+                                ),
+                                React.createElement('div', { className: 'text-xs text-gray-600 mt-2' },
+                                    '* Payments increase 5% annually. Tax calculation simplified - actual taxes may vary each year.'
+                                )
+                            )
+                        ),
+
+                        // Lump Sum Details
+                        React.createElement('div', { className: 'lump-sum-card card' },
+                            React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '💰 Lump Sum Details'),
+                            React.createElement('div', { className: 'space-y-3' },
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'Gross Lump Sum:'),
+                                    React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(lumpSum.grossAmount))
+                                ),
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'Federal Taxes:'),
+                                    React.createElement('span', { className: 'font-medium text-red-600' }, calculator.formatCurrency(lumpSum.taxes.federalTaxOwed))
+                                ),
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'State Taxes:'),
+                                    React.createElement('span', { className: 'font-medium text-red-600' }, calculator.formatCurrency(lumpSum.taxes.stateTaxOwed))
+                                ),
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'Total Taxes:'),
+                                    React.createElement('span', { className: 'font-medium text-red-600' }, calculator.formatCurrency(lumpSum.taxes.totalTaxOwed))
+                                ),
+                                React.createElement('div', { className: 'border-t pt-3' },
+                                    React.createElement('div', { className: 'flex justify-between font-bold' },
+                                        React.createElement('span', null, 'Net After Taxes:'),
+                                        React.createElement('span', { className: 'text-green-600' }, calculator.formatCurrency(lumpSum.afterTax))
+                                    )
+                                ),
+                                React.createElement('div', { className: 'text-xs text-gray-600 mt-2' },
+                                    `Effective tax rate: ${calculator.formatPercentage(lumpSum.taxes.effectiveTaxRate)}`
+                                )
+                            )
+                        )
+                    )
+                );
+            };
+
+            const states = Object.entries(calculator.stateNames).map(([code, name]) => ({ code, name }));
+
+            return React.createElement('div', { className: 'space-y-6' },
+                // Calculator Input Section
+                React.createElement('div', { className: 'card' },
+                    React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '🧮 Lottery Tax Calculator'),
+                    
+                    // Calculation Type Selector
+                    React.createElement('div', { className: 'mb-4' },
+                        React.createElement('div', { className: 'flex gap-2 mb-3' },
+                            React.createElement('button', {
+                                onClick: () => setActiveCalculation('simple'),
+                                className: `btn btn-sm ${activeCalculation === 'simple' ? 'btn-primary' : 'btn-secondary'}`
+                            }, '📊 Simple Tax Calculation'),
+                            React.createElement('button', {
+                                onClick: () => setActiveCalculation('comparison'),
+                                className: `btn btn-sm ${activeCalculation === 'comparison' ? 'btn-primary' : 'btn-secondary'}`
+                            }, '⚖️ Annuity vs Lump Sum')
+                        )
+                    ),
+                    
+                    React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4' },
+                        // Jackpot Amount
+                        React.createElement('div', { className: 'tax-input-group' },
+                            React.createElement('label', null, 
+                                activeCalculation === 'simple' ? '💰 Winnings Amount' : '🎰 Total Jackpot'
+                            ),
+                            React.createElement('input', {
+                                type: 'number',
+                                value: jackpotAmount,
+                                onChange: (e) => setJackpotAmount(e.target.value),
+                                placeholder: activeCalculation === 'simple' ? '1000000' : '100000000',
+                                min: '0'
+                            }),
+                            window.currentJackpotData ? React.createElement('button', {
+                                onClick: () => setJackpotAmount(
+                                    activeCalculation === 'simple' ? 
+                                        (window.currentJackpotData.cashValue || window.currentJackpotData.amount * 0.6).toString() :
+                                        window.currentJackpotData.amount.toString()
+                                ),
+                                className: 'btn btn-secondary btn-sm text-xs'
+                            }, activeCalculation === 'simple' ? 'Use Current Cash' : 'Use Current Jackpot') : null
+                        ),
+
+                        // State Selection
+                        React.createElement('div', { className: 'tax-input-group' },
+                            React.createElement('label', null, '🏛️ Your State'),
+                            React.createElement('select', {
+                                value: selectedState,
+                                onChange: (e) => setSelectedState(e.target.value)
+                            },
+                                states.map(state =>
+                                    React.createElement('option', { key: state.code, value: state.code },
+                                        `${state.name} (${calculator.formatPercentage(calculator.stateTaxRates[state.code] * 100)})`
+                                    )
+                                )
+                            )
+                        ),
+
+                        // Other Income (only for simple calculation)
+                        activeCalculation === 'simple' ? React.createElement('div', { className: 'tax-input-group' },
+                            React.createElement('label', null, '💼 Other Annual Income'),
+                            React.createElement('input', {
+                                type: 'number',
+                                value: otherIncome,
+                                onChange: (e) => setOtherIncome(e.target.value),
+                                placeholder: '75000',
+                                min: '0'
+                            })
+                        ) : null,
+
+                        // Calculate Button
+                        React.createElement('div', { className: 'tax-input-group justify-end' },
+                            React.createElement('label', { className: 'invisible' }, 'Actions'),
+                            React.createElement('div', { className: 'flex gap-2' },
+                                React.createElement('button', {
+                                    onClick: calculateTaxes,
+                                    className: 'btn btn-primary'
+                                }, '🔢 Calculate'),
+                                calculationResults ? React.createElement('button', {
+                                    onClick: clearCalculation,
+                                    className: 'btn btn-secondary'
+                                }, '🗑️ Clear') : null
+                            )
+                        )
+                    ),
+                    
+                    // Quick Info
+                    React.createElement('div', { className: 'warning-banner' },
+                        React.createElement('p', { className: 'text-amber-700 text-xs' },
+                            '⚠️ Tax calculations are estimates for educational purposes. Consult a tax professional for advice. ',
+                            'Federal withholding is 24% for lottery winnings over $5,000.'
+                        )
+                    )
+                ),
+
+                // Results Section
+                calculationResults ? React.createElement('div', null,
+                    calculationResults.type === 'simple' ? 
+                        renderSimpleCalculation(calculationResults.data) :
+                        renderComparisonCalculation(calculationResults.data)
+                ) : React.createElement('div', { className: 'card text-center py-8' },
+                    React.createElement('div', { className: 'text-4xl mb-4' }, '🧮'),
+                    React.createElement('p', { className: 'text-gray-600' }, 'Enter jackpot amount and click Calculate to see tax breakdown'),
+                    React.createElement('p', { className: 'text-xs text-gray-500 mt-2' }, 
+                        'Get precise tax estimates and compare annuity vs lump sum options'
+                    )
+                )
+            );
+        }
+
+        // Export for use in main app
+        window.TaxCalculatorTab = TaxCalculatorTab;
 
         function AdvancedLotterySystem() {
             // State management
@@ -1781,6 +2398,12 @@
                             )
                         );
 
+                    case 'tax-calculator':
+                        return window.TaxCalculatorTab ? React.createElement(window.TaxCalculatorTab) : 
+                            React.createElement('div', { className: 'text-center py-8' },
+                                React.createElement('p', null, 'Tax Calculator loading...')
+                            );
+
                     case 'analysis':
                         return React.createElement('div', { className: 'space-y-6' },
                             // Data Status
@@ -1924,6 +2547,7 @@
                         [
                             { id: 'quick-selection', label: aiEnabled ? '🤖🧮 AI Hybrid' : '🧮 Algorithms', icon: aiEnabled ? '🤖🧮' : '🧮' },
                             { id: 'calculator', label: '🎯 Calculator', icon: '🎯' },
+                            { id: 'tax-calculator', label: '💰 Tax Calculator', icon: '💰' },
                             { id: 'analysis', label: '📊 Analysis', icon: '📊' }
                         ].map(tab =>
                             React.createElement('button', {
@@ -1967,643 +2591,5 @@
         // Render the app
         ReactDOM.render(React.createElement(AdvancedLotterySystem), document.getElementById('root'));
     </script>
-    <!-- Tax Calculator Component - Insert this into your existing index.html -->
-
-<script>
-// Enhanced Tax Calculator for Lottery Winnings
-class LotteryTaxCalculator {
-    constructor() {
-        this.currentYear = new Date().getFullYear();
-        
-        // 2024/2025 Federal Tax Brackets (Single Filing)
-        this.federalBrackets = [
-            { min: 0, max: 11000, rate: 0.10 },
-            { min: 11000, max: 44725, rate: 0.12 },
-            { min: 44725, max: 95375, rate: 0.22 },
-            { min: 95375, max: 182050, rate: 0.24 },
-            { min: 182050, max: 231250, rate: 0.32 },
-            { min: 231250, max: 578125, rate: 0.35 },
-            { min: 578125, max: Infinity, rate: 0.37 }
-        ];
-        
-        // State tax rates (simplified - actual rates may vary by income level)
-        this.stateTaxRates = {
-            'AL': 0.05, 'AK': 0.00, 'AZ': 0.045, 'AR': 0.066, 'CA': 0.133,
-            'CO': 0.044, 'CT': 0.0699, 'DE': 0.066, 'FL': 0.00, 'GA': 0.0575,
-            'HI': 0.11, 'ID': 0.058, 'IL': 0.0495, 'IN': 0.0323, 'IA': 0.0853,
-            'KS': 0.057, 'KY': 0.05, 'LA': 0.06, 'ME': 0.0715, 'MD': 0.0575,
-            'MA': 0.05, 'MI': 0.0425, 'MN': 0.0985, 'MS': 0.05, 'MO': 0.054,
-            'MT': 0.0675, 'NE': 0.0684, 'NV': 0.00, 'NH': 0.05, 'NJ': 0.1075,
-            'NM': 0.059, 'NY': 0.1090, 'NC': 0.0499, 'ND': 0.029, 'OH': 0.0399,
-            'OK': 0.05, 'OR': 0.099, 'PA': 0.0307, 'RI': 0.0599, 'SC': 0.07,
-            'SD': 0.00, 'TN': 0.00, 'TX': 0.00, 'UT': 0.0495, 'VT': 0.0875,
-            'VA': 0.0575, 'WA': 0.00, 'WV': 0.065, 'WI': 0.0765, 'WY': 0.00
-        };
-        
-        this.stateNames = {
-            'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
-            'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia',
-            'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
-            'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
-            'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri',
-            'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey',
-            'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
-            'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
-            'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont',
-            'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
-        };
-    }
-    
-    calculateFederalTax(income) {
-        let tax = 0;
-        let taxDetails = [];
-        
-        for (const bracket of this.federalBrackets) {
-            if (income > bracket.min) {
-                const taxableInThisBracket = Math.min(income, bracket.max) - bracket.min;
-                const taxForBracket = taxableInThisBracket * bracket.rate;
-                tax += taxForBracket;
-                
-                if (taxableInThisBracket > 0) {
-                    taxDetails.push({
-                        range: `$${bracket.min.toLocaleString()} - $${bracket.max === Infinity ? '∞' : bracket.max.toLocaleString()}`,
-                        rate: (bracket.rate * 100).toFixed(1) + '%',
-                        taxableAmount: taxableInThisBracket,
-                        tax: taxForBracket
-                    });
-                }
-            }
-        }
-        
-        return { total: tax, details: taxDetails };
-    }
-    
-    calculateStateTax(income, state) {
-        const rate = this.stateTaxRates[state] || 0;
-        return income * rate;
-    }
-    
-    calculateTotalTaxes(grossWinnings, state = 'GA', filingStatus = 'single', hasOtherIncome = 0) {
-        // Federal withholding is 24% for lottery winnings over $5,000
-        const federalWithheld = grossWinnings * 0.24;
-        
-        // Calculate actual federal tax owed (including other income)
-        const totalIncome = grossWinnings + hasOtherIncome;
-        const federalTaxCalc = this.calculateFederalTax(totalIncome);
-        const federalTaxOwed = federalTaxCalc.total;
-        
-        // State tax calculation
-        const stateTaxRate = this.stateTaxRates[state] || 0;
-        const stateTaxOwed = this.calculateStateTax(grossWinnings, state);
-        
-        // Calculate refund or additional owed
-        const federalRefundOrOwed = federalWithheld - federalTaxOwed;
-        
-        // Net winnings calculation
-        const totalTaxOwed = federalTaxOwed + stateTaxOwed;
-        const netWinnings = grossWinnings - totalTaxOwed;
-        
-        return {
-            grossWinnings,
-            federalWithheld,
-            federalTaxOwed,
-            federalTaxDetails: federalTaxCalc.details,
-            federalRefundOrOwed,
-            stateTaxRate: stateTaxRate * 100,
-            stateTaxOwed,
-            totalTaxOwed,
-            netWinnings,
-            effectiveTaxRate: (totalTaxOwed / grossWinnings) * 100
-        };
-    }
-    
-    calculateAnnuityVsLumpSum(jackpotAmount, state = 'GA') {
-        // Annuity calculations (30 payments over 29 years, increasing 5% annually)
-        const annualPayment = jackpotAmount / 30;
-        const firstYearPayment = annualPayment;
-        
-        // Lump sum is typically about 60% of jackpot
-        const lumpSum = jackpotAmount * 0.6;
-        
-        // Calculate taxes for both scenarios
-        const annuityTaxes = this.calculateTotalTaxes(firstYearPayment, state);
-        const lumpSumTaxes = this.calculateTotalTaxes(lumpSum, state);
-        
-        // Project total annuity value (simplified - doesn't account for varying tax brackets each year)
-        let totalAnnuityAfterTax = 0;
-        let currentPayment = firstYearPayment;
-        
-        for (let year = 0; year < 30; year++) {
-            const yearTaxes = this.calculateTotalTaxes(currentPayment, state);
-            totalAnnuityAfterTax += yearTaxes.netWinnings;
-            currentPayment *= 1.05; // 5% annual increase
-        }
-        
-        return {
-            annuity: {
-                totalJackpot: jackpotAmount,
-                firstYearPayment,
-                firstYearAfterTax: annuityTaxes.netWinnings,
-                estimatedTotalAfterTax: totalAnnuityAfterTax,
-                taxesFirstYear: annuityTaxes
-            },
-            lumpSum: {
-                grossAmount: lumpSum,
-                afterTax: lumpSumTaxes.netWinnings,
-                taxes: lumpSumTaxes
-            }
-        };
-    }
-    
-    formatCurrency(amount) {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(amount);
-    }
-    
-    formatPercentage(rate) {
-        return (rate).toFixed(2) + '%';
-    }
-}
-
-// Add to global scope
-window.LotteryTaxCalculator = LotteryTaxCalculator;
-</script>
-
-<style>
-/* Tax Calculator Specific Styles */
-.tax-breakdown-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-}
-
-.tax-breakdown-table th,
-.tax-breakdown-table td {
-    padding: 0.5rem;
-    text-align: left;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.tax-breakdown-table th {
-    background-color: #f9fafb;
-    font-weight: 600;
-    color: #374151;
-}
-
-.tax-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.tax-summary-item {
-    background: #f8fafc;
-    padding: 1rem;
-    border-radius: 8px;
-    border-left: 4px solid #3b82f6;
-}
-
-.tax-summary-item.negative {
-    border-left-color: #ef4444;
-}
-
-.tax-summary-item.positive {
-    border-left-color: #22c55e;
-}
-
-.comparison-card {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    border: 2px solid #0ea5e9;
-}
-
-.annuity-card {
-    background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
-    border: 2px solid #f59e0b;
-}
-
-.lump-sum-card {
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    border: 2px solid #22c55e;
-}
-
-.tax-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.tax-input-group label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-}
-
-.tax-input-group input,
-.tax-input-group select {
-    padding: 0.5rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-}
-
-.highlight-amount {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-.warning-text {
-    color: #dc2626;
-    font-weight: 600;
-}
-
-.positive-text {
-    color: #059669;
-    font-weight: 600;
-}
-
-@media (max-width: 768px) {
-    .tax-summary-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .tax-breakdown-table {
-        font-size: 0.75rem;
-    }
-    
-    .tax-breakdown-table th,
-    .tax-breakdown-table td {
-        padding: 0.375rem;
-    }
-}
-</style>
-
-<script type="text/babel">
-// Tax Calculator React Component
-function TaxCalculatorTab() {
-    const [jackpotAmount, setJackpotAmount] = useState('');
-    const [selectedState, setSelectedState] = useState('GA');
-    const [otherIncome, setOtherIncome] = useState('');
-    const [calculationResults, setCalculationResults] = useState(null);
-    const [calculator] = useState(new window.LotteryTaxCalculator());
-    const [activeCalculation, setActiveCalculation] = useState('simple');
-
-    // Auto-populate jackpot from current data
-    useEffect(() => {
-        if (window.currentJackpotData && window.currentJackpotData.amount) {
-            setJackpotAmount(window.currentJackpotData.amount.toString());
-        }
-    }, []);
-
-    const calculateTaxes = () => {
-        const grossAmount = parseFloat(jackpotAmount);
-        const income = parseFloat(otherIncome) || 0;
-        
-        if (!grossAmount || grossAmount <= 0) {
-            alert('Please enter a valid jackpot amount');
-            return;
-        }
-
-        if (activeCalculation === 'simple') {
-            const results = calculator.calculateTotalTaxes(grossAmount, selectedState, 'single', income);
-            setCalculationResults({ type: 'simple', data: results });
-        } else {
-            const results = calculator.calculateAnnuityVsLumpSum(grossAmount, selectedState);
-            setCalculationResults({ type: 'comparison', data: results });
-        }
-    };
-
-    const clearCalculation = () => {
-        setCalculationResults(null);
-        setJackpotAmount('');
-        setOtherIncome('');
-    };
-
-    const renderSimpleCalculation = (results) => {
-        return React.createElement('div', { className: 'space-y-6' },
-            // Summary Cards
-            React.createElement('div', { className: 'tax-summary-grid' },
-                React.createElement('div', { className: 'tax-summary-item' },
-                    React.createElement('div', { className: 'text-sm text-gray-600' }, 'Gross Winnings'),
-                    React.createElement('div', { className: 'highlight-amount' }, calculator.formatCurrency(results.grossWinnings))
-                ),
-                React.createElement('div', { className: 'tax-summary-item negative' },
-                    React.createElement('div', { className: 'text-sm text-gray-600' }, 'Total Taxes Owed'),
-                    React.createElement('div', { className: 'highlight-amount warning-text' }, calculator.formatCurrency(results.totalTaxOwed))
-                ),
-                React.createElement('div', { className: 'tax-summary-item positive' },
-                    React.createElement('div', { className: 'text-sm text-gray-600' }, 'Net After Taxes'),
-                    React.createElement('div', { className: 'highlight-amount positive-text' }, calculator.formatCurrency(results.netWinnings))
-                ),
-                React.createElement('div', { className: 'tax-summary-item' },
-                    React.createElement('div', { className: 'text-sm text-gray-600' }, 'Effective Tax Rate'),
-                    React.createElement('div', { className: 'highlight-amount' }, calculator.formatPercentage(results.effectiveTaxRate))
-                )
-            ),
-
-            // Tax Breakdown
-            React.createElement('div', { className: 'card' },
-                React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '💰 Tax Breakdown'),
-                
-                React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
-                    // Federal Taxes
-                    React.createElement('div', null,
-                        React.createElement('h5', { className: 'font-semibold mb-3 text-blue-700' }, '🏛️ Federal Taxes'),
-                        React.createElement('div', { className: 'space-y-2 text-sm' },
-                            React.createElement('div', { className: 'flex justify-between' },
-                                React.createElement('span', null, 'Withheld (24%):'),
-                                React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(results.federalWithheld))
-                            ),
-                            React.createElement('div', { className: 'flex justify-between' },
-                                React.createElement('span', null, 'Actually Owed:'),
-                                React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(results.federalTaxOwed))
-                            ),
-                            React.createElement('div', { className: 'flex justify-between border-t pt-2' },
-                                React.createElement('span', { className: 'font-medium' }, 
-                                    results.federalRefundOrOwed >= 0 ? 'Refund Expected:' : 'Additional Owed:'
-                                ),
-                                React.createElement('span', { 
-                                    className: `font-bold ${results.federalRefundOrOwed >= 0 ? 'positive-text' : 'warning-text'}`
-                                }, calculator.formatCurrency(Math.abs(results.federalRefundOrOwed)))
-                            )
-                        )
-                    ),
-
-                    // State Taxes
-                    React.createElement('div', null,
-                        React.createElement('h5', { className: 'font-semibold mb-3 text-green-700' }, 
-                            `🏛️ ${calculator.stateNames[selectedState]} State Taxes`
-                        ),
-                        React.createElement('div', { className: 'space-y-2 text-sm' },
-                            React.createElement('div', { className: 'flex justify-between' },
-                                React.createElement('span', null, 'Tax Rate:'),
-                                React.createElement('span', { className: 'font-medium' }, 
-                                    calculator.formatPercentage(results.stateTaxRate)
-                                )
-                            ),
-                            React.createElement('div', { className: 'flex justify-between' },
-                                React.createElement('span', null, 'State Tax Owed:'),
-                                React.createElement('span', { className: 'font-medium' }, 
-                                    calculator.formatCurrency(results.stateTaxOwed)
-                                )
-                            ),
-                            results.stateTaxRate === 0 ? React.createElement('div', { className: 'text-green-600 text-xs font-medium' },
-                                '✅ No state income tax!'
-                            ) : null
-                        )
-                    )
-                )
-            ),
-
-            // Federal Tax Bracket Breakdown
-            results.federalTaxDetails.length > 0 ? React.createElement('div', { className: 'card' },
-                React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '📊 Federal Tax Bracket Breakdown'),
-                React.createElement('div', { className: 'overflow-x-auto' },
-                    React.createElement('table', { className: 'tax-breakdown-table' },
-                        React.createElement('thead', null,
-                            React.createElement('tr', null,
-                                React.createElement('th', null, 'Tax Bracket'),
-                                React.createElement('th', null, 'Rate'),
-                                React.createElement('th', null, 'Taxable Amount'),
-                                React.createElement('th', null, 'Tax Owed')
-                            )
-                        ),
-                        React.createElement('tbody', null,
-                            results.federalTaxDetails.map((bracket, index) =>
-                                React.createElement('tr', { key: index },
-                                    React.createElement('td', null, bracket.range),
-                                    React.createElement('td', null, bracket.rate),
-                                    React.createElement('td', null, calculator.formatCurrency(bracket.taxableAmount)),
-                                    React.createElement('td', { className: 'font-medium' }, calculator.formatCurrency(bracket.tax))
-                                )
-                            )
-                        )
-                    )
-                )
-            ) : null
-        );
-    };
-
-    const renderComparisonCalculation = (results) => {
-        const { annuity, lumpSum } = results;
-        
-        return React.createElement('div', { className: 'space-y-6' },
-            // Overall Comparison
-            React.createElement('div', { className: 'comparison-card card' },
-                React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '⚖️ Annuity vs Lump Sum Comparison'),
-                React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
-                    React.createElement('div', { className: 'text-center' },
-                        React.createElement('div', { className: 'text-3xl mb-2' }, '📅'),
-                        React.createElement('div', { className: 'text-lg font-semibold' }, '30-Year Annuity'),
-                        React.createElement('div', { className: 'text-2xl font-bold text-amber-600' }, 
-                            calculator.formatCurrency(annuity.estimatedTotalAfterTax)
-                        ),
-                        React.createElement('div', { className: 'text-sm text-gray-600' }, 'Estimated Total After Tax')
-                    ),
-                    React.createElement('div', { className: 'text-center' },
-                        React.createElement('div', { className: 'text-3xl mb-2' }, '💰'),
-                        React.createElement('div', { className: 'text-lg font-semibold' }, 'Lump Sum'),
-                        React.createElement('div', { className: 'text-2xl font-bold text-green-600' }, 
-                            calculator.formatCurrency(lumpSum.afterTax)
-                        ),
-                        React.createElement('div', { className: 'text-sm text-gray-600' }, 'Immediate After Tax')
-                    )
-                ),
-                React.createElement('div', { className: 'text-center mt-4 p-3 bg-blue-50 rounded-lg' },
-                    React.createElement('div', { className: 'font-semibold' }, 
-                        annuity.estimatedTotalAfterTax > lumpSum.afterTax ? 
-                            '📅 Annuity provides more total value' : 
-                            '💰 Lump sum provides more immediate value'
-                    ),
-                    React.createElement('div', { className: 'text-sm text-gray-600' },
-                        'Difference: ', calculator.formatCurrency(Math.abs(annuity.estimatedTotalAfterTax - lumpSum.afterTax))
-                    )
-                )
-            ),
-
-            // Detailed Breakdown
-            React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6' },
-                // Annuity Details
-                React.createElement('div', { className: 'annuity-card card' },
-                    React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '📅 30-Year Annuity Details'),
-                    React.createElement('div', { className: 'space-y-3' },
-                        React.createElement('div', { className: 'flex justify-between' },
-                            React.createElement('span', null, 'Total Jackpot:'),
-                            React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(annuity.totalJackpot))
-                        ),
-                        React.createElement('div', { className: 'flex justify-between' },
-                            React.createElement('span', null, 'First Year Payment:'),
-                            React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(annuity.firstYearPayment))
-                        ),
-                        React.createElement('div', { className: 'flex justify-between' },
-                            React.createElement('span', null, 'First Year After Tax:'),
-                            React.createElement('span', { className: 'font-medium text-green-600' }, calculator.formatCurrency(annuity.firstYearAfterTax))
-                        ),
-                        React.createElement('div', { className: 'border-t pt-3' },
-                            React.createElement('div', { className: 'flex justify-between font-bold' },
-                                React.createElement('span', null, 'Est. Total After Tax:'),
-                                React.createElement('span', { className: 'text-amber-600' }, calculator.formatCurrency(annuity.estimatedTotalAfterTax))
-                            )
-                        ),
-                        React.createElement('div', { className: 'text-xs text-gray-600 mt-2' },
-                            '* Payments increase 5% annually. Tax calculation simplified - actual taxes may vary each year.'
-                        )
-                    )
-                ),
-
-                // Lump Sum Details
-                React.createElement('div', { className: 'lump-sum-card card' },
-                    React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '💰 Lump Sum Details'),
-                    React.createElement('div', { className: 'space-y-3' },
-                        React.createElement('div', { className: 'flex justify-between' },
-                            React.createElement('span', null, 'Gross Lump Sum:'),
-                            React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(lumpSum.grossAmount))
-                        ),
-                        React.createElement('div', { className: 'flex justify-between' },
-                            React.createElement('span', null, 'Federal Taxes:'),
-                            React.createElement('span', { className: 'font-medium text-red-600' }, calculator.formatCurrency(lumpSum.taxes.federalTaxOwed))
-                        ),
-                        React.createElement('div', { className: 'flex justify-between' },
-                            React.createElement('span', null, 'State Taxes:'),
-                            React.createElement('span', { className: 'font-medium text-red-600' }, calculator.formatCurrency(lumpSum.taxes.stateTaxOwed))
-                        ),
-                        React.createElement('div', { className: 'flex justify-between' },
-                            React.createElement('span', null, 'Total Taxes:'),
-                            React.createElement('span', { className: 'font-medium text-red-600' }, calculator.formatCurrency(lumpSum.taxes.totalTaxOwed))
-                        ),
-                        React.createElement('div', { className: 'border-t pt-3' },
-                            React.createElement('div', { className: 'flex justify-between font-bold' },
-                                React.createElement('span', null, 'Net After Taxes:'),
-                                React.createElement('span', { className: 'text-green-600' }, calculator.formatCurrency(lumpSum.afterTax))
-                            )
-                        ),
-                        React.createElement('div', { className: 'text-xs text-gray-600 mt-2' },
-                            `Effective tax rate: ${calculator.formatPercentage(lumpSum.taxes.effectiveTaxRate)}`
-                        )
-                    )
-                )
-            )
-        );
-    };
-
-    const states = Object.entries(calculator.stateNames).map(([code, name]) => ({ code, name }));
-
-    return React.createElement('div', { className: 'space-y-6' },
-        // Calculator Input Section
-        React.createElement('div', { className: 'card' },
-            React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '🧮 Lottery Tax Calculator'),
-            
-            // Calculation Type Selector
-            React.createElement('div', { className: 'mb-4' },
-                React.createElement('div', { className: 'flex gap-2 mb-3' },
-                    React.createElement('button', {
-                        onClick: () => setActiveCalculation('simple'),
-                        className: `btn btn-sm ${activeCalculation === 'simple' ? 'btn-primary' : 'btn-secondary'}`
-                    }, '📊 Simple Tax Calculation'),
-                    React.createElement('button', {
-                        onClick: () => setActiveCalculation('comparison'),
-                        className: `btn btn-sm ${activeCalculation === 'comparison' ? 'btn-primary' : 'btn-secondary'}`
-                    }, '⚖️ Annuity vs Lump Sum')
-                )
-            ),
-            
-            React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4' },
-                // Jackpot Amount
-                React.createElement('div', { className: 'tax-input-group' },
-                    React.createElement('label', null, 
-                        activeCalculation === 'simple' ? '💰 Winnings Amount' : '🎰 Total Jackpot'
-                    ),
-                    React.createElement('input', {
-                        type: 'number',
-                        value: jackpotAmount,
-                        onChange: (e) => setJackpotAmount(e.target.value),
-                        placeholder: activeCalculation === 'simple' ? '1000000' : '100000000',
-                        min: '0'
-                    }),
-                    window.currentJackpotData ? React.createElement('button', {
-                        onClick: () => setJackpotAmount(
-                            activeCalculation === 'simple' ? 
-                                (window.currentJackpotData.cashValue || window.currentJackpotData.amount * 0.6).toString() :
-                                window.currentJackpotData.amount.toString()
-                        ),
-                        className: 'btn btn-secondary btn-sm text-xs'
-                    }, activeCalculation === 'simple' ? 'Use Current Cash' : 'Use Current Jackpot') : null
-                ),
-
-                // State Selection
-                React.createElement('div', { className: 'tax-input-group' },
-                    React.createElement('label', null, '🏛️ Your State'),
-                    React.createElement('select', {
-                        value: selectedState,
-                        onChange: (e) => setSelectedState(e.target.value)
-                    },
-                        states.map(state =>
-                            React.createElement('option', { key: state.code, value: state.code },
-                                `${state.name} (${calculator.formatPercentage(calculator.stateTaxRates[state.code] * 100)})`
-                            )
-                        )
-                    )
-                ),
-
-                // Other Income (only for simple calculation)
-                activeCalculation === 'simple' ? React.createElement('div', { className: 'tax-input-group' },
-                    React.createElement('label', null, '💼 Other Annual Income'),
-                    React.createElement('input', {
-                        type: 'number',
-                        value: otherIncome,
-                        onChange: (e) => setOtherIncome(e.target.value),
-                        placeholder: '75000',
-                        min: '0'
-                    })
-                ) : null,
-
-                // Calculate Button
-                React.createElement('div', { className: 'tax-input-group justify-end' },
-                    React.createElement('label', { className: 'invisible' }, 'Actions'),
-                    React.createElement('div', { className: 'flex gap-2' },
-                        React.createElement('button', {
-                            onClick: calculateTaxes,
-                            className: 'btn btn-primary'
-                        }, '🔢 Calculate'),
-                        calculationResults ? React.createElement('button', {
-                            onClick: clearCalculation,
-                            className: 'btn btn-secondary'
-                        }, '🗑️ Clear') : null
-                    )
-                )
-            ),
-            
-            // Quick Info
-            React.createElement('div', { className: 'warning-banner' },
-                React.createElement('p', { className: 'text-amber-700 text-xs' },
-                    '⚠️ Tax calculations are estimates for educational purposes. Consult a tax professional for advice. ',
-                    'Federal withholding is 24% for lottery winnings over $5,000.'
-                )
-            )
-        ),
-
-        // Results Section
-        calculationResults ? React.createElement('div', null,
-            calculationResults.type === 'simple' ? 
-                renderSimpleCalculation(calculationResults.data) :
-                renderComparisonCalculation(calculationResults.data)
-        ) : React.createElement('div', { className: 'card text-center py-8' },
-            React.createElement('div', { className: 'text-4xl mb-4' }, '🧮'),
-            React.createElement('p', { className: 'text-gray-600' }, 'Enter jackpot amount and click Calculate to see tax breakdown'),
-            React.createElement('p', { className: 'text-xs text-gray-500 mt-2' }, 
-                'Get precise tax estimates and compare annuity vs lump sum options'
-            )
-        )
-    );
-}
-
-// Export for use in main app
-window.TaxCalculatorTab = TaxCalculatorTab;
-</script>
 </body>
 </html>
