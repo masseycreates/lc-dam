@@ -1293,11 +1293,14 @@
                 setIsUpdating(false);
             };
 
-            const fetchHistoricalData = async () => {
+            const fetchHistoricalData = async (customLimit) => {
+                const limit = customLimit || historicalRecordsLimit;
                 setIsLoadingHistory(true);
                 
+                console.log('📊 Fetching ' + limit + ' historical drawings...');
+                
                 try {
-                    const response = await fetch('/api/powerball-history?limit=' + historicalRecordsLimit, {
+                    const response = await fetch('/api/powerball-history?limit=' + limit, {
                         method: 'GET',
                         headers: { 
                             'Content-Type': 'application/json',
@@ -1306,16 +1309,21 @@
                     });
                     
                     const data = await response.json();
+                    console.log('📊 Historical data response:', data);
                     
                     if (data.success && data.dataAvailable && data.statistics) {
                         setHistoricalStats(data.statistics);
                         setHistoricalDataAvailable(true);
                         
+                        console.log('✅ Loaded ' + data.statistics.totalDrawings + ' drawings for analysis');
+                        
                         if (window.generateAdvancedQuickSelection) {
                             const advancedSelection = await window.generateAdvancedQuickSelection(data.statistics);
                             setQuickSelectionSets(advancedSelection);
+                            console.log('✅ Generated ' + advancedSelection.length + ' initial selections');
                         }
                     } else {
+                        console.warn('Historical data not available, using fallback');
                         setHistoricalStats(null);
                         setHistoricalDataAvailable(false);
                     }
@@ -1326,6 +1334,62 @@
                 }
                 
                 setIsLoadingHistory(false);
+            };
+
+            const handleDataLimitChange = async (newLimit) => {
+                console.log('📊 Changing data limit from ' + historicalRecordsLimit + ' to ' + newLimit);
+                
+                setHistoricalRecordsLimit(newLimit);
+                setIsLoadingHistory(true);
+                setDataStatus('🔄 Loading ' + newLimit + ' historical drawings for analysis...');
+                
+                try {
+                    const response = await fetch('/api/powerball-history?limit=' + newLimit, {
+                        method: 'GET',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    console.log('📊 Received data for ' + newLimit + ' limit:', data);
+                    
+                    if (data.success && data.dataAvailable && data.statistics) {
+                        setHistoricalStats(data.statistics);
+                        setHistoricalDataAvailable(true);
+                        
+                        console.log('✅ Updated analysis with ' + data.statistics.totalDrawings + ' drawings');
+                        setDataStatus('✅ Analysis updated with ' + data.statistics.totalDrawings + ' drawings');
+                        
+                        if (window.generateAdvancedQuickSelection) {
+                            setDataStatus('🤖🧮 Regenerating selections with ' + newLimit + ' drawings...');
+                            
+                            try {
+                                const newSelections = await window.generateAdvancedQuickSelection(data.statistics);
+                                setQuickSelectionSets(newSelections);
+                                console.log('✅ Generated ' + newSelections.length + ' new selections with updated data');
+                                setDataStatus('✅ ' + newSelections.length + ' selections generated with ' + data.statistics.totalDrawings + ' drawings');
+                            } catch (selectionError) {
+                                console.error('Selection generation failed:', selectionError);
+                                setDataStatus('⚠️ Data updated but selection generation failed');
+                            }
+                        }
+                        
+                    } else {
+                        console.warn('No valid historical data received');
+                        setHistoricalStats(null);
+                        setHistoricalDataAvailable(false);
+                        setDataStatus('⚠️ Using fallback data (' + newLimit + ' limit)');
+                    }
+                } catch (error) {
+                    console.error('Data limit change failed:', error);
+                    setHistoricalStats(null);
+                    setHistoricalDataAvailable(false);
+                    setDataStatus('❌ Failed to load ' + newLimit + ' drawings');
+                } finally {
+                    setIsLoadingHistory(false);
+                }
             };
 
             const enableAI = async () => {
@@ -1439,6 +1503,57 @@
                 switch (activeTab) {
                     case 'quick-selection':
                         return React.createElement('div', { className: 'space-y-4' },
+                            React.createElement('div', { className: 'data-selector' },
+                                React.createElement('div', { className: 'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3' },
+                                    React.createElement('div', null,
+                                        React.createElement('h4', { className: 'text-sm font-semibold text-gray-700' }, '📊 Historical Data Range'),
+                                        React.createElement('p', { className: 'text-xs text-gray-600' }, 
+                                            isLoadingHistory ? 'Updating analysis...' : 'Select amount of historical data for analysis'
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'flex items-center gap-2' },
+                                        React.createElement('select', {
+                                            value: historicalRecordsLimit,
+                                            onChange: (e) => handleDataLimitChange(parseInt(e.target.value)),
+                                            disabled: isLoadingHistory,
+                                            className: 'px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white disabled:opacity-50'
+                                        },
+                                            [
+                                                { value: 50, label: '50 drawings (2 months)' },
+                                                { value: 100, label: '100 drawings (4 months)' },
+                                                { value: 250, label: '250 drawings (1 year)' },
+                                                { value: 500, label: '500 drawings (2 years)' },
+                                                { value: 1000, label: '1000 drawings (4 years)' },
+                                                { value: 1500, label: '1500 drawings (6 years)' },
+                                                { value: 2000, label: '2000 drawings (8+ years)' }
+                                            ].map(option =>
+                                                React.createElement('option', { 
+                                                    key: option.value, 
+                                                    value: option.value 
+                                                }, option.label)
+                                            )
+                                        ),
+                                        isLoadingHistory ? React.createElement('div', { className: 'loading-spinner' }) : null
+                                    )
+                                ),
+                                
+                                historicalStats ? React.createElement('div', { className: 'grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs' },
+                                    React.createElement('div', { className: 'text-gray-600' },
+                                        '📈 Currently analyzing: ' + historicalStats.totalDrawings + ' drawings'
+                                    ),
+                                    React.createElement('div', { className: 'text-gray-600' },
+                                        '🔥 Data source: ' + (historicalStats.dataSource || 'API')
+                                    ),
+                                    React.createElement('div', { className: 'text-gray-600' },
+                                        '🎯 Range: ' + (historicalStats.dateRange ? 
+                                            historicalStats.dateRange.earliest + ' to ' + historicalStats.dateRange.latest : 
+                                            'Full range')
+                                    )
+                                ) : React.createElement('div', { className: 'text-xs text-gray-500' },
+                                    'No historical data loaded'
+                                )
+                            ),
+
                             React.createElement('div', { className: 'enhanced-prediction-card-opus4 card-compact' },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement('div', { className: 'flex items-center gap-2' },
