@@ -28,7 +28,7 @@
     </div>
     
     <script>
-        // Advanced Lottery Prediction System with Claude Opus 4
+        // Advanced Lottery Prediction System
         class AdvancedLotteryPredictor {
             constructor() {
                 this.algorithmPerformance = {
@@ -39,6 +39,7 @@
                     markovChain: { weight: 0.14, successRate: 0.11, recentHits: [] },
                     neuralNetwork: { weight: 0.17, successRate: 0.16, recentHits: [] }
                 };
+
                 this.ewmaAlpha = 0.3;
                 this.neuralWeights = this.initializeNeuralWeights();
                 this.predictionHistory = [];
@@ -104,7 +105,7 @@
                 const compositeScores = {};
                 
                 for (let num = 1; num <= 69; num++) {
-                    compositeScores[num] = Math.random() * ewmaScores.numbers[num] || Math.random();
+                    compositeScores[num] = Math.random() * (ewmaScores.numbers[num] || 0.1) + Math.random() * 0.5;
                 }
                 
                 return this.generateMultiplePredictionSets(compositeScores, ewmaScores.powerball);
@@ -119,9 +120,19 @@
                 
                 for (let i = 0; i < 5; i++) {
                     const numbers = [];
-                    while (numbers.length < 5) {
-                        const num = Math.floor(Math.random() * 69) + 1;
-                        if (!numbers.includes(num)) numbers.push(num);
+                    const startIndex = i * 3;
+                    
+                    // Select from different ranges of ranked numbers
+                    for (let j = 0; j < 5; j++) {
+                        let num;
+                        if (startIndex + j < rankedNumbers.length) {
+                            num = rankedNumbers[startIndex + j].number;
+                        } else {
+                            do {
+                                num = Math.floor(Math.random() * 69) + 1;
+                            } while (numbers.includes(num));
+                        }
+                        numbers.push(num);
                     }
                     
                     predictionSets.push({
@@ -129,7 +140,7 @@
                         powerball: Math.floor(Math.random() * 26) + 1,
                         strategy: ["Advanced EWMA", "Neural Network", "Pair Analysis", "Gap Optimization", "Markov Chain"][i],
                         confidence: 75 + Math.floor(Math.random() * 20),
-                        analysis: "Advanced mathematical analysis with Opus 4 enhancement"
+                        analysis: "Advanced mathematical analysis with enhanced pattern recognition"
                     });
                 }
                 
@@ -166,7 +177,7 @@
             }
         }
 
-        // Advanced Claude Opus 4 Integration
+        // Claude Opus 4 Integration
         class AdvancedClaudeOpus4LotteryAnalyzer {
             constructor() {
                 this.apiKey = null;
@@ -207,7 +218,7 @@
                             requestedSets: requestedSets,
                             strategy: strategy,
                             localAlgorithmResults: localResults,
-                            modelVersion: 'opus-4',
+                            modelVersion: 'claude-3-5-sonnet-20241022',
                             enhancedReasoning: true
                         })
                     });
@@ -296,9 +307,9 @@
                         powerball: Math.floor(Math.random() * 26) + 1,
                         strategy: strategies[i % strategies.length],
                         confidence: 75 + Math.floor(Math.random() * 15),
-                        analysis: "Advanced mathematical distribution with Opus 4 enhanced statistical constraints",
-                        algorithmDetail: "Enhanced random with Opus 4 optimization",
-                        technicalAnalysis: "Opus 4 enhanced mathematical analysis",
+                        analysis: "Advanced mathematical distribution with enhanced statistical constraints",
+                        algorithmDetail: "Enhanced random with optimization",
+                        technicalAnalysis: "Enhanced mathematical analysis",
                         opus4Enhanced: true
                     };
                 });
@@ -333,7 +344,7 @@
                             analysisType: 'predictionInsights',
                             predictionSet: { numbers: [1, 2, 3, 4, 5], powerball: 1 },
                             historicalContext: { totalDrawings: 100 },
-                            modelVersion: 'opus-4'
+                            modelVersion: 'claude-3-5-sonnet-20241022'
                         })
                     });
 
@@ -383,6 +394,8 @@
         // Tax Calculator
         class LotteryTaxCalculator {
             constructor() {
+                this.currentYear = new Date().getFullYear();
+                
                 this.federalBrackets = [
                     { min: 0, max: 11000, rate: 0.10 },
                     { min: 11000, max: 44725, rate: 0.12 },
@@ -420,10 +433,47 @@
                 };
             }
             
-            calculateTotalTaxes(grossWinnings, state = 'GA') {
+            calculateFederalTax(income) {
+                let tax = 0;
+                let taxDetails = [];
+                
+                for (const bracket of this.federalBrackets) {
+                    if (income > bracket.min) {
+                        const taxableInThisBracket = Math.min(income, bracket.max) - bracket.min;
+                        const taxForBracket = taxableInThisBracket * bracket.rate;
+                        tax += taxForBracket;
+                        
+                        if (taxableInThisBracket > 0) {
+                            taxDetails.push({
+                                range: `$${bracket.min.toLocaleString()} - $${bracket.max === Infinity ? '∞' : bracket.max.toLocaleString()}`,
+                                rate: (bracket.rate * 100).toFixed(1) + '%',
+                                taxableAmount: taxableInThisBracket,
+                                tax: taxForBracket
+                            });
+                        }
+                    }
+                }
+                
+                return { total: tax, details: taxDetails };
+            }
+            
+            calculateStateTax(income, state) {
+                const rate = this.stateTaxRates[state] || 0;
+                return income * rate;
+            }
+            
+            calculateTotalTaxes(grossWinnings, state = 'GA', filingStatus = 'single', hasOtherIncome = 0) {
                 const federalWithheld = grossWinnings * 0.24;
-                const federalTaxOwed = grossWinnings * 0.37; // Simplified
-                const stateTaxOwed = grossWinnings * (this.stateTaxRates[state] || 0);
+                
+                const totalIncome = grossWinnings + hasOtherIncome;
+                const federalTaxCalc = this.calculateFederalTax(totalIncome);
+                const federalTaxOwed = federalTaxCalc.total;
+                
+                const stateTaxRate = this.stateTaxRates[state] || 0;
+                const stateTaxOwed = this.calculateStateTax(grossWinnings, state);
+                
+                const federalRefundOrOwed = federalWithheld - federalTaxOwed;
+                
                 const totalTaxOwed = federalTaxOwed + stateTaxOwed;
                 const netWinnings = grossWinnings - totalTaxOwed;
                 
@@ -431,10 +481,47 @@
                     grossWinnings,
                     federalWithheld,
                     federalTaxOwed,
+                    federalTaxDetails: federalTaxCalc.details,
+                    federalRefundOrOwed,
+                    stateTaxRate: stateTaxRate * 100,
                     stateTaxOwed,
                     totalTaxOwed,
                     netWinnings,
                     effectiveTaxRate: (totalTaxOwed / grossWinnings) * 100
+                };
+            }
+            
+            calculateAnnuityVsLumpSum(jackpotAmount, state = 'GA') {
+                const annualPayment = jackpotAmount / 30;
+                const firstYearPayment = annualPayment;
+                
+                const lumpSum = jackpotAmount * 0.6;
+                
+                const annuityTaxes = this.calculateTotalTaxes(firstYearPayment, state);
+                const lumpSumTaxes = this.calculateTotalTaxes(lumpSum, state);
+                
+                let totalAnnuityAfterTax = 0;
+                let currentPayment = firstYearPayment;
+                
+                for (let year = 0; year < 30; year++) {
+                    const yearTaxes = this.calculateTotalTaxes(currentPayment, state);
+                    totalAnnuityAfterTax += yearTaxes.netWinnings;
+                    currentPayment *= 1.05;
+                }
+                
+                return {
+                    annuity: {
+                        totalJackpot: jackpotAmount,
+                        firstYearPayment,
+                        firstYearAfterTax: annuityTaxes.netWinnings,
+                        estimatedTotalAfterTax: totalAnnuityAfterTax,
+                        taxesFirstYear: annuityTaxes
+                    },
+                    lumpSum: {
+                        grossAmount: lumpSum,
+                        afterTax: lumpSumTaxes.netWinnings,
+                        taxes: lumpSumTaxes
+                    }
                 };
             }
             
@@ -448,7 +535,7 @@
             }
             
             formatPercentage(rate) {
-                return rate.toFixed(2) + '%';
+                return (rate).toFixed(2) + '%';
             }
         }
 
@@ -617,6 +704,348 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // Tax Calculator Component
+        function TaxCalculatorTab() {
+            const [jackpotAmount, setJackpotAmount] = useState('');
+            const [selectedState, setSelectedState] = useState('GA');
+            const [otherIncome, setOtherIncome] = useState('');
+            const [calculationResults, setCalculationResults] = useState(null);
+            const [calculator] = useState(new window.LotteryTaxCalculator());
+            const [activeCalculation, setActiveCalculation] = useState('simple');
+
+            useEffect(() => {
+                if (window.currentJackpotData && window.currentJackpotData.amount) {
+                    setJackpotAmount(window.currentJackpotData.amount.toString());
+                }
+            }, []);
+
+            const calculateTaxes = () => {
+                const grossAmount = parseFloat(jackpotAmount);
+                const income = parseFloat(otherIncome) || 0;
+                
+                if (!grossAmount || grossAmount <= 0) {
+                    alert('Please enter a valid jackpot amount');
+                    return;
+                }
+
+                if (activeCalculation === 'simple') {
+                    const results = calculator.calculateTotalTaxes(grossAmount, selectedState, 'single', income);
+                    setCalculationResults({ type: 'simple', data: results });
+                } else {
+                    const results = calculator.calculateAnnuityVsLumpSum(grossAmount, selectedState);
+                    setCalculationResults({ type: 'comparison', data: results });
+                }
+            };
+
+            const clearCalculation = () => {
+                setCalculationResults(null);
+                setJackpotAmount('');
+                setOtherIncome('');
+            };
+
+            const renderSimpleCalculation = (results) => {
+                return React.createElement('div', { className: 'space-y-6' },
+                    React.createElement('div', { className: 'tax-summary-grid' },
+                        React.createElement('div', { className: 'tax-summary-item' },
+                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Gross Winnings'),
+                            React.createElement('div', { className: 'highlight-amount' }, calculator.formatCurrency(results.grossWinnings))
+                        ),
+                        React.createElement('div', { className: 'tax-summary-item negative' },
+                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Total Taxes Owed'),
+                            React.createElement('div', { className: 'highlight-amount warning-text' }, calculator.formatCurrency(results.totalTaxOwed))
+                        ),
+                        React.createElement('div', { className: 'tax-summary-item positive' },
+                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Net After Taxes'),
+                            React.createElement('div', { className: 'highlight-amount positive-text' }, calculator.formatCurrency(results.netWinnings))
+                        ),
+                        React.createElement('div', { className: 'tax-summary-item' },
+                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Effective Tax Rate'),
+                            React.createElement('div', { className: 'highlight-amount' }, calculator.formatPercentage(results.effectiveTaxRate))
+                        )
+                    ),
+
+                    React.createElement('div', { className: 'card' },
+                        React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '💰 Tax Breakdown'),
+                        
+                        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
+                            React.createElement('div', null,
+                                React.createElement('h5', { className: 'font-semibold mb-3 text-blue-700' }, '🏛️ Federal Taxes'),
+                                React.createElement('div', { className: 'space-y-2 text-sm' },
+                                    React.createElement('div', { className: 'flex justify-between' },
+                                        React.createElement('span', null, 'Withheld (24%):'),
+                                        React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(results.federalWithheld))
+                                    ),
+                                    React.createElement('div', { className: 'flex justify-between' },
+                                        React.createElement('span', null, 'Actually Owed:'),
+                                        React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(results.federalTaxOwed))
+                                    ),
+                                    React.createElement('div', { className: 'flex justify-between border-t pt-2' },
+                                        React.createElement('span', { className: 'font-medium' }, 
+                                            results.federalRefundOrOwed >= 0 ? 'Refund Expected:' : 'Additional Owed:'
+                                        ),
+                                        React.createElement('span', { 
+                                            className: `font-bold ${results.federalRefundOrOwed >= 0 ? 'positive-text' : 'warning-text'}`
+                                        }, calculator.formatCurrency(Math.abs(results.federalRefundOrOwed)))
+                                    )
+                                )
+                            ),
+
+                            React.createElement('div', null,
+                                React.createElement('h5', { className: 'font-semibold mb-3 text-green-700' }, 
+                                    `🏛️ ${calculator.stateNames[selectedState]} State Taxes`
+                                ),
+                                React.createElement('div', { className: 'space-y-2 text-sm' },
+                                    React.createElement('div', { className: 'flex justify-between' },
+                                        React.createElement('span', null, 'Tax Rate:'),
+                                        React.createElement('span', { className: 'font-medium' }, 
+                                            calculator.formatPercentage(results.stateTaxRate)
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'flex justify-between' },
+                                        React.createElement('span', null, 'State Tax Owed:'),
+                                        React.createElement('span', { className: 'font-medium' }, 
+                                            calculator.formatCurrency(results.stateTaxOwed)
+                                        )
+                                    ),
+                                    results.stateTaxRate === 0 ? React.createElement('div', { className: 'text-green-600 text-xs font-medium' },
+                                        '✅ No state income tax!'
+                                    ) : null
+                                )
+                            )
+                        )
+                    ),
+
+                    results.federalTaxDetails && results.federalTaxDetails.length > 0 ? React.createElement('div', { className: 'card' },
+                        React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '📊 Federal Tax Bracket Breakdown'),
+                        React.createElement('div', { className: 'overflow-x-auto' },
+                            React.createElement('table', { className: 'tax-breakdown-table' },
+                                React.createElement('thead', null,
+                                    React.createElement('tr', null,
+                                        React.createElement('th', null, 'Tax Bracket'),
+                                        React.createElement('th', null, 'Rate'),
+                                        React.createElement('th', null, 'Taxable Amount'),
+                                        React.createElement('th', null, 'Tax Owed')
+                                    )
+                                ),
+                                React.createElement('tbody', null,
+                                    results.federalTaxDetails.map((bracket, index) =>
+                                        React.createElement('tr', { key: index },
+                                            React.createElement('td', null, bracket.range),
+                                            React.createElement('td', null, bracket.rate),
+                                            React.createElement('td', null, calculator.formatCurrency(bracket.taxableAmount)),
+                                            React.createElement('td', { className: 'font-medium' }, calculator.formatCurrency(bracket.tax))
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ) : null
+                );
+            };
+
+            const renderComparisonCalculation = (results) => {
+                const { annuity, lumpSum } = results;
+                
+                return React.createElement('div', { className: 'space-y-6' },
+                    React.createElement('div', { className: 'comparison-card card' },
+                        React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '⚖️ Annuity vs Lump Sum Comparison'),
+                        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6' },
+                            React.createElement('div', { className: 'text-center' },
+                                React.createElement('div', { className: 'text-3xl mb-2' }, '📅'),
+                                React.createElement('div', { className: 'text-lg font-semibold' }, '30-Year Annuity'),
+                                React.createElement('div', { className: 'text-2xl font-bold text-amber-600' }, 
+                                    calculator.formatCurrency(annuity.estimatedTotalAfterTax)
+                                ),
+                                React.createElement('div', { className: 'text-sm text-gray-600' }, 'Estimated Total After Tax')
+                            ),
+                            React.createElement('div', { className: 'text-center' },
+                                React.createElement('div', { className: 'text-3xl mb-2' }, '💰'),
+                                React.createElement('div', { className: 'text-lg font-semibold' }, 'Lump Sum'),
+                                React.createElement('div', { className: 'text-2xl font-bold text-green-600' }, 
+                                    calculator.formatCurrency(lumpSum.afterTax)
+                                ),
+                                React.createElement('div', { className: 'text-sm text-gray-600' }, 'Immediate After Tax')
+                            )
+                        ),
+                        React.createElement('div', { className: 'text-center mt-4 p-3 bg-blue-50 rounded-lg' },
+                            React.createElement('div', { className: 'font-semibold' }, 
+                                annuity.estimatedTotalAfterTax > lumpSum.afterTax ? 
+                                    '📅 Annuity provides more total value' : 
+                                    '💰 Lump sum provides more immediate value'
+                            ),
+                            React.createElement('div', { className: 'text-sm text-gray-600' },
+                                'Difference: ', calculator.formatCurrency(Math.abs(annuity.estimatedTotalAfterTax - lumpSum.afterTax))
+                            )
+                        )
+                    ),
+
+                    React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6' },
+                        React.createElement('div', { className: 'annuity-card card' },
+                            React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '📅 30-Year Annuity Details'),
+                            React.createElement('div', { className: 'space-y-3' },
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'Total Jackpot:'),
+                                    React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(annuity.totalJackpot))
+                                ),
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'First Year Payment:'),
+                                    React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(annuity.firstYearPayment))
+                                ),
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'First Year After Tax:'),
+                                    React.createElement('span', { className: 'font-medium text-green-600' }, calculator.formatCurrency(annuity.firstYearAfterTax))
+                                ),
+                                React.createElement('div', { className: 'border-t pt-3' },
+                                    React.createElement('div', { className: 'flex justify-between font-bold' },
+                                        React.createElement('span', null, 'Est. Total After Tax:'),
+                                        React.createElement('span', { className: 'text-amber-600' }, calculator.formatCurrency(annuity.estimatedTotalAfterTax))
+                                    )
+                                ),
+                                React.createElement('div', { className: 'text-xs text-gray-600 mt-2' },
+                                    '* Payments increase 5% annually. Tax calculation simplified - actual taxes may vary each year.'
+                                )
+                            )
+                        ),
+
+                        React.createElement('div', { className: 'lump-sum-card card' },
+                            React.createElement('h4', { className: 'text-lg font-semibold mb-4' }, '💰 Lump Sum Details'),
+                            React.createElement('div', { className: 'space-y-3' },
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'Gross Lump Sum:'),
+                                    React.createElement('span', { className: 'font-medium' }, calculator.formatCurrency(lumpSum.grossAmount))
+                                ),
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'Federal Taxes:'),
+                                    React.createElement('span', { className: 'font-medium text-red-600' }, calculator.formatCurrency(lumpSum.taxes.federalTaxOwed))
+                                ),
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'State Taxes:'),
+                                    React.createElement('span', { className: 'font-medium text-red-600' }, calculator.formatCurrency(lumpSum.taxes.stateTaxOwed))
+                                ),
+                                React.createElement('div', { className: 'flex justify-between' },
+                                    React.createElement('span', null, 'Total Taxes:'),
+                                    React.createElement('span', { className: 'font-medium text-red-600' }, calculator.formatCurrency(lumpSum.taxes.totalTaxOwed))
+                                ),
+                                React.createElement('div', { className: 'border-t pt-3' },
+                                    React.createElement('div', { className: 'flex justify-between font-bold' },
+                                        React.createElement('span', null, 'Net After Taxes:'),
+                                        React.createElement('span', { className: 'text-green-600' }, calculator.formatCurrency(lumpSum.afterTax))
+                                    )
+                                ),
+                                React.createElement('div', { className: 'text-xs text-gray-600 mt-2' },
+                                    `Effective tax rate: ${calculator.formatPercentage(lumpSum.taxes.effectiveTaxRate)}`
+                                )
+                            )
+                        )
+                    )
+                );
+            };
+
+            const states = Object.entries(calculator.stateNames).map(([code, name]) => ({ code, name }));
+
+            return React.createElement('div', { className: 'space-y-6' },
+                React.createElement('div', { className: 'card' },
+                    React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '🧮 Lottery Tax Calculator'),
+                    
+                    React.createElement('div', { className: 'mb-4' },
+                        React.createElement('div', { className: 'flex gap-2 mb-3' },
+                            React.createElement('button', {
+                                onClick: () => setActiveCalculation('simple'),
+                                className: `btn btn-sm ${activeCalculation === 'simple' ? 'btn-primary' : 'btn-secondary'}`
+                            }, '📊 Simple Tax Calculation'),
+                            React.createElement('button', {
+                                onClick: () => setActiveCalculation('comparison'),
+                                className: `btn btn-sm ${activeCalculation === 'comparison' ? 'btn-primary' : 'btn-secondary'}`
+                            }, '⚖️ Annuity vs Lump Sum')
+                        )
+                    ),
+                    
+                    React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4' },
+                        React.createElement('div', { className: 'tax-input-group' },
+                            React.createElement('label', null, 
+                                activeCalculation === 'simple' ? '💰 Winnings Amount' : '🎰 Total Jackpot'
+                            ),
+                            React.createElement('input', {
+                                type: 'number',
+                                value: jackpotAmount,
+                                onChange: (e) => setJackpotAmount(e.target.value),
+                                placeholder: activeCalculation === 'simple' ? '1000000' : '100000000',
+                                min: '0'
+                            }),
+                            window.currentJackpotData ? React.createElement('button', {
+                                onClick: () => setJackpotAmount(
+                                    activeCalculation === 'simple' ? 
+                                        (window.currentJackpotData.cashValue || window.currentJackpotData.amount * 0.6).toString() :
+                                        window.currentJackpotData.amount.toString()
+                                ),
+                                className: 'btn btn-secondary btn-sm text-xs'
+                            }, activeCalculation === 'simple' ? 'Use Current Cash' : 'Use Current Jackpot') : null
+                        ),
+
+                        React.createElement('div', { className: 'tax-input-group' },
+                            React.createElement('label', null, '🏛️ Your State'),
+                            React.createElement('select', {
+                                value: selectedState,
+                                onChange: (e) => setSelectedState(e.target.value)
+                            },
+                                states.map(state =>
+                                    React.createElement('option', { key: state.code, value: state.code },
+                                        `${state.name} (${calculator.formatPercentage(calculator.stateTaxRates[state.code] * 100)})`
+                                    )
+                                )
+                            )
+                        ),
+
+                        activeCalculation === 'simple' ? React.createElement('div', { className: 'tax-input-group' },
+                            React.createElement('label', null, '💼 Other Annual Income'),
+                            React.createElement('input', {
+                                type: 'number',
+                                value: otherIncome,
+                                onChange: (e) => setOtherIncome(e.target.value),
+                                placeholder: '75000',
+                                min: '0'
+                            })
+                        ) : null,
+
+                        React.createElement('div', { className: 'tax-input-group justify-end' },
+                            React.createElement('label', { className: 'invisible' }, 'Actions'),
+                            React.createElement('div', { className: 'flex gap-2' },
+                                React.createElement('button', {
+                                    onClick: calculateTaxes,
+                                    className: 'btn btn-primary'
+                                }, '🔢 Calculate'),
+                                calculationResults ? React.createElement('button', {
+                                    onClick: clearCalculation,
+                                    className: 'btn btn-secondary'
+                                }, '🗑️ Clear') : null
+                            )
+                        )
+                    ),
+                    
+                    React.createElement('div', { className: 'warning-banner' },
+                        React.createElement('p', { className: 'text-amber-700 text-xs' },
+                            '⚠️ Tax calculations are estimates for educational purposes. Consult a tax professional for advice. ',
+                            'Federal withholding is 24% for lottery winnings over $5,000.'
+                        )
+                    )
+                ),
+
+                calculationResults ? React.createElement('div', null,
+                    calculationResults.type === 'simple' ? 
+                        renderSimpleCalculation(calculationResults.data) :
+                        renderComparisonCalculation(calculationResults.data)
+                ) : React.createElement('div', { className: 'card text-center py-8' },
+                    React.createElement('div', { className: 'text-4xl mb-4' }, '🧮'),
+                    React.createElement('p', { className: 'text-gray-600' }, 'Enter jackpot amount and click Calculate to see tax breakdown'),
+                    React.createElement('p', { className: 'text-xs text-gray-500 mt-2' }, 
+                        'Get precise tax estimates and compare annuity vs lump sum options'
+                    )
+                )
+            );
+        }
+
+        window.TaxCalculatorTab = TaxCalculatorTab;
+
         // Main Component
         function AdvancedLotterySystem() {
             const [selectedNumbers, setSelectedNumbers] = useState([]);
@@ -640,6 +1069,8 @@
             const [aiApiKey, setAiApiKey] = useState('');
             const [isLoadingAI, setIsLoadingAI] = useState(false);
             const [aiEnabled, setAiEnabled] = useState(false);
+            
+            const [systemPerformance, setSystemPerformance] = useState(null);
 
             useEffect(() => {
                 const initializeData = async () => {
@@ -650,36 +1081,103 @@
                 initializeData();
             }, []);
 
-            const fetchHistoricalData = async () => {
+            const fetchHistoricalData = async (customLimit = null) => {
+                const limit = customLimit || historicalRecordsLimit;
                 setIsLoadingHistory(true);
                 
+                console.log(`📊 Fetching ${limit} historical drawings...`);
+                
                 try {
-                    const response = await fetch(`/api/powerball-history?limit=${historicalRecordsLimit}`, {
+                    const response = await fetch(`/api/powerball-history?limit=${limit}`, {
                         method: 'GET',
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
                     });
                     
                     const data = await response.json();
+                    console.log(`📊 Historical data response:`, data);
                     
                     if (data.success && data.dataAvailable && data.statistics) {
                         setHistoricalStats(data.statistics);
                         setHistoricalDataAvailable(true);
                         
+                        console.log(`✅ Loaded ${data.statistics.totalDrawings} drawings for analysis`);
+                        
                         if (window.generateAdvancedQuickSelection) {
                             const advancedSelection = await window.generateAdvancedQuickSelection(data.statistics);
                             setQuickSelectionSets(advancedSelection);
+                            console.log(`✅ Generated ${advancedSelection.length} initial selections`);
                         }
                     } else {
-                        setHistoricalStats(null);
+                        console.warn('Historical data not available, using fallback');
+                        setHistoricalStats(generateFallbackStats(limit));
                         setHistoricalDataAvailable(false);
                     }
                 } catch (error) {
                     console.error('Historical Data Error:', error);
-                    setHistoricalStats(null);
+                    setHistoricalStats(generateFallbackStats(limit));
                     setHistoricalDataAvailable(false);
                 }
                 
                 setIsLoadingHistory(false);
+            };
+
+            const handleDataLimitChange = async (newLimit) => {
+                console.log(`📊 Changing data limit from ${historicalRecordsLimit} to ${newLimit}`);
+                
+                setHistoricalRecordsLimit(newLimit);
+                setIsLoadingHistory(true);
+                setDataStatus(`🔄 Loading ${newLimit} historical drawings for analysis...`);
+                
+                try {
+                    const response = await fetch(`/api/powerball-history?limit=${newLimit}`, {
+                        method: 'GET',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    console.log(`📊 Received data for ${newLimit} limit:`, data);
+                    
+                    if (data.success && data.dataAvailable && data.statistics) {
+                        setHistoricalStats(data.statistics);
+                        setHistoricalDataAvailable(true);
+                        
+                        console.log(`✅ Updated analysis with ${data.statistics.totalDrawings} drawings`);
+                        setDataStatus(`✅ Analysis updated with ${data.statistics.totalDrawings} drawings`);
+                        
+                        if (window.generateAdvancedQuickSelection) {
+                            setDataStatus(`🤖✨ Regenerating selections with ${newLimit} drawings...`);
+                            
+                            try {
+                                const newSelections = await window.generateAdvancedQuickSelection(data.statistics);
+                                setQuickSelectionSets(newSelections);
+                                console.log(`✅ Generated ${newSelections.length} new selections with updated data`);
+                                setDataStatus(`✅ ${newSelections.length} selections generated with ${data.statistics.totalDrawings} drawings`);
+                            } catch (selectionError) {
+                                console.error('Selection generation failed:', selectionError);
+                                setDataStatus(`⚠️ Data updated but selection generation failed`);
+                            }
+                        }
+                        
+                    } else {
+                        console.warn('No valid historical data received');
+                        setHistoricalStats(generateFallbackStats(newLimit));
+                        setHistoricalDataAvailable(false);
+                        setDataStatus(`⚠️ Using fallback data (${newLimit} limit)`);
+                    }
+                } catch (error) {
+                    console.error('Data limit change failed:', error);
+                    setHistoricalStats(generateFallbackStats(newLimit));
+                    setHistoricalDataAvailable(false);
+                    setDataStatus(`❌ Failed to load ${newLimit} drawings`);
+                } finally {
+                    setIsLoadingHistory(false);
+                }
             };
 
             const fetchLatestPowerballData = async () => {
@@ -689,7 +1187,10 @@
                 try {
                     const response = await fetch('/api/powerball', {
                         method: 'GET',
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
                     });
                     
                     const data = await response.json();
@@ -710,6 +1211,10 @@
                         setLiveDataAvailable(false);
                         window.currentJackpotData = null;
                         setDataStatus(data.message || 'LIVE POWERBALL DATA TEMPORARILY UNAVAILABLE');
+                        
+                        if (data.nextDrawing) {
+                            setNextDrawDate(`${data.nextDrawing.date} @ ${data.nextDrawing.time}`);
+                        }
                     }
                 } catch (error) {
                     console.error('API Error:', error);
@@ -725,29 +1230,51 @@
             const enableAI = async () => {
                 const trimmedKey = aiApiKey.trim();
                 
-                if (!trimmedKey || !window.claudeAnalyzer.validateApiKey(trimmedKey)) {
+                if (!trimmedKey) {
+                    alert('Please enter your Anthropic API key');
+                    return;
+                }
+                
+                if (!window.claudeAnalyzer.validateApiKey(trimmedKey)) {
                     alert('Please enter a valid Anthropic API key (starts with sk-ant-)');
                     return;
                 }
                 
                 try {
                     window.claudeAnalyzer.initialize(trimmedKey);
-                    setDataStatus('🔄 Testing Claude Opus 4 connection...');
+                    
+                    setDataStatus('🔄 Testing Claude Opus 4 hybrid connection...');
                     setIsLoadingAI(true);
                     
                     const connectionTest = await window.claudeAnalyzer.testConnection();
                     
                     if (connectionTest.success) {
                         setAiEnabled(true);
-                        setDataStatus('✅ Claude Opus 4 hybrid system enabled successfully');
+                        localStorage.setItem('lottery_ai_enabled', 'true');
+                        setDataStatus('✅ Claude Opus 4 hybrid system enabled and connected successfully');
+                        
                         await generateClaudeHybridSelection();
+                        
+                        console.log('Claude Opus 4 hybrid system enabled successfully');
                     } else {
                         throw new Error(connectionTest.error || 'Connection test failed');
                     }
+                    
                 } catch (error) {
                     console.error('Claude Opus 4 initialization failed:', error);
                     setAiEnabled(false);
-                    alert(`Failed to connect to Claude Opus 4: ${error.message}`);
+                    localStorage.removeItem('lottery_ai_enabled');
+                    
+                    let errorMessage = 'Failed to connect to Claude Opus 4: ';
+                    if (error.message.includes('401') || error.message.includes('403')) {
+                        errorMessage += 'Invalid API key. Please check your Anthropic API key.';
+                    } else if (error.message.includes('429')) {
+                        errorMessage += 'Rate limit exceeded. Please wait and try again.';
+                    } else {
+                        errorMessage += error.message;
+                    }
+                    
+                    alert(errorMessage);
                     setDataStatus('❌ Claude Opus 4 connection failed');
                 } finally {
                     setIsLoadingAI(false);
@@ -763,6 +1290,8 @@
                 setIsLoadingAI(true);
                 
                 try {
+                    console.log('🤖✨ Generating Claude Opus 4 + Algorithm hybrid selections...');
+                    
                     const hybridSelections = await window.claudeAnalyzer.generateAdvancedHybridQuickSelection(
                         historicalStats,
                         currentJackpot,
@@ -771,10 +1300,16 @@
                     );
                     
                     setQuickSelectionSets(hybridSelections);
-                    setDataStatus('🤖✨ Claude Opus 4 + 6 Algorithms hybrid selections generated!');
+                    setDataStatus('🤖✨ Claude Opus 4 + 6 Algorithms hybrid selections generated successfully!');
+                    
                 } catch (error) {
                     console.error('Claude hybrid selection failed:', error);
-                    alert(`Claude Opus 4 Error: ${error.message}`);
+                    alert(`Claude Hybrid Error: ${error.message}`);
+                    
+                    if (window.generateAdvancedQuickSelection) {
+                        const fallbackSelection = await window.generateAdvancedQuickSelection(historicalStats);
+                        setQuickSelectionSets(fallbackSelection);
+                    }
                 } finally {
                     setIsLoadingAI(false);
                 }
@@ -805,10 +1340,86 @@
                 setPowerball(Math.floor(Math.random() * 26) + 1);
             };
 
+            const generateFallbackStats = (recordCount = 150) => {
+                const numberFreq = {};
+                for (let i = 1; i <= 69; i++) {
+                    numberFreq[i] = { 
+                        total: Math.floor(Math.random() * Math.min(40, recordCount * 0.3)) + 5, 
+                        recent: Math.floor(Math.random() * Math.min(8, recordCount * 0.05)) + 1 
+                    };
+                }
+                
+                const hotNumbers = Object.entries(numberFreq)
+                    .sort((a, b) => (b[1].recent + b[1].total * 0.1) - (a[1].recent + a[1].total * 0.1))
+                    .slice(0, 20)
+                    .map(([num]) => parseInt(num));
+                    
+                return {
+                    numberFrequency: numberFreq,
+                    hotNumbers,
+                    totalDrawings: recordCount,
+                    dataSource: 'Simulated Data',
+                    drawings: []
+                };
+            };
+
+            const dataLimitOptions = [
+                { value: 50, label: '50 drawings (2 months)' },
+                { value: 100, label: '100 drawings (4 months)' },
+                { value: 250, label: '250 drawings (1 year)' },
+                { value: 500, label: '500 drawings (2 years)' },
+                { value: 1000, label: '1000 drawings (4 years)' },
+                { value: 1500, label: '1500 drawings (6 years)' },
+                { value: 2000, label: '2000 drawings (8+ years)' }
+            ];
+
             const renderTabContent = () => {
                 switch (activeTab) {
                     case 'quick-selection':
                         return React.createElement('div', { className: 'space-y-4' },
+                            React.createElement('div', { className: 'data-selector' },
+                                React.createElement('div', { className: 'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3' },
+                                    React.createElement('div', null,
+                                        React.createElement('h4', { className: 'text-sm font-semibold text-gray-700' }, '📊 Historical Data Range'),
+                                        React.createElement('p', { className: 'text-xs text-gray-600' }, 
+                                            isLoadingHistory ? 'Updating analysis...' : 'Select amount of historical data for analysis'
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'flex items-center gap-2' },
+                                        React.createElement('select', {
+                                            value: historicalRecordsLimit,
+                                            onChange: (e) => handleDataLimitChange(parseInt(e.target.value)),
+                                            disabled: isLoadingHistory,
+                                            className: 'px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white disabled:opacity-50'
+                                        },
+                                            dataLimitOptions.map(option =>
+                                                React.createElement('option', { 
+                                                    key: option.value, 
+                                                    value: option.value 
+                                                }, option.label)
+                                            )
+                                        ),
+                                        isLoadingHistory ? React.createElement('div', { className: 'loading-spinner' }) : null
+                                    )
+                                ),
+                                
+                                historicalStats ? React.createElement('div', { className: 'grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs' },
+                                    React.createElement('div', { className: 'text-gray-600' },
+                                        `📈 Currently analyzing: ${historicalStats.totalDrawings} drawings`
+                                    ),
+                                    React.createElement('div', { className: 'text-gray-600' },
+                                        `🔥 Data source: ${historicalStats.dataSource || 'API'}`
+                                    ),
+                                    React.createElement('div', { className: 'text-gray-600' },
+                                        `🎯 Range: ${historicalStats.dateRange ? 
+                                            `${historicalStats.dateRange.earliest} to ${historicalStats.dateRange.latest}` : 
+                                            'Full range'}`
+                                    )
+                                ) : React.createElement('div', { className: 'text-xs text-gray-500' },
+                                    'No historical data loaded'
+                                )
+                            ),
+
                             React.createElement('div', { className: 'card-compact enhanced-prediction-card-opus4' },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement('div', { className: 'flex items-center gap-2' },
@@ -940,9 +1551,9 @@
                                             ),
                                             
                                             React.createElement('p', { className: 'text-xs text-gray-600 line-clamp-2' }, 
-                                                selection.description.length > 90 ? 
+                                                selection.description && selection.description.length > 90 ? 
                                                     selection.description.substring(0, 90) + '...' : 
-                                                    selection.description
+                                                    selection.description || 'Advanced mathematical analysis'
                                             )
                                         );
                                     })
@@ -981,7 +1592,15 @@
                                         React.createElement('button', {
                                             onClick: clearSelection,
                                             className: 'btn btn-secondary'
-                                        }, '🗑️ Clear')
+                                        }, '🗑️ Clear'),
+                                        selectedNumbers.length === 5 && powerball ? React.createElement('button', {
+                                            onClick: () => {
+                                                const ticket = `${selectedNumbers.join(', ')} | PB: ${powerball}`;
+                                                navigator.clipboard.writeText(ticket);
+                                                alert('Selection copied to clipboard!');
+                                            },
+                                            className: 'btn btn-secondary'
+                                        }, '📋 Copy') : null
                                     )
                                 ),
 
@@ -1019,6 +1638,81 @@
                             )
                         );
 
+                    case 'tax-calculator':
+                        return window.TaxCalculatorTab ? React.createElement(window.TaxCalculatorTab) : 
+                            React.createElement('div', { className: 'text-center py-8' },
+                                React.createElement('p', null, 'Tax Calculator loading...')
+                            );
+
+                    case 'analysis':
+                        return React.createElement('div', { className: 'space-y-6' },
+                            React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '📊 Data Analysis & Statistics'),
+                                
+                                React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-4' },
+                                    React.createElement('div', { className: 'p-3 bg-gray-50 rounded-lg' },
+                                        React.createElement('h4', { className: 'font-medium text-sm mb-1' }, 'Live Data Status'),
+                                        React.createElement('p', { className: 'text-xs' }, liveDataAvailable ? '✅ Connected' : '❌ Unavailable'),
+                                        React.createElement('p', { className: 'text-xs text-gray-600' }, lastUpdated ? `Updated: ${lastUpdated}` : 'Not updated')
+                                    ),
+                                    React.createElement('div', { className: 'p-3 bg-gray-50 rounded-lg' },
+                                        React.createElement('h4', { className: 'font-medium text-sm mb-1' }, 'Historical Data'),
+                                        React.createElement('p', { className: 'text-xs' }, historicalDataAvailable ? '✅ Available' : '❌ Limited'),
+                                        React.createElement('p', { className: 'text-xs text-gray-600' }, 
+                                            historicalStats ? `${historicalStats.totalDrawings} drawings` : 'No data'
+                                        )
+                                    )
+                                ),
+
+                                historicalStats && historicalStats.hotNumbers ? React.createElement('div', { className: 'space-y-4' },
+                                    React.createElement('div', null,
+                                        React.createElement('h4', { className: 'font-medium text-sm mb-2' }, '🔥 Hot Numbers (Most Frequent)'),
+                                        React.createElement('div', { className: 'flex flex-wrap gap-2' },
+                                            historicalStats.hotNumbers.slice(0, 15).map(num =>
+                                                React.createElement('span', { 
+                                                    key: num, 
+                                                    className: 'px-2 py-1 bg-red-100 text-red-800 rounded text-xs'
+                                                }, num)
+                                            )
+                                        )
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('h4', { className: 'font-medium text-sm mb-2' }, '❄️ Cold Numbers (Least Frequent)'),
+                                        React.createElement('div', { className: 'flex flex-wrap gap-2' },
+                                            historicalStats.coldNumbers ? historicalStats.coldNumbers.slice(0, 15).map(num =>
+                                                React.createElement('span', { 
+                                                    key: num, 
+                                                    className: 'px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs'
+                                                }, num)
+                                            ) : React.createElement('span', { className: 'text-gray-500 text-xs' }, 'Data not available')
+                                        )
+                                    )
+                                ) : React.createElement('p', { className: 'text-gray-500 text-sm' }, 'Statistical analysis will appear here when historical data is loaded.')
+                            ),
+
+                            systemPerformance ? React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '⚙️ System Performance'),
+                                React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4' },
+                                    React.createElement('div', { className: 'text-center' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-blue-600' }, systemPerformance.averageHitRate + '%'),
+                                        React.createElement('div', { className: 'text-xs text-gray-600' }, 'Avg Hit Rate')
+                                    ),
+                                    React.createElement('div', { className: 'text-center' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-green-600' }, systemPerformance.predictionsGenerated),
+                                        React.createElement('div', { className: 'text-xs text-gray-600' }, 'Predictions')
+                                    ),
+                                    React.createElement('div', { className: 'text-center' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-purple-600' }, aiEnabled ? 'OPUS 4' : 'LOCAL'),
+                                        React.createElement('div', { className: 'text-xs text-gray-600' }, 'Mode')
+                                    ),
+                                    React.createElement('div', { className: 'text-center' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-orange-600' }, systemPerformance.status.toUpperCase()),
+                                        React.createElement('div', { className: 'text-xs text-gray-600' }, 'Status')
+                                    )
+                                )
+                            ) : null
+                        );
+
                     default:
                         return React.createElement('div', { className: 'text-center py-8' },
                             React.createElement('p', null, 'Select a tab to view content')
@@ -1044,7 +1738,7 @@
                                     borderRadius: '50%',
                                     fontSize: '1.5rem'
                                 } 
-                            }, aiEnabled ? '🤖✨' : '⚠️'),
+                            }, aiEnabled ? '🤖✨' : liveDataAvailable ? '🎯' : '⚠️'),
                             React.createElement('div', null,
                                 React.createElement('div', { style: { opacity: 0.9, fontSize: '0.75rem', fontWeight: 600 } },
                                     aiEnabled ? 'Claude Opus 4 + 6 Algorithms Hybrid Intelligence' : 'Advanced Powerball System'
@@ -1096,7 +1790,9 @@
                     React.createElement('div', { className: 'flex border-b border-gray-200' },
                         [
                             { id: 'quick-selection', label: aiEnabled ? '🤖✨ AI Hybrid' : '🧮 Algorithms', icon: aiEnabled ? '🤖✨' : '🧮' },
-                            { id: 'calculator', label: '🎯 Calculator', icon: '🎯' }
+                            { id: 'calculator', label: '🎯 Calculator', icon: '🎯' },
+                            { id: 'tax-calculator', label: '💰 Tax Calculator', icon: '💰' },
+                            { id: 'analysis', label: '📊 Analysis', icon: '📊' }
                         ].map(tab =>
                             React.createElement('button', {
                                 key: tab.id,
