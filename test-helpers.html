@@ -12,6 +12,7 @@
         .test-button { margin: 5px; padding: 10px; background: #007cba; color: white; border: none; cursor: pointer; }
         .test-button:hover { background: #005a87; }
         .loading { color: #666; font-style: italic; }
+        .console-log { background: #f5f5f5; padding: 10px; margin: 10px 0; font-family: monospace; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -24,6 +25,11 @@
     <button class="test-button" onclick="testNumberGeneration('hybrid')">Test Hybrid Generation</button>
     <button class="test-button" onclick="testNumberGeneration('hot-cold')">Test Hot-Cold Generation</button>
     <button class="test-button" onclick="testServiceInitialization()">Test Service Initialization</button>
+    <button class="test-button" onclick="testUserSelection()">Test User Selection</button>
+    <button class="test-button" onclick="testNumberAnalysis()">Test Number Analysis</button>
+    <button class="test-button" onclick="clearResults()">Clear Results</button>
+
+    <div id="console-output"></div>
 
     <!-- Load utility modules -->
     <script src="src/utils/constants.js"></script>
@@ -36,9 +42,18 @@
 
     <script>
         let testResults = [];
+        let consoleOutput = [];
+        
+        // Override console.log to capture output
+        const originalConsoleLog = console.log;
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            consoleOutput.push(args.join(' '));
+            updateConsoleDisplay();
+        };
         
         function addTestResult(test, passed, details) {
-            testResults.push({ test, passed, details });
+            testResults.push({ test, passed, details, timestamp: new Date().toLocaleTimeString() });
             updateDisplay();
         }
         
@@ -47,13 +62,28 @@
             resultsDiv.innerHTML = '<h2>Test Results:</h2>' + 
                 testResults.map(result => 
                     `<div class="test-result ${result.passed ? 'passed' : 'failed'}">
-                        <strong>${result.test}:</strong> ${result.passed ? 'PASSED' : 'FAILED'}<br>
+                        <strong>${result.test}:</strong> ${result.passed ? 'PASSED' : 'FAILED'} <small>(${result.timestamp})</small><br>
                         <small>${result.details}</small>
                     </div>`
                 ).join('');
         }
         
+        function updateConsoleDisplay() {
+            const consoleDiv = document.getElementById('console-output');
+            consoleDiv.innerHTML = '<h3>Console Output:</h3><div class="console-log">' + 
+                consoleOutput.slice(-20).join('\n') + '</div>';
+        }
+        
+        function clearResults() {
+            testResults = [];
+            consoleOutput = [];
+            updateDisplay();
+            updateConsoleDisplay();
+        }
+        
         function runBasicTests() {
+            console.log('Starting basic tests...');
+            
             // Test 1: Check if performanceMetrics is initialized
             addTestResult(
                 'Performance Metrics Initialization',
@@ -135,11 +165,22 @@
                 window.lotteryService && typeof window.lotteryService.initialize === 'function',
                 window.lotteryService ? `initialize: ${typeof window.lotteryService.initialize}` : 'Service not available'
             );
+            
+            // Test 9: Check service methods
+            if (window.lotteryService) {
+                const methods = ['generateNumbers', 'saveUserSelection', 'analyzeNumbers', 'getCurrentDrawing'];
+                const methodsExist = methods.every(method => typeof window.lotteryService[method] === 'function');
+                addTestResult(
+                    'Service Methods',
+                    methodsExist,
+                    methods.map(method => `${method}: ${typeof window.lotteryService[method]}`).join(', ')
+                );
+            }
         }
         
         async function testServiceInitialization() {
             try {
-                addTestResult('Service Initialization Test', false, 'Testing...');
+                console.log('Testing service initialization...');
                 
                 if (!window.lotteryService) {
                     addTestResult('Service Initialization Test', false, 'Lottery service not available');
@@ -186,6 +227,66 @@
             } catch (error) {
                 addTestResult(
                     `${algorithm} Generation`,
+                    false,
+                    `Exception: ${error.message}`
+                );
+            }
+        }
+        
+        async function testUserSelection() {
+            try {
+                console.log('Testing user selection...');
+                
+                if (!window.lotteryService) {
+                    addTestResult('User Selection Test', false, 'Lottery service not available');
+                    return;
+                }
+                
+                const testNumbers = [1, 15, 23, 42, 67];
+                const testPowerball = 12;
+                
+                const result = window.lotteryService.saveUserSelection(testNumbers, testPowerball);
+                
+                addTestResult(
+                    'User Selection Test',
+                    result.success,
+                    result.success ? 
+                        `Saved selection: ${testNumbers.join(', ')} + ${testPowerball}` :
+                        `Error: ${result.error}`
+                );
+            } catch (error) {
+                addTestResult(
+                    'User Selection Test',
+                    false,
+                    `Exception: ${error.message}`
+                );
+            }
+        }
+        
+        async function testNumberAnalysis() {
+            try {
+                console.log('Testing number analysis...');
+                
+                if (!window.lotteryService) {
+                    addTestResult('Number Analysis Test', false, 'Lottery service not available');
+                    return;
+                }
+                
+                const testNumbers = [5, 12, 28, 35, 49];
+                const testPowerball = 8;
+                
+                const result = await window.lotteryService.analyzeNumbers(testNumbers, testPowerball);
+                
+                addTestResult(
+                    'Number Analysis Test',
+                    result.success,
+                    result.success ? 
+                        `Analysis completed for: ${testNumbers.join(', ')} + ${testPowerball}` :
+                        `Error: ${result.error}`
+                );
+            } catch (error) {
+                addTestResult(
+                    'Number Analysis Test',
                     false,
                     `Exception: ${error.message}`
                 );
