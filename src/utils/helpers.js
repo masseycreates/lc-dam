@@ -1,325 +1,346 @@
-// Utility functions for formatting, validation, and common operations
-export const formatCurrency = (amount) => {
-    if (typeof amount !== 'number' || isNaN(amount)) return '$0';
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(amount);
-};
+// Advanced Lottery Intelligence System - Helper Utilities
+// Global helper functions available throughout the application
 
-export const formatNumber = (number) => {
-    if (typeof number !== 'number' || isNaN(number)) return '0';
-    return new Intl.NumberFormat('en-US').format(number);
-};
+window.LotteryHelpers = {
+    // Number formatting utilities
+    formatCurrency: function(amount, options = {}) {
+        const { 
+            minimumFractionDigits = 0, 
+            maximumFractionDigits = 0,
+            currency = 'USD',
+            locale = 'en-US'
+        } = options;
+        
+        return new Intl.NumberFormat(locale, {
+            style: 'currency',
+            currency,
+            minimumFractionDigits,
+            maximumFractionDigits
+        }).format(amount);
+    },
 
-export const formatPercentage = (decimal) => {
-    if (typeof decimal !== 'number' || isNaN(decimal)) return '0%';
-    return new Intl.NumberFormat('en-US', {
-        style: 'percent',
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 2
-    }).format(decimal / 100);
-};
+    formatNumber: function(number, options = {}) {
+        const { 
+            minimumFractionDigits = 0,
+            maximumFractionDigits = 3,
+            locale = 'en-US'
+        } = options;
+        
+        return new Intl.NumberFormat(locale, {
+            minimumFractionDigits,
+            maximumFractionDigits
+        }).format(number);
+    },
 
-export const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    } catch (error) {
-        return 'Invalid Date';
-    }
-};
+    formatPercentage: function(decimal, options = {}) {
+        const { 
+            minimumFractionDigits = 1,
+            maximumFractionDigits = 2,
+            locale = 'en-US'
+        } = options;
+        
+        return new Intl.NumberFormat(locale, {
+            style: 'percent',
+            minimumFractionDigits,
+            maximumFractionDigits
+        }).format(decimal);
+    },
 
-export const formatDateTime = (dateString) => {
-    if (!dateString) return 'Unknown';
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    } catch (error) {
-        return 'Invalid Date';
-    }
-};
+    formatDate: function(date, options = {}) {
+        const { 
+            dateStyle = 'medium',
+            timeStyle = 'short',
+            locale = 'en-US'
+        } = options;
+        
+        return new Intl.DateTimeFormat(locale, {
+            dateStyle,
+            timeStyle
+        }).format(new Date(date));
+    },
 
-// Validation functions
-export const validateLotteryNumbers = (numbers) => {
-    if (!Array.isArray(numbers) || numbers.length !== 5) {
-        return { valid: false, error: 'Must have exactly 5 numbers' };
-    }
-
-    for (const num of numbers) {
-        if (!Number.isInteger(num) || num < 1 || num > 69) {
+    // Validation utilities
+    validateLotteryNumbers: function(numbers) {
+        if (!Array.isArray(numbers) || numbers.length !== 5) {
+            return { valid: false, error: 'Must provide exactly 5 main numbers' };
+        }
+        
+        const uniqueNumbers = [...new Set(numbers)];
+        if (uniqueNumbers.length !== 5) {
+            return { valid: false, error: 'All numbers must be unique' };
+        }
+        
+        const invalidNumbers = numbers.filter(num => 
+            !Number.isInteger(num) || num < 1 || num > 69
+        );
+        
+        if (invalidNumbers.length > 0) {
             return { valid: false, error: 'Numbers must be integers between 1 and 69' };
         }
-    }
+        
+        return { valid: true };
+    },
 
-    const uniqueNumbers = new Set(numbers);
-    if (uniqueNumbers.size !== 5) {
-        return { valid: false, error: 'All numbers must be unique' };
-    }
+    validatePowerball: function(powerball) {
+        if (!Number.isInteger(powerball) || powerball < 1 || powerball > 26) {
+            return { valid: false, error: 'Powerball must be an integer between 1 and 26' };
+        }
+        
+        return { valid: true };
+    },
 
-    return { valid: true };
-};
+    validateApiKey: function(apiKey) {
+        if (!apiKey || typeof apiKey !== 'string') {
+            return { valid: false, error: 'API key is required' };
+        }
+        
+        if (!apiKey.startsWith('sk-ant-')) {
+            return { valid: false, error: 'Invalid Claude API key format' };
+        }
+        
+        if (apiKey.length < 20) {
+            return { valid: false, error: 'API key appears to be too short' };
+        }
+        
+        return { valid: true };
+    },
 
-export const validatePowerball = (powerball) => {
-    if (!Number.isInteger(powerball) || powerball < 1 || powerball > 26) {
-        return { valid: false, error: 'Powerball must be an integer between 1 and 26' };
-    }
-    return { valid: true };
-};
+    // Data processing utilities
+    processHistoricalData: function(rawData) {
+        if (!rawData || !Array.isArray(rawData.drawings)) {
+            return null;
+        }
 
-export const validateApiKey = (apiKey) => {
-    if (!apiKey || typeof apiKey !== 'string') {
-        return { valid: false, error: 'API key is required' };
-    }
-
-    if (apiKey.length < 10) {
-        return { valid: false, error: 'API key appears to be too short' };
-    }
-
-    // Basic format validation for Claude API keys
-    if (!apiKey.startsWith('sk-ant-')) {
-        return { valid: false, error: 'Invalid Claude API key format' };
-    }
-
-    return { valid: true };
-};
-
-// Data processing utilities
-export const processHistoricalData = (rawData) => {
-    if (!rawData || !Array.isArray(rawData)) {
-        return null;
-    }
-
-    const numberFrequency = {};
-    const powerballs = {};
-    const recentDrawings = [];
-
-    rawData.forEach(drawing => {
-        if (drawing.numbers && Array.isArray(drawing.numbers)) {
-            // Process main numbers
-            drawing.numbers.forEach(num => {
-                numberFrequency[num] = (numberFrequency[num] || 0) + 1;
-            });
-
-            // Process powerball
-            if (drawing.powerball) {
-                powerballs[drawing.powerball] = (powerballs[drawing.powerball] || 0) + 1;
+        const drawings = rawData.drawings;
+        const totalDrawings = drawings.length;
+        
+        // Calculate frequency statistics
+        const numberFrequency = {};
+        const powerballFrequency = {};
+        
+        for (let i = 1; i <= 69; i++) {
+            numberFrequency[i] = 0;
+        }
+        
+        for (let i = 1; i <= 26; i++) {
+            powerballFrequency[i] = 0;
+        }
+        
+        drawings.forEach(drawing => {
+            if (drawing.numbers && Array.isArray(drawing.numbers)) {
+                drawing.numbers.forEach(num => {
+                    if (numberFrequency[num] !== undefined) {
+                        numberFrequency[num]++;
+                    }
+                });
             }
-
-            // Add to recent drawings
-            recentDrawings.push({
-                date: drawing.date,
-                numbers: drawing.numbers,
-                powerball: drawing.powerball
-            });
-        }
-    });
-
-    return {
-        numberFrequency,
-        powerballs,
-        recentDrawings: recentDrawings.slice(0, 100), // Keep last 100 drawings
-        totalDrawings: rawData.length,
-        dateRange: {
-            from: rawData[rawData.length - 1]?.date,
-            to: rawData[0]?.date
-        }
-    };
-};
-
-export const calculateStatistics = (historicalData) => {
-    if (!historicalData) return null;
-
-    const { numberFrequency, powerballs, totalDrawings } = historicalData;
-
-    // Find most/least frequent numbers
-    const sortedNumbers = Object.entries(numberFrequency)
-        .sort(([,a], [,b]) => b - a)
-        .map(([num, freq]) => ({ number: parseInt(num), frequency: freq }));
-
-    const mostFrequent = sortedNumbers.slice(0, 10);
-    const leastFrequent = sortedNumbers.slice(-10);
-
-    // Calculate averages
-    const avgFrequency = Object.values(numberFrequency).reduce((sum, freq) => sum + freq, 0) / Object.keys(numberFrequency).length;
-
-    return {
-        mostFrequent,
-        leastFrequent,
-        avgFrequency,
-        totalDrawings,
-        uniqueNumbers: Object.keys(numberFrequency).length,
-        uniquePowerballs: Object.keys(powerballs).length
-    };
-};
-
-// Performance tracking utilities
-export const trackPerformance = (operation, startTime) => {
-    const endTime = performance.now();
-    const duration = endTime - startTime;
-    
-    console.log(`Performance: ${operation} took ${duration.toFixed(2)}ms`);
-    
-    return {
-        operation,
-        duration,
-        timestamp: new Date().toISOString()
-    };
-};
-
-export const debounce = (func, wait) => {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
+            
+            if (drawing.powerball && powerballFrequency[drawing.powerball] !== undefined) {
+                powerballFrequency[drawing.powerball]++;
+            }
+        });
+        
+        // Calculate hot and cold numbers
+        const sortedNumbers = Object.entries(numberFrequency)
+            .sort(([,a], [,b]) => b - a)
+            .map(([num, freq]) => ({ number: parseInt(num), frequency: freq }));
+            
+        const sortedPowerballs = Object.entries(powerballFrequency)
+            .sort(([,a], [,b]) => b - a)
+            .map(([num, freq]) => ({ number: parseInt(num), frequency: freq }));
+        
+        return {
+            totalDrawings,
+            numberFrequency,
+            powerballFrequency,
+            hotNumbers: sortedNumbers.slice(0, 10),
+            coldNumbers: sortedNumbers.slice(-10).reverse(),
+            hotPowerballs: sortedPowerballs.slice(0, 5),
+            coldPowerballs: sortedPowerballs.slice(-5).reverse(),
+            averageFrequency: totalDrawings / 69,
+            lastUpdated: new Date().toISOString()
         };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-};
+    },
 
-export const throttle = (func, limit) => {
-    let inThrottle;
-    return function() {
-        const args = arguments;
-        const context = this;
-        if (!inThrottle) {
-            func.apply(context, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
+    calculateStatistics: function(numbers) {
+        if (!Array.isArray(numbers) || numbers.length === 0) {
+            return null;
         }
-    };
-};
+        
+        const sum = numbers.reduce((a, b) => a + b, 0);
+        const mean = sum / numbers.length;
+        
+        const sortedNumbers = [...numbers].sort((a, b) => a - b);
+        const median = sortedNumbers.length % 2 === 0
+            ? (sortedNumbers[sortedNumbers.length / 2 - 1] + sortedNumbers[sortedNumbers.length / 2]) / 2
+            : sortedNumbers[Math.floor(sortedNumbers.length / 2)];
+        
+        const variance = numbers.reduce((acc, num) => acc + Math.pow(num - mean, 2), 0) / numbers.length;
+        const standardDeviation = Math.sqrt(variance);
+        
+        return {
+            sum,
+            mean: Math.round(mean * 100) / 100,
+            median,
+            min: Math.min(...numbers),
+            max: Math.max(...numbers),
+            range: Math.max(...numbers) - Math.min(...numbers),
+            variance: Math.round(variance * 100) / 100,
+            standardDeviation: Math.round(standardDeviation * 100) / 100
+        };
+    },
 
-// Local storage utilities
-export const saveToLocalStorage = (key, data) => {
-    try {
-        localStorage.setItem(key, JSON.stringify(data));
-        return true;
-    } catch (error) {
-        console.error('Failed to save to localStorage:', error);
-        return false;
-    }
-};
+    // Performance tracking
+    trackPerformance: function(operation, startTime) {
+        const duration = performance.now() - startTime;
+        
+        if (!window.performanceMetrics.loadTimes[operation]) {
+            window.performanceMetrics.loadTimes[operation] = [];
+        }
+        
+        window.performanceMetrics.loadTimes[operation].push(duration);
+        
+        // Keep only last 100 measurements
+        if (window.performanceMetrics.loadTimes[operation].length > 100) {
+            window.performanceMetrics.loadTimes[operation] = 
+                window.performanceMetrics.loadTimes[operation].slice(-100);
+        }
+        
+        // Log slow operations
+        if (duration > 1000) {
+            console.warn(`Slow operation detected: ${operation} took ${Math.round(duration)}ms`);
+        }
+    },
 
-export const loadFromLocalStorage = (key, defaultValue = null) => {
-    try {
-        const item = localStorage.getItem(key);
-        return item ? JSON.parse(item) : defaultValue;
-    } catch (error) {
-        console.error('Failed to load from localStorage:', error);
-        return defaultValue;
-    }
-};
+    // Error handling
+    handleApiError: function(error, context = 'API') {
+        console.error(`${context} Error:`, error);
+        
+        if (window.performanceMetrics) {
+            window.performanceMetrics.errors++;
+        }
+        
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            return window.LOTTERY_CONFIG.ERROR_MESSAGES.NETWORK_ERROR;
+        }
+        
+        if (error.status === 401 || error.status === 403) {
+            return window.LOTTERY_CONFIG.ERROR_MESSAGES.INVALID_API_KEY;
+        }
+        
+        if (error.status >= 500) {
+            return window.LOTTERY_CONFIG.ERROR_MESSAGES.API_ERROR;
+        }
+        
+        return error.message || `${context} operation failed. Please try again.`;
+    },
 
-export const removeFromLocalStorage = (key) => {
-    try {
-        localStorage.removeItem(key);
-        return true;
-    } catch (error) {
-        console.error('Failed to remove from localStorage:', error);
-        return false;
-    }
-};
+    // Utility functions
+    generateRandomNumbers: function(min, max, count, exclude = []) {
+        const numbers = [];
+        const available = [];
+        
+        for (let i = min; i <= max; i++) {
+            if (!exclude.includes(i)) {
+                available.push(i);
+            }
+        }
+        
+        if (available.length < count) {
+            throw new Error('Not enough available numbers to generate the requested count');
+        }
+        
+        while (numbers.length < count) {
+            const randomIndex = Math.floor(Math.random() * available.length);
+            const number = available.splice(randomIndex, 1)[0];
+            numbers.push(number);
+        }
+        
+        return numbers.sort((a, b) => a - b);
+    },
 
-// Error handling utilities
-export const handleApiError = (error, context = 'API') => {
-    console.error(`${context} Error:`, error);
-    
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        return 'Network error: Please check your internet connection';
-    }
-    
-    if (error.message.includes('401') || error.message.includes('unauthorized')) {
-        return 'Authentication error: Please check your API key';
-    }
-    
-    if (error.message.includes('429') || error.message.includes('rate limit')) {
-        return 'Rate limit exceeded: Please wait before making another request';
-    }
-    
-    if (error.message.includes('500') || error.message.includes('internal server')) {
-        return 'Server error: Please try again later';
-    }
-    
-    return error.message || 'An unexpected error occurred';
-};
+    shuffleArray: function(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    },
 
-// Number generation utilities
-export const generateRandomNumbers = (min, max, count, exclude = []) => {
-    const numbers = [];
-    const excludeSet = new Set(exclude);
-    
-    while (numbers.length < count) {
-        const num = Math.floor(Math.random() * (max - min + 1)) + min;
-        if (!numbers.includes(num) && !excludeSet.has(num)) {
-            numbers.push(num);
+    debounce: function(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+
+    throttle: function(func, limit) {
+        let inThrottle;
+        return function() {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    },
+
+    // Local storage utilities
+    saveToStorage: function(key, data) {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+            return true;
+        } catch (error) {
+            console.error('Failed to save to localStorage:', error);
+            return false;
+        }
+    },
+
+    loadFromStorage: function(key, defaultValue = null) {
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : defaultValue;
+        } catch (error) {
+            console.error('Failed to load from localStorage:', error);
+            return defaultValue;
+        }
+    },
+
+    clearStorage: function(key) {
+        try {
+            localStorage.removeItem(key);
+            return true;
+        } catch (error) {
+            console.error('Failed to clear localStorage:', error);
+            return false;
         }
     }
-    
-    return numbers.sort((a, b) => a - b);
 };
 
-export const shuffleArray = (array) => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-};
-
-// Constants
-export const LOTTERY_CONSTANTS = {
-    MAIN_NUMBER_MIN: 1,
-    MAIN_NUMBER_MAX: 69,
-    MAIN_NUMBER_COUNT: 5,
-    POWERBALL_MIN: 1,
-    POWERBALL_MAX: 26,
-    JACKPOT_ODDS: 292201338,
-    MATCH_5_ODDS: 11688053,
-    MATCH_4_POWERBALL_ODDS: 913129,
-    MATCH_4_ODDS: 36525,
-    MATCH_3_POWERBALL_ODDS: 14494,
-    MATCH_3_ODDS: 579,
-    MATCH_2_POWERBALL_ODDS: 701,
-    MATCH_1_POWERBALL_ODDS: 92,
-    POWERBALL_ONLY_ODDS: 38
-};
-
-export default {
-    formatCurrency,
-    formatNumber,
-    formatPercentage,
-    formatDate,
-    formatDateTime,
-    validateLotteryNumbers,
-    validatePowerball,
-    validateApiKey,
-    processHistoricalData,
-    calculateStatistics,
-    trackPerformance,
-    debounce,
-    throttle,
-    saveToLocalStorage,
-    loadFromLocalStorage,
-    removeFromLocalStorage,
-    handleApiError,
-    generateRandomNumbers,
-    shuffleArray,
-    LOTTERY_CONSTANTS
-};
+// Make helper functions available globally
+window.formatCurrency = window.LotteryHelpers.formatCurrency;
+window.formatNumber = window.LotteryHelpers.formatNumber;
+window.formatPercentage = window.LotteryHelpers.formatPercentage;
+window.formatDate = window.LotteryHelpers.formatDate;
+window.validateLotteryNumbers = window.LotteryHelpers.validateLotteryNumbers;
+window.validatePowerball = window.LotteryHelpers.validatePowerball;
+window.validateApiKey = window.LotteryHelpers.validateApiKey;
+window.processHistoricalData = window.LotteryHelpers.processHistoricalData;
+window.calculateStatistics = window.LotteryHelpers.calculateStatistics;
+window.trackPerformance = window.LotteryHelpers.trackPerformance;
+window.handleApiError = window.LotteryHelpers.handleApiError;
+window.generateRandomNumbers = window.LotteryHelpers.generateRandomNumbers;
+window.shuffleArray = window.LotteryHelpers.shuffleArray;
+window.debounce = window.LotteryHelpers.debounce;
+window.throttle = window.LotteryHelpers.throttle;
+window.saveToStorage = window.LotteryHelpers.saveToStorage;
+window.loadFromStorage = window.LotteryHelpers.loadFromStorage;
+window.clearStorage = window.LotteryHelpers.clearStorage;
