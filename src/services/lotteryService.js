@@ -236,6 +236,7 @@ window.LotteryService = class {
                     error: error.message
                 };
             }
+        }
     }
 
     generateQuickPick() {
