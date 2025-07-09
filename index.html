@@ -4,18 +4,606 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Lottery Intelligence System</title>
-    <link rel="stylesheet" href="src/styles/main.css">
-    
+
+    <style>
+        /* Advanced Lottery Intelligence System - Inline Styles */
+
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f8fafc;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        /* Lottery App Main Container */
+        .lottery-app {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        /* Header Styles */
+        .app-header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .current-jackpot {
+            font-size: 1.125rem;
+            color: #059669;
+            font-weight: 600;
+        }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0 2rem;
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+        }
+
+        .tab-navigation button {
+            padding: 1rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab-navigation button:hover {
+            color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        .tab-navigation button.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        /* Main Content Area */
+        .app-content {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Generator Tab Styles */
+        .generator-tab h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+
+        .algorithm-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .algorithm-buttons button {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .algorithm-buttons button:hover {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Generated Sets Container */
+        .generated-sets-container h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+
+        .generated-sets {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .generated-set {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .generated-set:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .set-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .algorithm-name {
+            font-weight: 600;
+            color: #3b82f6;
+            text-transform: capitalize;
+        }
+
+        .confidence {
+            font-size: 0.875rem;
+            color: #6b7280;
+            background: #f3f4f6;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+        }
+
+        .numbers {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .number {
+            background: #3b82f6;
+            color: white;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .powerball {
+            background: #dc2626;
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .set-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .set-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .set-actions button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .set-actions button:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        /* Manual Selection Tab */
+        .manual-tab h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+
+        .selection-controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .selection-controls button {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .selection-controls button:hover:not(:disabled) {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .selection-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .selected-display {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .selected-display h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.75rem;
+        }
+
+        .selected-numbers {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .selected-number {
+            background: #3b82f6;
+            color: white;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .number-grids {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .main-numbers h3,
+        .powerball-numbers h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(3rem, 1fr));
+            gap: 0.5rem;
+            max-width: 100%;
+        }
+
+        .powerball-grid {
+            max-width: 600px;
+        }
+
+        .number-btn {
+            width: 3rem;
+            height: 3rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 50%;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .number-btn:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .number-btn.selected {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .number-btn.powerball.selected {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        /* User Selections */
+        .user-selections {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .user-selection {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .selection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .selection-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .selection-date {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .selection-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .selection-actions button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .selection-actions button:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        /* Analysis Tab */
+        .analysis-tab h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+
+        .analysis-section {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .analysis-section h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+
+        /* Settings Tab */
+        .settings-tab h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+
+        .setting-group {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .setting-group label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .setting-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .setting-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .setting-group small {
+            display: block;
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Error Message */
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .error-message button {
+            background: none;
+            border: none;
+            color: #991b1b;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0;
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 50vh;
+            font-size: 1.125rem;
+            color: #6b7280;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            color: #374151;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .app-header {
+                padding: 1rem;
+            }
+
+            .app-content {
+                padding: 1rem;
+            }
+
+            .tab-navigation {
+                padding: 0 1rem;
+            }
+
+            .algorithm-buttons {
+                flex-direction: column;
+            }
+
+            .algorithm-buttons button {
+                width: 100%;
+            }
+
+            .selection-controls {
+                flex-direction: column;
+            }
+
+            .selection-controls button {
+                width: 100%;
+            }
+
+            .number-grid {
+                grid-template-columns: repeat(7, 1fr);
+            }
+
+            .powerball-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .app-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .current-jackpot {
+                font-size: 1rem;
+            }
+
+            .number-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+
+            .powerball-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .number-btn {
+                width: 2.5rem;
+                height: 2.5rem;
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+
     <!-- React and Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
+
     <!-- Load utility modules first -->
     <script src="src/utils/constants.js"></script>
     <script src="src/utils/helpers.js"></script>
     <script src="src/utils/LotteryAlgorithms.js"></script>
-    
+
     <!-- Load services -->
     <script src="src/services/apiService.js"></script>
     <script src="src/services/lotteryService.js"></script>
