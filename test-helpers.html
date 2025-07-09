@@ -11,6 +11,7 @@
         .failed { border-color: red; background: #ffe8e8; }
         .test-button { margin: 5px; padding: 10px; background: #007cba; color: white; border: none; cursor: pointer; }
         .test-button:hover { background: #005a87; }
+        .loading { color: #666; font-style: italic; }
     </style>
 </head>
 <body>
@@ -22,6 +23,7 @@
     <button class="test-button" onclick="testNumberGeneration('frequency')">Test Frequency Generation</button>
     <button class="test-button" onclick="testNumberGeneration('hybrid')">Test Hybrid Generation</button>
     <button class="test-button" onclick="testNumberGeneration('hot-cold')">Test Hot-Cold Generation</button>
+    <button class="test-button" onclick="testServiceInitialization()">Test Service Initialization</button>
 
     <!-- Load utility modules -->
     <script src="src/utils/constants.js"></script>
@@ -119,12 +121,59 @@
                     typeof algorithms.hybrid === 'function',
                     `random: ${typeof algorithms.random}, frequency: ${typeof algorithms.frequency}, hybrid: ${typeof algorithms.hybrid}`
                 );
+            } else {
+                addTestResult(
+                    'Algorithm Methods',
+                    false,
+                    'Lottery service or algorithms not available'
+                );
+            }
+            
+            // Test 8: Check initialize method
+            addTestResult(
+                'Initialize Method',
+                window.lotteryService && typeof window.lotteryService.initialize === 'function',
+                window.lotteryService ? `initialize: ${typeof window.lotteryService.initialize}` : 'Service not available'
+            );
+        }
+        
+        async function testServiceInitialization() {
+            try {
+                addTestResult('Service Initialization Test', false, 'Testing...');
+                
+                if (!window.lotteryService) {
+                    addTestResult('Service Initialization Test', false, 'Lottery service not available');
+                    return;
+                }
+                
+                const result = await window.lotteryService.initialize();
+                addTestResult(
+                    'Service Initialization Test',
+                    result.success,
+                    result.success ? 'Service initialized successfully' : `Error: ${result.error}`
+                );
+            } catch (error) {
+                addTestResult(
+                    'Service Initialization Test',
+                    false,
+                    `Exception: ${error.message}`
+                );
             }
         }
         
         async function testNumberGeneration(algorithm) {
             try {
                 console.log(`Testing ${algorithm} generation...`);
+                
+                if (!window.lotteryService) {
+                    addTestResult(
+                        `${algorithm} Generation`,
+                        false,
+                        'Lottery service not available'
+                    );
+                    return;
+                }
+                
                 const result = await window.lotteryService.generateNumbers(algorithm, 3);
                 
                 addTestResult(
@@ -145,7 +194,11 @@
         
         // Run tests when page loads
         window.addEventListener('load', () => {
-            setTimeout(runBasicTests, 1000); // Give time for services to initialize
+            // Add a delay to ensure all scripts are loaded
+            setTimeout(() => {
+                console.log('Running basic tests...');
+                runBasicTests();
+            }, 500);
         });
     </script>
 </body>
