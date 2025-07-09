@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Styling Test - Advanced Lottery Intelligence System</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+</head>
+<body>
+    <div class="lottery-app">
+        <header class="app-header">
+            <h1>Advanced Lottery Intelligence System</h1>
+            <div class="current-jackpot">
+                Next Jackpot: $50,000,000
+            </div>
+        </header>
+
+        <nav class="tab-navigation">
+            <button class="active">Number Generator</button>
+            <button>Manual Selection</button>
+            <button>Analysis</button>
+            <button>My Selections</button>
+            <button>Settings</button>
+        </nav>
+
+        <main class="app-content">
+            <div class="generator-tab">
+                <div class="generator-controls">
+                    <h2>AI Number Generator</h2>
+                    <div class="algorithm-buttons">
+                        <button>Frequency Analysis</button>
+                        <button>Hot & Cold Numbers</button>
+                        <button>Pattern Analysis</button>
+                        <button>Statistical</button>
+                        <button>Hybrid (Recommended)</button>
+                        <button>Random</button>
+                    </div>
+                </div>
+                
+                <div class="generated-sets-container">
+                    <h3>Generated Number Sets</h3>
+                    <div class="generated-sets">
+                        <div class="generated-set">
+                            <div class="set-header">
+                                <span class="algorithm-name">hybrid</span>
+                                <span class="confidence">Confidence: 75.2%</span>
+                            </div>
+                            <div class="numbers">
+                                <span class="number">7</span>
+                                <span class="number">14</span>
+                                <span class="number">23</span>
+                                <span class="number">35</span>
+                                <span class="number">42</span>
+                                <span class="powerball">PB: 18</span>
+                            </div>
+                            <div class="set-description">Combined multi-algorithm approach</div>
+                            <div class="set-actions">
+                                <button>Analyze</button>
+                                <button>Use These Numbers</button>
+                            </div>
+                        </div>
+
+                        <div class="generated-set">
+                            <div class="set-header">
+                                <span class="algorithm-name">frequency</span>
+                                <span class="confidence">Confidence: 68.5%</span>
+                            </div>
+                            <div class="numbers">
+                                <span class="number">3</span>
+                                <span class="number">12</span>
+                                <span class="number">27</span>
+                                <span class="number">41</span>
+                                <span class="number">56</span>
+                                <span class="powerball">PB: 9</span>
+                            </div>
+                            <div class="set-description">Based on historical frequency patterns</div>
+                            <div class="set-actions">
+                                <button>Analyze</button>
+                                <button>Use These Numbers</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
