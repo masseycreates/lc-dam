@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Styling Verification - Advanced Lottery Intelligence System</title>
+    <link rel="stylesheet" href="main.css">
+    <style>
+        /* Fallback inline styles in case external CSS doesn't load */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f8fafc;
+            color: #1f2937;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+        .test-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .test-button {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .test-button:hover {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        .test-number {
+            background: #3b82f6;
+            color: white;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-right: 0.5rem;
+        }
+        .test-powerball {
+            background: #dc2626;
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Styling Verification Test</h1>
+        <p>This page tests if the CSS styling is loading correctly on Vercel.</p>
+        
+        <div class="test-card">
+            <h2>Test Card Component</h2>
+            <p>This should be a white card with subtle shadow and rounded corners.</p>
+            
+            <div style="margin: 1rem 0;">
+                <button class="test-button">Test Button 1</button>
+                <button class="test-button">Test Button 2</button>
+                <button class="test-button">Test Button 3</button>
+            </div>
+            
+            <div style="margin: 1rem 0;">
+                <span class="test-number">7</span>
+                <span class="test-number">14</span>
+                <span class="test-number">23</span>
+                <span class="test-number">35</span>
+                <span class="test-number">42</span>
+                <span class="test-powerball">PB: 18</span>
+            </div>
+        </div>
+        
+        <div class="test-card">
+            <h3>Expected Appearance:</h3>
+            <ul>
+                <li>Light gray background (#f8fafc)</li>
+                <li>White cards with subtle shadows</li>
+                <li>Blue buttons that turn darker blue on hover</li>
+                <li>Blue circular number badges</li>
+                <li>Red Powerball badge</li>
+                <li>Clean, modern typography</li>
+            </ul>
+        </div>
+        
+        <div class="test-card">
+            <h3>Status Check:</h3>
+            <p id="css-status">Checking CSS loading...</p>
+        </div>
+    </div>
+    
+    <script>
+        // Check if CSS is loaded by testing computed styles
+        window.addEventListener('load', function() {
+            const body = document.body;
+            const computedStyle = window.getComputedStyle(body);
+            const backgroundColor = computedStyle.backgroundColor;
+            const statusElement = document.getElementById('css-status');
+            
+            if (backgroundColor === 'rgb(248, 250, 252)' || backgroundColor.includes('248, 250, 252')) {
+                statusElement.textContent = '✅ CSS is loading correctly! Background color is correct.';
+                statusElement.style.color = '#059669';
+            } else {
+                statusElement.textContent = '❌ CSS may not be loading. Background color: ' + backgroundColor;
+                statusElement.style.color = '#dc2626';
+            }
+        });
+    </script>
+</body>
+</html>
