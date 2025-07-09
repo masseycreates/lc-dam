@@ -6,12 +6,6 @@
     "api/powerball-history.js": {
       "maxDuration": 30
     },
-    "api/claude.js": {
-      "maxDuration": 30
-    },
-    "api/diagnose.js": {
-      "maxDuration": 15
-    },
     "api/test.js": {
       "maxDuration": 10
     }
@@ -22,27 +16,7 @@
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" },
-        { "key": "Cache-Control", "value": "s-maxage=300, stale-while-revalidate=600" }
-      ]
-    },
-    {
-      "source": "/src/(.*)",
-      "headers": [
-        { "key": "Content-Type", "value": "application/javascript" },
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/(.*).css",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/(.*).js",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
       ]
     }
   ],
@@ -50,12 +24,6 @@
     {
       "source": "/",
       "destination": "/index.html"
-    },
-    {
-      "source": "/src/(.*)",
-      "destination": "/src/$1"
     }
-  ],
-  "cleanUrls": true,
-  "trailingSlash": false
+  ]
 }

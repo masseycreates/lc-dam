@@ -1,4 +1,4 @@
-// Enhanced Claude API Proxy with Claude Opus 4 Support
+// Enhanced Claude API Proxy with Better Error Handling and Debugging
 // Replace your existing api/claude.js with this version
 
 export default async function handler(req, res) {
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('=== Claude Opus 4 API Request Debug ===');
+    console.log('=== Claude API Request Debug ===');
     console.log('Request method:', req.method);
     console.log('Request headers:', req.headers);
     console.log('Request body keys:', Object.keys(req.body || {}));
@@ -91,47 +91,43 @@ export default async function handler(req, res) {
       });
     }
 
-    // Build prompt based on analysis type with Opus 4 optimizations
+    // Build prompt based on analysis type
     let analysisPrompt;
     let maxTokens = 1000;
 
     if (analysisType === 'hybridSelection') {
-      analysisPrompt = buildAdvancedHybridSelectionPrompt(
+      analysisPrompt = buildHybridSelectionPrompt(
         historicalData, 
         currentJackpot, 
         requestedSets, 
         strategy, 
         localAlgorithmResults
       );
-      maxTokens = 2000; // Increased for Opus 4's enhanced capabilities
+      maxTokens = 1400;
     } else if (analysisType === 'quickSelection') {
-      analysisPrompt = buildEnhancedQuickSelectionPrompt(historicalData, currentJackpot, requestedSets, strategy);
-      maxTokens = 1500;
+      analysisPrompt = buildQuickSelectionPrompt(historicalData, currentJackpot, requestedSets, strategy);
+      maxTokens = 1200;
     } else if (analysisType === 'predictionInsights') {
-      analysisPrompt = buildAdvancedPredictionInsightsPrompt(predictionSet, historicalContext);
-      maxTokens = 800;
+      analysisPrompt = buildPredictionInsightsPrompt(predictionSet, historicalContext);
+      maxTokens = 400;
     }
 
     console.log('Prompt length:', analysisPrompt ? analysisPrompt.length : 0);
     console.log('Max tokens:', maxTokens);
     
-    // Make request to Claude Opus 4 API
-    console.log('Making request to Claude Opus 4 API...');
+    // Make request to Claude API
+    console.log('Making request to Claude API...');
     
     const claudePayload = {
-      model: 'claude-3-opus-20240229', // Updated to use Opus 4 (latest Opus model identifier)
+      model: 'claude-3-haiku-20240307',
       max_tokens: maxTokens,
-      temperature: 0.3, // Lower temperature for more consistent mathematical analysis
       messages: [{
         role: 'user',
         content: analysisPrompt
-      }],
-      metadata: {
-        user_id: 'lottery-hybrid-system'
-      }
+      }]
     };
 
-    console.log('Claude Opus 4 payload prepared, making request...');
+    console.log('Claude payload prepared, making request...');
 
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -143,14 +139,14 @@ export default async function handler(req, res) {
       body: JSON.stringify(claudePayload)
     });
 
-    console.log('Claude Opus 4 API response status:', claudeResponse.status);
-    console.log('Claude Opus 4 API response headers:', Object.fromEntries(claudeResponse.headers.entries()));
+    console.log('Claude API response status:', claudeResponse.status);
+    console.log('Claude API response headers:', Object.fromEntries(claudeResponse.headers.entries()));
 
     if (!claudeResponse.ok) {
       const errorText = await claudeResponse.text();
-      console.error('Claude Opus 4 API error response:', errorText);
+      console.error('Claude API error response:', errorText);
       
-      let errorMessage = `Claude Opus 4 API error: ${claudeResponse.status}`;
+      let errorMessage = `Claude API error: ${claudeResponse.status}`;
       let debugInfo = errorText;
       
       // Parse error for better messaging
@@ -168,26 +164,25 @@ export default async function handler(req, res) {
         error: errorMessage,
         success: false,
         debug: debugInfo,
-        claudeStatus: claudeResponse.status,
-        model: 'claude-3-opus-20240229'
+        claudeStatus: claudeResponse.status
       });
     }
 
     const claudeData = await claudeResponse.json();
-    console.log('Claude Opus 4 response received successfully');
-    console.log('Claude Opus 4 response structure:', Object.keys(claudeData));
+    console.log('Claude response received successfully');
+    console.log('Claude response structure:', Object.keys(claudeData));
     
-    // Process Claude Opus 4's enhanced response
+    // Process Claude's response
     let processedResponse;
     
     if (analysisType === 'hybridSelection') {
-      processedResponse = processAdvancedHybridSelectionResponse(
+      processedResponse = processHybridSelectionResponse(
         claudeData.content[0].text, 
         requestedSets, 
         localAlgorithmResults
       );
     } else if (analysisType === 'quickSelection') {
-      processedResponse = processEnhancedQuickSelectionResponse(claudeData.content[0].text, requestedSets);
+      processedResponse = processQuickSelectionResponse(claudeData.content[0].text, requestedSets);
     } else {
       processedResponse = {
         analysis: claudeData.content[0].text,
@@ -195,20 +190,19 @@ export default async function handler(req, res) {
       };
     }
     
-    console.log('Claude Opus 4 response processed successfully');
+    console.log('Response processed successfully');
     
     return res.status(200).json({
       success: true,
       analysisType,
-      model: claudeData.model,
       ...processedResponse,
       usage: claudeData.usage,
-      timestamp: new Date().toISOString(),
-      claudeVersion: 'Opus 4 Enhanced'
+      model: claudeData.model,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('=== Claude Opus 4 API Error ===');
+    console.error('=== Claude API Error ===');
     console.error('Error name:', error.name);
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
@@ -217,7 +211,6 @@ export default async function handler(req, res) {
       success: false,
       error: 'Internal server error',
       details: error.message,
-      model: 'claude-3-opus-20240229',
       debug: {
         errorName: error.name,
         errorMessage: error.message,
@@ -227,119 +220,92 @@ export default async function handler(req, res) {
   }
 }
 
-// Enhanced hybrid prompt for Opus 4's advanced capabilities
-function buildAdvancedHybridSelectionPrompt(historicalData, currentJackpot, requestedSets, strategy, localResults) {
-  const recentDrawings = historicalData?.drawings?.slice(0, 20) || [];
+// Build hybrid prompt that includes local algorithm results
+function buildHybridSelectionPrompt(historicalData, currentJackpot, requestedSets, strategy, localResults) {
+  const recentDrawings = historicalData?.drawings?.slice(0, 15) || [];
   const stats = historicalData || {};
   
-  // Enhanced local algorithm results formatting for Opus 4
-  const localResultsSummary = localResults ? formatAdvancedLocalResultsForOpus4(localResults) : 'No local results provided';
+  // Format local algorithm results for Claude
+  const localResultsSummary = localResults ? formatLocalResultsForClaude(localResults) : 'No local results provided';
   
-  return `You are Claude Opus 4, the most advanced AI system for lottery data analysis. Your task is to create ${requestedSets} SUPERIOR hybrid Powerball selections that leverage your enhanced reasoning capabilities with sophisticated mathematical algorithms.
+  return `You are an expert lottery data scientist with access to both historical data AND advanced mathematical algorithm results. Your task is to create ${requestedSets} HYBRID Powerball selections that combine your statistical intelligence with the provided algorithm outputs.
 
-ENHANCED CONTEXT ANALYSIS:
+CURRENT CONTEXT:
 - Current Jackpot: ${currentJackpot?.formatted || 'Unknown'}
 - Strategy Focus: ${strategy}
-- Historical Dataset: ${stats.totalDrawings || 0} drawings analyzed
+- Historical Data: ${stats.totalDrawings || 0} drawings analyzed
 - Analysis Date: ${new Date().toISOString().split('T')[0]}
-- AI Model: Claude Opus 4 (Advanced Reasoning)
 
-RECENT DRAWING PATTERNS (Last 20):
+RECENT DRAWING PATTERNS:
 ${recentDrawings.map((d, i) => `Drawing ${i+1}: [${d.numbers?.join(', ') || 'N/A'}] PB:${d.powerball || 'N/A'} (${d.date || 'Unknown'})`).join('\n')}
 
-ADVANCED FREQUENCY ANALYSIS:
-- Hot Numbers (High Frequency): ${stats.hotNumbers?.slice(0, 20).join(', ') || 'Not available'}
-- Cold Numbers (Low Frequency): ${stats.coldNumbers?.slice(0, 20).join(', ') || 'Not available'}
-- Hot Powerballs: ${stats.hotPowerballs?.slice(0, 10).join(', ') || 'Not available'}
-- Cold Powerballs: ${stats.coldPowerballs?.slice(0, 10).join(', ') || 'Not available'}
+FREQUENCY DATA:
+- Hot Numbers: ${stats.hotNumbers?.slice(0, 15).join(', ') || 'Not available'}
+- Cold Numbers: ${stats.coldNumbers?.slice(0, 15).join(', ') || 'Not available'}
 
-MATHEMATICAL ALGORITHM ENSEMBLE RESULTS:
+MATHEMATICAL ALGORITHM RESULTS:
 ${localResultsSummary}
 
-ADVANCED OPUS 4 HYBRID ANALYSIS TASK:
+HYBRID ANALYSIS TASK:
+Create ${requestedSets} intelligent selections by:
 
-As Claude Opus 4, apply your superior reasoning capabilities to:
+1. **Analyzing the mathematical algorithm outputs** for patterns and consensus
+2. **Applying your own statistical reasoning** to validate or improve the suggestions
+3. **Combining the best insights** from both mathematical models and pattern analysis
+4. **Optimizing for different strategic approaches** (consensus, contrarian, balanced, etc.)
 
-1. **Deep Pattern Recognition**: Analyze complex multi-dimensional patterns in the historical data beyond simple frequency
-2. **Algorithm Synthesis**: Intelligently combine and weight the mathematical algorithm outputs based on their historical performance
-3. **Statistical Validation**: Apply advanced statistical principles to validate and optimize each selection
-4. **Strategic Diversification**: Create selections that cover different strategic approaches while maintaining mathematical rigor
-5. **Confidence Modeling**: Provide nuanced confidence assessments based on multiple convergent factors
-
-For each selection, provide:
+For each hybrid selection, provide:
 - 5 main numbers (1-69) in ascending order
 - 1 Powerball number (1-26)
-- Advanced reasoning that demonstrates Opus 4's enhanced analytical capabilities
-- Confidence level (80-98% range for Opus 4)
-- Strategic classification
+- Hybrid reasoning explaining how you combined algorithm insights with your analysis
+- Confidence level (75-95%)
 
-OUTPUT FORMAT (Exactly as shown):
-**Opus 4 Selection 1: [Advanced Strategy Name]**
+FORMAT EXACTLY LIKE THIS:
+**Hybrid Selection 1: [Strategy Name]**
 Numbers: 7, 15, 23, 42, 58 | Powerball: 12
-Advanced Reasoning: [Your sophisticated analysis combining multiple algorithmic insights with advanced pattern recognition, statistical validation, and strategic optimization]
-Confidence: 92%
-Strategic Class: [Primary/Contrarian/Balanced/Convergent/Optimization]
+Reasoning: Combined algorithm consensus shows strong preference for mid-range numbers 15, 23, 42. Added 7 for low-range balance and 58 based on gap analysis indicating overdue status. Powerball 12 chosen from frequency hot list with recent pattern confirmation.
+Confidence: 87%
 
-**Opus 4 Selection 2: [Advanced Strategy Name]**
+**Hybrid Selection 2: [Strategy Name]**
 Numbers: 3, 18, 31, 47, 62 | Powerball: 8
-Advanced Reasoning: [Demonstrate superior analytical depth]
-Confidence: 89%
-Strategic Class: [Classification]
+Reasoning: [Your hybrid analysis here combining algorithm insights with statistical reasoning]
+Confidence: 84%
 
-Continue for all ${requestedSets} selections. Each should showcase Opus 4's advanced reasoning while incorporating mathematical rigor.
-
-ADVANCED REQUIREMENTS:
-- Demonstrate mathematical sophistication beyond basic frequency analysis
-- Show consideration of multiple statistical factors simultaneously
-- Provide insights that go beyond what simpler models could achieve
-- Maintain lottery number validity (1-69 main, 1-26 Powerball, no duplicates)
-- Achieve confidence levels appropriate for advanced AI analysis (80-98%)`;
+Continue for all ${requestedSets} selections. Each should represent a different strategic approach to combining mathematical algorithms with intelligent analysis.`;
 }
 
-// Enhanced formatting for Opus 4
-function formatAdvancedLocalResultsForOpus4(localResults) {
+// Format local algorithm results for Claude's analysis
+function formatLocalResultsForClaude(localResults) {
   if (!localResults || localResults.length === 0) {
-    return 'No local algorithm results available for synthesis';
+    return 'No local algorithm results available';
   }
   
-  let summary = 'MATHEMATICAL ALGORITHM ENSEMBLE ANALYSIS:\n\n';
+  let summary = 'MATHEMATICAL ALGORITHM PREDICTIONS:\n\n';
   
   localResults.forEach((result, index) => {
-    summary += `Algorithm ${index + 1}: ${result.strategy || 'Advanced Mathematical Model'}\n`;
-    summary += `Selection: [${result.numbers?.join(', ') || 'N/A'}] | Powerball: ${result.powerball || 'N/A'}\n`;
-    summary += `Confidence Level: ${result.confidence || 'N/A'}%\n`;
-    summary += `Methodology: ${result.analysis || result.technicalAnalysis || 'Statistical optimization with pattern recognition'}\n`;
-    summary += `Algorithm Type: ${result.algorithmDetail || 'Multi-factor mathematical analysis'}\n\n`;
+    summary += `Algorithm ${index + 1}: ${result.strategy || 'Unknown Strategy'}\n`;
+    summary += `Numbers: [${result.numbers?.join(', ') || 'N/A'}] | Powerball: ${result.powerball || 'N/A'}\n`;
+    summary += `Confidence: ${result.confidence || 'N/A'}%\n`;
+    summary += `Method: ${result.analysis || result.technicalAnalysis || 'Mathematical optimization'}\n\n`;
   });
   
-  // Advanced consensus analysis for Opus 4
+  // Add frequency analysis
   const allNumbers = localResults.flatMap(r => r.numbers || []);
   const numberFreq = {};
   allNumbers.forEach(num => {
     numberFreq[num] = (numberFreq[num] || 0) + 1;
   });
   
-  const strongConsensus = Object.entries(numberFreq)
-    .filter(([num, freq]) => freq >= 3)
+  const consensusNumbers = Object.entries(numberFreq)
+    .filter(([num, freq]) => freq > 1)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([num, freq]) => `${num}(${freq}x)`);
-    
-  const moderateConsensus = Object.entries(numberFreq)
-    .filter(([num, freq]) => freq === 2)
-    .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
     .slice(0, 10)
     .map(([num, freq]) => `${num}(${freq}x)`);
   
-  if (strongConsensus.length > 0) {
-    summary += `STRONG ALGORITHM CONSENSUS (3+ algorithms): ${strongConsensus.join(', ')}\n`;
+  if (consensusNumbers.length > 0) {
+    summary += `ALGORITHM CONSENSUS: ${consensusNumbers.join(', ')}\n`;
   }
   
-  if (moderateConsensus.length > 0) {
-    summary += `MODERATE CONSENSUS (2 algorithms): ${moderateConsensus.join(', ')}\n`;
-  }
-  
-  // Powerball consensus analysis
   const allPowerballs = localResults.map(r => r.powerball).filter(Boolean);
   const pbFreq = {};
   allPowerballs.forEach(pb => {
@@ -347,45 +313,41 @@ function formatAdvancedLocalResultsForOpus4(localResults) {
   });
   
   const consensusPowerballs = Object.entries(pbFreq)
-    .filter(([pb, freq]) => freq >= 2)
+    .filter(([pb, freq]) => freq > 1)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([pb, freq]) => `${pb}(${freq}x)`);
   
   if (consensusPowerballs.length > 0) {
-    summary += `POWERBALL ALGORITHM CONSENSUS: ${consensusPowerballs.join(', ')}\n`;
+    summary += `POWERBALL CONSENSUS: ${consensusPowerballs.join(', ')}\n`;
   }
-  
-  // Calculate average confidence for Opus 4 analysis
-  const avgConfidence = localResults.reduce((sum, r) => sum + (r.confidence || 75), 0) / localResults.length;
-  summary += `ENSEMBLE AVERAGE CONFIDENCE: ${avgConfidence.toFixed(1)}%\n`;
   
   return summary;
 }
 
-// Enhanced response processing for Opus 4 outputs
-function processAdvancedHybridSelectionResponse(claudeText, requestedSets, localResults) {
+// Process hybrid selection response
+function processHybridSelectionResponse(claudeText, requestedSets, localResults) {
   const selections = [];
   
   try {
-    console.log('Processing Claude Opus 4 enhanced hybrid response...');
-    console.log('Claude Opus 4 text length:', claudeText.length);
+    console.log('Processing Claude hybrid response...');
+    console.log('Claude text length:', claudeText.length);
     
-    // Parse Opus 4's enhanced response format
-    const selectionBlocks = claudeText.split(/\*\*Opus 4 Selection|\*\*Selection/).slice(1);
-    console.log('Found Opus 4 selection blocks:', selectionBlocks.length);
+    // Parse Claude's hybrid response
+    const selectionBlocks = claudeText.split('**Hybrid Selection').slice(1);
+    console.log('Found selection blocks:', selectionBlocks.length);
     
     for (let i = 0; i < Math.min(selectionBlocks.length, requestedSets); i++) {
       const block = selectionBlocks[i];
       
-      // Extract strategy name with enhanced parsing
+      // Extract strategy name
       const strategyMatch = block.match(/^[^*]+:\s*([^*\n]+)/);
-      const strategy = strategyMatch ? strategyMatch[1].trim() : `Opus 4 Advanced Strategy ${i + 1}`;
+      const strategy = strategyMatch ? strategyMatch[1].trim() : `Hybrid Strategy ${i + 1}`;
       
-      // Extract numbers with enhanced validation
+      // Extract numbers
       const numbersMatch = block.match(/Numbers:\s*([0-9,\s]+)\s*\|\s*Powerball:\s*(\d+)/);
       if (!numbersMatch) {
-        console.warn(`No valid numbers found in Opus 4 selection ${i + 1}`);
+        console.warn(`No valid numbers found in selection ${i + 1}`);
         continue;
       }
       
@@ -398,114 +360,96 @@ function processAdvancedHybridSelectionResponse(claudeText, requestedSets, local
         
       const powerball = parseInt(numbersMatch[2]);
       
-      // Enhanced validation for Opus 4 quality
+      // Validate numbers
       if (numbers.length !== 5 || powerball < 1 || powerball > 26) {
-        console.warn(`Invalid Opus 4 numbers in selection ${i + 1}, skipping`);
+        console.warn(`Invalid hybrid numbers in selection ${i + 1}, skipping`);
         continue;
       }
       
-      // Check for duplicates with enhanced logging
+      // Check for duplicates
       const uniqueNumbers = new Set(numbers);
       if (uniqueNumbers.size !== 5) {
-        console.warn(`Duplicate numbers in Opus 4 selection ${i + 1}, skipping`);
+        console.warn(`Duplicate numbers in hybrid selection ${i + 1}, skipping`);
         continue;
       }
       
-      // Extract advanced reasoning
-      const reasoningMatch = block.match(/Advanced Reasoning:\s*([^C]+?)(?:Confidence:|Strategic Class:|$)/s);
-      const reasoning = reasoningMatch ? reasoningMatch[1].trim() : 'Claude Opus 4 advanced hybrid analysis with mathematical algorithm synthesis';
+      // Extract reasoning
+      const reasoningMatch = block.match(/Reasoning:\s*([^C]+?)(?:Confidence:|$)/s);
+      const reasoning = reasoningMatch ? reasoningMatch[1].trim() : 'Claude AI hybrid analysis combining mathematical algorithms with statistical intelligence';
       
-      // Extract confidence with Opus 4 range validation
+      // Extract confidence
       const confidenceMatch = block.match(/Confidence:\s*(\d+)%/);
-      let confidence = confidenceMatch ? parseInt(confidenceMatch[1]) : 87;
-      confidence = Math.min(98, Math.max(80, confidence)); // Opus 4 confidence range
-      
-      // Extract strategic classification
-      const strategyClassMatch = block.match(/Strategic Class:\s*([^\n]+)/);
-      const strategyClass = strategyClassMatch ? strategyClassMatch[1].trim() : 'Advanced';
+      const confidence = confidenceMatch ? parseInt(confidenceMatch[1]) : 85;
       
       selections.push({
         id: i + 1,
-        name: `🤖✨ ${strategy} (Opus 4)`,
-        description: `CLAUDE OPUS 4 + ALGORITHMS: ${reasoning}`,
-        algorithmDetail: "Claude Opus 4 AI + 6 Mathematical Algorithms Advanced Synthesis",
+        name: `🤖🧮 ${strategy} (Hybrid)`,
+        description: `CLAUDE + ALGORITHMS: ${reasoning}`,
+        algorithmDetail: "Claude 3 AI + 6 Mathematical Algorithms Hybrid Analysis",
         numbers: numbers,
         powerball: powerball,
-        strategy: `${confidence}% Opus 4 Confidence`,
+        strategy: `${confidence}% Hybrid Confidence`,
         confidence: confidence,
         actualStrategy: strategy,
-        strategicClass: strategyClass,
-        technicalAnalysis: "Advanced validation by Claude Opus 4 + Mathematical Ensemble",
+        technicalAnalysis: "Validated by Claude 3 AI + Local Algorithms",
         claudeGenerated: true,
-        isHybrid: true,
-        claudeVersion: 'Opus 4',
-        enhancedReasoning: reasoning
+        isHybrid: true
       });
     }
     
-    console.log(`Successfully processed ${selections.length} Opus 4 hybrid selections`);
+    console.log(`Successfully processed ${selections.length} hybrid selections`);
     
-    // Enhanced fallback with Opus 4 branding
+    // If we didn't get enough hybrid selections, fill with local results enhanced by Claude insights
     while (selections.length < requestedSets && localResults && selections.length < localResults.length) {
       const localResult = localResults[selections.length];
       
       selections.push({
         id: selections.length + 1,
-        name: `🧮✨ ${localResult.actualStrategy || localResult.strategy} (Opus 4 Enhanced)`,
-        description: `ALGORITHM + OPUS 4: ${localResult.description} Enhanced with Claude Opus 4 advanced validation.`,
-        algorithmDetail: `${localResult.algorithmDetail} + Opus 4 validation`,
+        name: `🧮+ ${localResult.actualStrategy || localResult.strategy} (Enhanced)`,
+        description: `ALGORITHM + AI: ${localResult.description} Enhanced with Claude statistical validation.`,
+        algorithmDetail: `${localResult.algorithmDetail} + Claude validation`,
         numbers: localResult.numbers,
         powerball: localResult.powerball,
-        strategy: `${Math.min(95, localResult.confidence + 8)}% Opus 4 Enhanced`,
-        confidence: Math.min(95, localResult.confidence + 8),
+        strategy: `${localResult.confidence}% Enhanced`,
+        confidence: Math.min(95, localResult.confidence + 5),
         actualStrategy: localResult.actualStrategy,
-        technicalAnalysis: `${localResult.technicalAnalysis} + Opus 4 review`,
+        technicalAnalysis: `${localResult.technicalAnalysis} + Claude review`,
         claudeGenerated: false,
-        isHybrid: true,
-        claudeVersion: 'Opus 4'
+        isHybrid: true
       });
     }
     
   } catch (error) {
-    console.error('Error parsing Claude Opus 4 hybrid response:', error);
-    // Return enhanced local results if Opus 4 parsing fails
-    return { claudeSelections: enhanceLocalResultsWithOpus4(localResults || []) };
+    console.error('Error parsing Claude hybrid response:', error);
+    // Return enhanced local results if parsing fails
+    return { claudeSelections: enhanceLocalResultsWithClaude(localResults || []) };
   }
   
   return { claudeSelections: selections.slice(0, requestedSets) };
 }
 
-// Enhanced local results with Opus 4 branding
-function enhanceLocalResultsWithOpus4(localResults) {
+// Enhance local results when Claude parsing fails
+function enhanceLocalResultsWithClaude(localResults) {
   return localResults.map((result, index) => ({
     ...result,
-    name: `🧮✨ ${result.actualStrategy || result.strategy} (Opus 4 Enhanced)`,
-    description: `ALGORITHM + OPUS 4: ${result.description} Enhanced with Claude Opus 4 advanced statistical validation.`,
-    algorithmDetail: `${result.algorithmDetail} + Opus 4 validation`,
-    confidence: Math.min(95, result.confidence + 8),
-    technicalAnalysis: `${result.technicalAnalysis} + Opus 4 advanced review`,
-    isHybrid: true,
-    claudeVersion: 'Opus 4'
+    name: `🧮+ ${result.actualStrategy || result.strategy} (AI Enhanced)`,
+    description: `ALGORITHM + AI: ${result.description} Enhanced with Claude statistical validation.`,
+    algorithmDetail: `${result.algorithmDetail} + Claude validation`,
+    confidence: Math.min(95, result.confidence + 3),
+    technicalAnalysis: `${result.technicalAnalysis} + Claude review`,
+    isHybrid: true
   }));
 }
 
-// Enhanced quick selection prompt for Opus 4
-function buildEnhancedQuickSelectionPrompt(historicalData, currentJackpot, requestedSets, strategy) {
-  return `As Claude Opus 4, generate ${requestedSets} advanced Powerball selections using sophisticated analysis. 
-  
-Format each as: Numbers: 1, 2, 3, 4, 5 | Powerball: 6
-Provide advanced reasoning for each selection demonstrating Opus 4's enhanced capabilities.`;
+// Simple fallback functions for other analysis types
+function buildQuickSelectionPrompt(historicalData, currentJackpot, requestedSets, strategy) {
+  return `Generate ${requestedSets} Powerball number selections based on the provided data. Format each as: Numbers: 1, 2, 3, 4, 5 | Powerball: 6`;
 }
 
-// Enhanced prediction insights for Opus 4
-function buildAdvancedPredictionInsightsPrompt(predictionSet, historicalContext) {
-  return `As Claude Opus 4, analyze this lottery prediction with advanced reasoning: ${JSON.stringify(predictionSet)}. 
-  
-Provide sophisticated insights that demonstrate superior analytical capabilities.`;
-}
-
-// Enhanced quick selection response processing
-function processEnhancedQuickSelectionResponse(claudeText, requestedSets) {
-  // Enhanced processing for Opus 4 quick selections
+function processQuickSelectionResponse(claudeText, requestedSets) {
   return { claudeSelections: [] };
+}
+
+function buildPredictionInsightsPrompt(predictionSet, historicalContext) {
+  return `Analyze this lottery prediction: ${JSON.stringify(predictionSet)}. Provide brief insights.`;
 }

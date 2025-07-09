@@ -1,6 +1,6 @@
-// api/powerball-history.js - Complete Fixed Version
+// api/powerball-history.js - Enhanced with multiple data sources and better reliability
 export default async function handler(req, res) {
-  // Enhanced CORS headers
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -20,36 +20,60 @@ export default async function handler(req, res) {
 
   try {
     const requestedLimit = parseInt(req.query.limit) || 150;
-    const limit = Math.min(Math.max(requestedLimit, 25), 2000);
+    const limit = Math.min(Math.max(requestedLimit, 25), 2000); // Increased max to 2000
     
     console.log(`=== Historical API Request Started (${limit} drawings) ===`);
     console.log('Timestamp:', new Date().toISOString());
     
-    // Enhanced historical data sources
+    // Enhanced historical data sources with higher limits and better reliability
     const historicalSources = [
       {
         name: 'NY State Open Data Portal (SODA API)',
-        url: `https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=${Math.min(limit * 2, 2000)}`,
+        url: `https://data.ny.gov/resource/d6yy-54nr.json?$order=draw_date%20DESC&$limit=${Math.min(limit * 1.2, 1000)}`,
         type: 'json',
         extractor: extractFromNYStateAPI,
-        timeout: 30000,
+        timeout: 20000,
         priority: 1
+      },
+      {
+        name: 'NY State Full Download API',
+        url: 'https://data.ny.gov/api/views/d6yy-54nr/rows.json?accessType=DOWNLOAD',
+        type: 'json',
+        extractor: extractFromNYStateFullAPI,
+        timeout: 30000,
+        priority: 2
+      },
+      {
+        name: 'NY State Powerball History Dataset',
+        url: `https://data.ny.gov/resource/dhwa-m6y4.json?$order=date%20DESC&$limit=${Math.min(limit * 1.2, 1000)}`,
+        type: 'json',
+        extractor: extractFromNYStateHistoryAPI,
+        timeout: 20000,
+        priority: 3
       },
       {
         name: 'Texas Lottery CSV Data',
         url: 'https://www.texaslottery.com/export/sites/lottery/Games/Powerball/Winning_Numbers/powerball.csv',
         type: 'csv',
         extractor: extractFromTexasCSV,
-        timeout: 25000,
-        priority: 2
+        timeout: 15000,
+        priority: 4
       },
       {
-        name: 'Mock Data Generator',
-        url: null,
-        type: 'fallback',
-        extractor: generateMockHistoricalData,
-        timeout: 1000,
-        priority: 99
+        name: 'Lottery Statistics API',
+        url: `https://api.powerball.net/v1/numbers/history?limit=${Math.min(limit, 500)}`,
+        type: 'json',
+        extractor: extractFromLotteryStatsAPI,
+        timeout: 12000,
+        priority: 5
+      },
+      {
+        name: 'Texas Lottery Historical HTML',
+        url: 'https://www.texaslottery.com/export/sites/lottery/Games/Powerball/Winning_Numbers/',
+        type: 'html',
+        extractor: extractFromTexasHistoricalHTML,
+        timeout: 10000,
+        priority: 6
       }
     ];
 
@@ -57,22 +81,10 @@ export default async function handler(req, res) {
     let sourceUsed = null;
     let errors = [];
 
-    // Try each source sequentially
+    // Try each source sequentially with enhanced error handling
     for (const source of historicalSources) {
       try {
-        console.log(`\n--- Attempting ${source.name} (Priority: ${source.priority}) for ${limit} drawings ---`);
-        
-        if (source.type === 'fallback') {
-          // Use fallback data generator
-          const fallbackData = source.extractor(limit);
-          if (fallbackData && fallbackData.length > 0) {
-            historicalData = fallbackData;
-            sourceUsed = source.name;
-            console.log(`✅ Fallback generated ${fallbackData.length} mock drawings`);
-            break;
-          }
-          continue;
-        }
+        console.log(`\n--- Attempting ${source.name} (Priority: ${source.priority}) ---`);
         
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), source.timeout);
@@ -80,11 +92,14 @@ export default async function handler(req, res) {
         const response = await fetch(source.url, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': source.type === 'json' ? 'application/json' : 'text/csv,text/plain',
+            'Accept': source.type === 'json' ? 'application/json' : 
+                     source.type === 'csv' ? 'text/csv,text/plain' : 
+                     'text/html,application/xhtml+xml',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
             'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
+            'Connection': 'keep-alive',
+            'Referer': 'https://www.powerball.com/'
           },
           signal: controller.signal
         });
@@ -100,6 +115,8 @@ export default async function handler(req, res) {
         let data;
         if (source.type === 'json') {
           data = await response.json();
+        } else if (source.type === 'csv') {
+          data = await response.text();
         } else {
           data = await response.text();
         }
@@ -107,13 +124,14 @@ export default async function handler(req, res) {
         console.log(`${source.name} data received, processing...`);
         const extractedData = source.extractor(data, limit);
         
-        if (extractedData && extractedData.length >= 10 && validateHistoricalData(extractedData)) {
+        if (extractedData && extractedData.length > 0 && validateHistoricalData(extractedData)) {
           historicalData = extractedData;
           sourceUsed = source.name;
           console.log(`✅ Success from ${source.name}: ${extractedData.length} valid drawings`);
+          console.log(`   Date range: ${extractedData[0]?.date} to ${extractedData[extractedData.length - 1]?.date}`);
           break;
         } else {
-          throw new Error(`Insufficient valid data (got ${extractedData?.length || 0} records, need >= 10)`);
+          throw new Error(`No valid historical data returned (got ${extractedData?.length || 0} records)`);
         }
         
       } catch (error) {
@@ -125,14 +143,14 @@ export default async function handler(req, res) {
     }
 
     if (historicalData.length === 0) {
-      // COMPLETE FAILURE - This should not happen with fallback
-      console.log('=== CRITICAL FAILURE: No data sources working ===');
-      return res.status(500).json({
+      // FAILURE: No real historical data available
+      console.log('=== FAILURE: No historical data sources working ===');
+      return res.status(503).json({
         success: false,
         dataAvailable: false,
-        error: 'All data sources failed',
         message: 'HISTORICAL POWERBALL DATA TEMPORARILY UNAVAILABLE',
-        details: 'Unable to retrieve or generate historical drawing data.',
+        details: 'Unable to retrieve historical drawing data from official sources. Number optimization features are disabled.',
+        lastAttempted: new Date().toISOString(),
         timestamp: new Date().toISOString(),
         debug: {
           sourcesAttempted: historicalSources.length,
@@ -146,8 +164,6 @@ export default async function handler(req, res) {
     const sortedData = historicalData
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .slice(0, limit);
-
-    console.log(`📊 FINAL RESULT: Returning ${sortedData.length} drawings out of ${limit} requested`);
 
     // Calculate enhanced statistics
     const statistics = calculateAdvancedFrequencyStats(sortedData);
@@ -168,7 +184,7 @@ export default async function handler(req, res) {
         source: sourceUsed,
         dataQuality: {
           completeness: (sortedData.length / limit * 100).toFixed(1) + '%',
-          sourceReliability: sourceUsed?.includes('NY State') ? 'High' : sourceUsed?.includes('Mock') ? 'Simulated' : 'Medium',
+          sourceReliability: sourceUsed.includes('NY State') ? 'High' : 'Medium',
           lastUpdated: new Date().toISOString()
         }
       },
@@ -176,18 +192,16 @@ export default async function handler(req, res) {
       debug: {
         sourcesAttempted: historicalSources.length,
         errors: errors,
-        successfulSource: sourceUsed,
-        actualDrawingsReturned: sortedData.length,
-        requestedDrawings: limit
+        successfulSource: sourceUsed
       }
     };
 
-    // Cache for 6 hours
+    // Cache for 6 hours (historical data doesn't change often)
     res.setHeader('Cache-Control', 's-maxage=21600, max-age=21600');
     return res.status(200).json(result);
 
   } catch (error) {
-    console.error('=== Historical API Critical Error ===');
+    console.error('=== Historical API Error ===');
     console.error('Error:', error);
     
     return res.status(500).json({
@@ -198,21 +212,22 @@ export default async function handler(req, res) {
       details: 'A technical error occurred while fetching historical data.',
       timestamp: new Date().toISOString(),
       debug: {
-        error: error.message,
-        stack: error.stack
+        error: error.message
       }
     });
   }
 }
 
-// Extract from NY State SODA API
-function extractFromNYStateAPI(data, maxRecords = 2000) {
+// Enhanced extraction functions
+
+// Extract from NY State SODA API (current endpoint)
+function extractFromNYStateAPI(data, maxRecords = 1000) {
   try {
     console.log('NY State SODA API extractor - processing...');
     const drawings = [];
     
     if (Array.isArray(data)) {
-      console.log(`Processing ${data.length} records from SODA API for max ${maxRecords}`);
+      console.log(`Processing ${data.length} records from SODA API`);
       
       data.forEach((drawing) => {
         if (drawings.length >= maxRecords) return;
@@ -255,54 +270,157 @@ function extractFromNYStateAPI(data, maxRecords = 2000) {
   }
 }
 
-// Extract from Texas CSV data
-function extractFromTexasCSV(csvText, maxRecords = 2000) {
+// Extract from NY State Full Download API (potentially thousands of records)
+function extractFromNYStateFullAPI(data, maxRecords = 2000) {
+  try {
+    console.log('NY State Full API extractor - processing...');
+    const drawings = [];
+    
+    if (data && data.data && Array.isArray(data.data)) {
+      console.log(`Processing ${data.data.length} records from Full Download API`);
+      
+      // Skip header row if present
+      const dataRows = data.data.slice(1);
+      
+      dataRows.forEach((row) => {
+        if (drawings.length >= maxRecords) return;
+        
+        try {
+          // NY State format: [id, date, winning_numbers, jackpot, ...]
+          const date = row[1] ? new Date(row[1]).toISOString().split('T')[0] : null;
+          const winningNumbers = row[2];
+          const jackpot = row[3];
+          
+          if (date && winningNumbers) {
+            const numberParts = winningNumbers.toString().trim().split(/\s+/);
+            
+            if (numberParts.length >= 6) {
+              const numbers = numberParts.slice(0, 5).map(n => parseInt(n));
+              const powerball = parseInt(numberParts[5]);
+              
+              if (isValidPowerballNumbers(numbers, powerball)) {
+                drawings.push({
+                  date: date,
+                  numbers: numbers.sort((a, b) => a - b),
+                  powerball: powerball,
+                  jackpot: jackpot ? parseInt(jackpot) : null,
+                  source: 'NY State Full API'
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.log('Error parsing NY State Full API drawing:', err.message);
+        }
+      });
+    }
+    
+    console.log(`NY State Full API extracted ${drawings.length} valid drawings`);
+    return drawings;
+    
+  } catch (error) {
+    console.log('NY State Full API extraction failed:', error.message);
+    return [];
+  }
+}
+
+// Extract from NY State History Dataset
+function extractFromNYStateHistoryAPI(data, maxRecords = 1000) {
+  try {
+    console.log('NY State History API extractor - processing...');
+    const drawings = [];
+    
+    if (Array.isArray(data)) {
+      console.log(`Processing ${data.length} records from History API`);
+      
+      data.forEach((drawing) => {
+        if (drawings.length >= maxRecords) return;
+        
+        try {
+          const date = drawing.date || drawing.draw_date;
+          if (date && drawing.white_balls && drawing.powerball) {
+            let numbers = [];
+            
+            // Handle different formats
+            if (Array.isArray(drawing.white_balls)) {
+              numbers = drawing.white_balls.map(n => parseInt(n));
+            } else if (typeof drawing.white_balls === 'string') {
+              numbers = drawing.white_balls.split(/[,\s]+/).map(n => parseInt(n.trim()));
+            }
+            
+            const powerball = parseInt(drawing.powerball);
+            
+            if (isValidPowerballNumbers(numbers, powerball)) {
+              drawings.push({
+                date: date.split('T')[0],
+                numbers: numbers.sort((a, b) => a - b),
+                powerball: powerball,
+                jackpot: drawing.jackpot || null,
+                source: 'NY State History API'
+              });
+            }
+          }
+        } catch (err) {
+          console.log('Error parsing NY State history drawing:', err.message);
+        }
+      });
+    }
+    
+    console.log(`NY State History API extracted ${drawings.length} valid drawings`);
+    return drawings;
+    
+  } catch (error) {
+    console.log('NY State History API extraction failed:', error.message);
+    return [];
+  }
+}
+
+// Extract from Texas CSV (potentially very comprehensive)
+function extractFromTexasCSV(csvText, maxRecords = 1000) {
   try {
     console.log('Texas CSV extractor - processing...');
     const drawings = [];
-    
-    if (typeof csvText !== 'string' || csvText.length < 100) {
-      throw new Error('Invalid or empty CSV data');
-    }
-    
     const lines = csvText.split('\n');
-    console.log(`Processing ${lines.length} CSV lines for max ${maxRecords} records`);
     
-    // Skip header row and process data
-    for (let i = 1; i < lines.length && drawings.length < maxRecords; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+    console.log(`Processing ${lines.length} lines from Texas CSV`);
+    
+    lines.forEach((line, index) => {
+      if (drawings.length >= maxRecords) return;
+      if (index === 0) return; // Skip header
       
       try {
-        // Texas CSV format: Date,WB1,WB2,WB3,WB4,WB5,PB,PP
         const parts = line.split(',');
-        
         if (parts.length >= 7) {
-          const date = new Date(parts[0]).toISOString().split('T')[0];
-          const numbers = [
-            parseInt(parts[1]),
-            parseInt(parts[2]),
-            parseInt(parts[3]),
-            parseInt(parts[4]),
-            parseInt(parts[5])
-          ];
-          const powerball = parseInt(parts[6]);
+          // Texas format: Game, Month, Day, Year, Num1, Num2, Num3, Num4, Num5, Powerball
+          const month = parseInt(parts[1]);
+          const day = parseInt(parts[2]);
+          const year = parseInt(parts[3]);
           
-          if (isValidPowerballNumbers(numbers, powerball)) {
-            drawings.push({
-              date: date,
-              numbers: numbers.sort((a, b) => a - b),
-              powerball: powerball,
-              jackpot: null,
-              multiplier: parts[7] ? parseInt(parts[7]) : null,
-              source: 'Texas Lottery CSV'
-            });
+          if (year && month && day) {
+            const date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            const numbers = [
+              parseInt(parts[4]),
+              parseInt(parts[5]),
+              parseInt(parts[6]),
+              parseInt(parts[7]),
+              parseInt(parts[8])
+            ];
+            const powerball = parseInt(parts[9]);
+            
+            if (isValidPowerballNumbers(numbers, powerball)) {
+              drawings.push({
+                date: date,
+                numbers: numbers.sort((a, b) => a - b),
+                powerball: powerball,
+                source: 'Texas CSV'
+              });
+            }
           }
         }
       } catch (err) {
-        console.log(`Error parsing CSV line ${i}:`, err.message);
+        console.log(`Error parsing Texas CSV line ${index}:`, err.message);
       }
-    }
+    });
     
     console.log(`Texas CSV extracted ${drawings.length} valid drawings`);
     return drawings;
@@ -313,58 +431,109 @@ function extractFromTexasCSV(csvText, maxRecords = 2000) {
   }
 }
 
-// Generate mock historical data as fallback
-function generateMockHistoricalData(maxRecords = 500) {
+// Extract from Lottery Statistics API (hypothetical, but good pattern)
+function extractFromLotteryStatsAPI(data, maxRecords = 500) {
   try {
-    console.log(`Generating ${maxRecords} mock historical drawings as fallback...`);
+    console.log('Lottery Stats API extractor - processing...');
     const drawings = [];
     
-    const today = new Date();
-    
-    // Generate realistic mock data
-    for (let i = 0; i < maxRecords; i++) {
-      const drawDate = new Date(today);
-      drawDate.setDate(today.getDate() - (i * 3.5)); // Drawings every ~3.5 days
+    if (data && data.status === 'success' && Array.isArray(data.results)) {
+      console.log(`Processing ${data.results.length} records from Lottery Stats API`);
       
-      const numbers = [];
-      while (numbers.length < 5) {
-        const num = Math.floor(Math.random() * 69) + 1;
-        if (!numbers.includes(num)) {
-          numbers.push(num);
+      data.results.forEach((drawing) => {
+        if (drawings.length >= maxRecords) return;
+        
+        try {
+          if (drawing.date && drawing.white_balls && drawing.powerball) {
+            const numbers = Array.isArray(drawing.white_balls) ? 
+              drawing.white_balls.map(n => parseInt(n)) :
+              drawing.white_balls.split(',').map(n => parseInt(n.trim()));
+            const powerball = parseInt(drawing.powerball);
+            
+            if (isValidPowerballNumbers(numbers, powerball)) {
+              drawings.push({
+                date: drawing.date,
+                numbers: numbers.sort((a, b) => a - b),
+                powerball: powerball,
+                jackpot: drawing.jackpot || null,
+                source: 'Lottery Stats API'
+              });
+            }
+          }
+        } catch (err) {
+          console.log('Error parsing Lottery Stats API drawing:', err.message);
         }
-      }
-      
-      const powerball = Math.floor(Math.random() * 26) + 1;
-      
-      // Add some frequency bias to make it more realistic
-      const biasedNumbers = numbers.map(num => {
-        // Slightly bias towards middle range numbers
-        if (num >= 20 && num <= 50) {
-          return Math.random() < 0.3 ? Math.floor(Math.random() * 69) + 1 : num;
-        }
-        return num;
-      });
-      
-      drawings.push({
-        date: drawDate.toISOString().split('T')[0],
-        numbers: biasedNumbers.sort((a, b) => a - b),
-        powerball: powerball,
-        jackpot: Math.floor(Math.random() * 800000000) + 40000000, // $40M to $840M
-        multiplier: Math.random() < 0.3 ? (Math.floor(Math.random() * 5) + 2) : null,
-        source: 'Mock Data Generator'
       });
     }
     
-    console.log(`Generated ${drawings.length} mock drawings`);
+    console.log(`Lottery Stats API extracted ${drawings.length} valid drawings`);
     return drawings;
     
   } catch (error) {
-    console.log('Mock data generation failed:', error.message);
+    console.log('Lottery Stats API extraction failed:', error.message);
     return [];
   }
 }
 
-// Validate Powerball numbers
+// Extract from Texas Historical HTML (enhanced)
+function extractFromTexasHistoricalHTML(html, maxRecords = 200) {
+  try {
+    console.log('Texas Historical HTML extractor - processing...');
+    const drawings = [];
+    
+    // Enhanced patterns for different date and number formats
+    const patterns = [
+      /(\d{2}\/\d{2}\/\d{4})[^0-9]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*PB:\s*(\d{1,2})/gi,
+      /Date:\s*(\d{2}\/\d{2}\/\d{4})[^0-9]*Numbers:\s*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/gi,
+      /(\d{1,2}\/\d{1,2}\/\d{4})[^0-9]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/gi
+    ];
+    
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(html)) !== null && drawings.length < maxRecords) {
+        try {
+          const [, dateStr, n1, n2, n3, n4, n5, pb] = match;
+          
+          // Convert MM/DD/YYYY to YYYY-MM-DD
+          const dateParts = dateStr.split('/');
+          const date = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+          
+          const numbers = [parseInt(n1), parseInt(n2), parseInt(n3), parseInt(n4), parseInt(n5)];
+          const powerball = parseInt(pb);
+          
+          if (isValidPowerballNumbers(numbers, powerball)) {
+            // Check for duplicates
+            const isDuplicate = drawings.some(d => 
+              d.date === date && 
+              JSON.stringify(d.numbers) === JSON.stringify(numbers.sort((a, b) => a - b)) &&
+              d.powerball === powerball
+            );
+            
+            if (!isDuplicate) {
+              drawings.push({
+                date: date,
+                numbers: numbers.sort((a, b) => a - b),
+                powerball: powerball,
+                source: 'Texas Historical HTML'
+              });
+            }
+          }
+        } catch (err) {
+          console.log('Error parsing Texas HTML result:', err.message);
+        }
+      }
+    }
+    
+    console.log(`Texas Historical HTML extracted ${drawings.length} valid drawings`);
+    return drawings;
+    
+  } catch (error) {
+    console.log('Texas historical HTML extraction failed:', error.message);
+    return [];
+  }
+}
+
+// Validate Powerball numbers (updated for current rules)
 function isValidPowerballNumbers(numbers, powerball) {
   if (!Array.isArray(numbers) || numbers.length !== 5) return false;
   if (!powerball || powerball < 1 || powerball > 26) return false;
@@ -406,8 +575,6 @@ function calculateAdvancedFrequencyStats(drawings) {
   const totalDrawings = drawings.length;
   const recentDrawings = drawings.slice(0, Math.min(50, Math.floor(totalDrawings * 0.3)));
   
-  console.log(`📊 Calculating stats for ${totalDrawings} drawings (${recentDrawings.length} recent)`);
-  
   // Initialize frequency counters
   for (let i = 1; i <= 69; i++) numberFreq[i] = { total: 0, recent: 0, lastSeen: null };
   for (let i = 1; i <= 26; i++) powerballFreq[i] = { total: 0, recent: 0, lastSeen: null };
@@ -427,11 +594,11 @@ function calculateAdvancedFrequencyStats(drawings) {
     if (!powerballFreq[drawing.powerball].lastSeen) powerballFreq[drawing.powerball].lastSeen = drawing.date;
   });
   
-  // Calculate hot and cold numbers
+  // Calculate hot and cold numbers with enhanced scoring
   const hotNumbers = Object.entries(numberFreq)
     .map(([num, freq]) => ({
       number: parseInt(num),
-      score: freq.recent * 3 + freq.total * 0.2,
+      score: freq.recent * 3 + freq.total * 0.2, // Weighted more toward recent
       totalFreq: freq.total,
       recentFreq: freq.recent,
       lastSeen: freq.lastSeen
@@ -451,21 +618,26 @@ function calculateAdvancedFrequencyStats(drawings) {
     .sort((a, b) => a.score - b.score)
     .slice(0, 25)
     .map(item => item.number);
-
-  // Hot and cold powerballs
+    
   const hotPowerballs = Object.entries(powerballFreq)
     .map(([num, freq]) => ({
       number: parseInt(num),
-      score: freq.recent * 3 + freq.total * 0.2
+      score: freq.recent * 3 + freq.total * 0.2,
+      totalFreq: freq.total,
+      recentFreq: freq.recent,
+      lastSeen: freq.lastSeen
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 10)
     .map(item => item.number);
-
+    
   const coldPowerballs = Object.entries(powerballFreq)
     .map(([num, freq]) => ({
       number: parseInt(num),
-      score: freq.recent * 3 + freq.total * 0.2
+      score: freq.recent * 3 + freq.total * 0.2,
+      totalFreq: freq.total,
+      recentFreq: freq.recent,
+      lastSeen: freq.lastSeen
     }))
     .sort((a, b) => a.score - b.score)
     .slice(0, 10)
@@ -481,19 +653,20 @@ function calculateAdvancedFrequencyStats(drawings) {
     totalDrawings: totalDrawings,
     recentDrawings: recentDrawings.length,
     analysisDate: new Date().toISOString().split('T')[0],
-    dataSource: 'Enhanced Historical Analysis',
+    dataSource: 'Live Historical Data',
     dateRange: {
       latest: drawings[0]?.date || null,
       earliest: drawings[drawings.length - 1]?.date || null
     },
     qualityMetrics: {
-      dataCompleteness: (totalDrawings / 2000 * 100).toFixed(1) + '%',
+      dataCompleteness: (totalDrawings / 500 * 100).toFixed(1) + '%',
       recentCoverage: (recentDrawings.length / 50 * 100).toFixed(1) + '%',
       historicalDepth: calculateHistoricalDepth(drawings)
     }
   };
 }
 
+// Calculate how far back the historical data goes
 function calculateHistoricalDepth(drawings) {
   if (drawings.length === 0) return 'No data';
   
