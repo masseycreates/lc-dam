@@ -74,19 +74,26 @@
 
             // Generate numbers using selected algorithm
             const generateNumbers = useCallback(async (algorithm = 'hybrid', count = 5) => {
+                console.log(`Generating numbers with algorithm: ${algorithm}, count: ${count}`);
                 setLoading(true);
                 setError(null);
-                
+
                 try {
+                    console.log('Calling lotteryService.generateNumbers...');
                     const result = await window.lotteryService.generateNumbers(algorithm, count);
+                    console.log('Generation result:', result);
+
                     if (result.success) {
-                        setGeneratedSets(window.lotteryService.getGeneratedSets());
+                        const newGeneratedSets = window.lotteryService.getGeneratedSets();
+                        console.log('New generated sets:', newGeneratedSets);
+                        setGeneratedSets(newGeneratedSets);
                     } else {
+                        console.error('Generation failed:', result.error);
                         setError(result.error);
                     }
                 } catch (err) {
-                    setError('Failed to generate numbers');
                     console.error('Generation error:', err);
+                    setError('Failed to generate numbers');
                 } finally {
                     setLoading(false);
                 }
