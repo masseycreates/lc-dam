@@ -171,28 +171,8 @@ window.LotteryService = class {
             let algorithmResults;
             
             // Get results from the selected algorithm
-            switch (algorithm) {
-                case 'frequency':
-                    algorithmResults = this.algorithms.frequency(this.historicalData, count);
-                    break;
-                case 'hot-cold':
-                case 'hot_cold':
-                    algorithmResults = this.algorithms.hot_cold(this.historicalData, count);
-                    break;
-                case 'pattern':
-                    algorithmResults = this.algorithms.pattern(this.historicalData, count);
-                    break;
-                case 'statistical':
-                    algorithmResults = this.algorithms.statistical(this.historicalData, count);
-                    break;
-                case 'random':
-                    algorithmResults = this.algorithms.random(this.historicalData, count);
-                    break;
-                case 'hybrid':
-                default:
-                    algorithmResults = this.algorithms.hybrid(this.historicalData, count);
-                    break;
-            }
+            const algorithmFunction = this.algorithms.getAlgorithm(algorithm);
+            algorithmResults = algorithmFunction(this.historicalData, count);
 
             // Ensure we have an array of results
             if (!Array.isArray(algorithmResults)) {

@@ -86,6 +86,15 @@ window.ApiService = class {
         }
     }
 
+    // Alias methods for backward compatibility
+    async fetchPowerballData() {
+        return await this.getCurrentPowerball();
+    }
+
+    async fetchHistoricalData(limit = 100) {
+        return await this.getPowerballHistory(limit);
+    }
+
     async getPowerballHistory(limit = 100) {
         try {
             const data = await this.makeApiCall(`/powerball-history?limit=${limit}`);

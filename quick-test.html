@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { border-color: green; background: #e8f5e8; }
+        .error { border-color: red; background: #ffe8e8; }
+    </style>
+</head>
+<body>
+    <h1>Quick Fix Test</h1>
+    <div id="results"></div>
+
+    <!-- Load utility modules -->
+    <script src="src/utils/constants.js"></script>
+    <script src="src/utils/helpers.js"></script>
+    <script src="src/utils/LotteryAlgorithms.js"></script>
+    
+    <!-- Load services -->
+    <script src="src/services/apiService.js"></script>
+    <script src="src/services/lotteryService.js"></script>
+
+    <script>
+        function addResult(message, isSuccess) {
+            const div = document.createElement('div');
+            div.className = `result ${isSuccess ? 'success' : 'error'}`;
+            div.textContent = message;
+            document.getElementById('results').appendChild(div);
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(async () => {
+                console.log('Testing fixes...');
+                
+                // Test 1: Check if services exist
+                addResult(`API Service exists: ${!!window.apiService}`, !!window.apiService);
+                addResult(`Lottery Service exists: ${!!window.lotteryService}`, !!window.lotteryService);
+                
+                // Test 2: Check if API methods exist
+                if (window.apiService) {
+                    addResult(`fetchPowerballData exists: ${typeof window.apiService.fetchPowerballData === 'function'}`, 
+                        typeof window.apiService.fetchPowerballData === 'function');
+                    addResult(`fetchHistoricalData exists: ${typeof window.apiService.fetchHistoricalData === 'function'}`, 
+                        typeof window.apiService.fetchHistoricalData === 'function');
+                }
+                
+                // Test 3: Check if algorithm methods exist
+                if (window.lotteryService && window.lotteryService.algorithms) {
+                    const alg = window.lotteryService.algorithms;
+                    addResult(`getAlgorithm exists: ${typeof alg.getAlgorithm === 'function'}`, 
+                        typeof alg.getAlgorithm === 'function');
+                    
+                    if (typeof alg.getAlgorithm === 'function') {
+                        const randomAlg = alg.getAlgorithm('random');
+                        addResult(`random algorithm accessible: ${typeof randomAlg === 'function'}`, 
+                            typeof randomAlg === 'function');
+                        
+                        const hybridAlg = alg.getAlgorithm('hybrid');
+                        addResult(`hybrid algorithm accessible: ${typeof hybridAlg === 'function'}`, 
+                            typeof hybridAlg === 'function');
+                    }
+                }
+                
+                // Test 4: Try to generate numbers
+                if (window.lotteryService) {
+                    try {
+                        const result = await window.lotteryService.generateNumbers('random', 1);
+                        addResult(`Number generation works: ${result.success}`, result.success);
+                        if (result.success) {
+                            addResult(`Generated: ${JSON.stringify(result.data[0].numbers)} + ${result.data[0].powerball}`, true);
+                        } else {
+                            addResult(`Generation error: ${result.error}`, false);
+                        }
+                    } catch (error) {
+                        addResult(`Generation exception: ${error.message}`, false);
+                    }
+                }
+                
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
