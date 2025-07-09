@@ -527,8 +527,9 @@
             );
         };
 
-        // Render the application
-        ReactDOM.render(<LotteryApp />, document.getElementById('root'));
+        // Render the application using React 18 createRoot
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<LotteryApp />);
     </script>
 </body>
 </html>

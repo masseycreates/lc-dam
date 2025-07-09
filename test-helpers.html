@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helper Functions Test</title>
+</head>
+<body>
+    <h1>Helper Functions Test</h1>
+    <div id="test-results"></div>
+
+    <!-- Load utility modules -->
+    <script src="src/utils/constants.js"></script>
+    <script src="src/utils/helpers.js"></script>
+    <script src="src/utils/LotteryAlgorithms.js"></script>
+    
+    <!-- Load services -->
+    <script src="src/services/apiService.js"></script>
+    <script src="src/services/lotteryService.js"></script>
+
+    <script>
+        function runTests() {
+            const results = [];
+            
+            // Test 1: Check if performanceMetrics is initialized
+            results.push({
+                test: 'Performance Metrics Initialization',
+                passed: window.performanceMetrics && window.performanceMetrics.loadTimes,
+                details: window.performanceMetrics ? 'Initialized' : 'Not initialized'
+            });
+            
+            // Test 2: Check if trackPerformance is available
+            results.push({
+                test: 'trackPerformance Function',
+                passed: typeof window.trackPerformance === 'function',
+                details: typeof window.trackPerformance
+            });
+            
+            // Test 3: Check if handleApiError is available
+            results.push({
+                test: 'handleApiError Function',
+                passed: typeof window.handleApiError === 'function',
+                details: typeof window.handleApiError
+            });
+            
+            // Test 4: Test trackPerformance function
+            try {
+                window.trackPerformance('test_operation', performance.now() - 100);
+                results.push({
+                    test: 'trackPerformance Execution',
+                    passed: true,
+                    details: 'Function executed without error'
+                });
+            } catch (error) {
+                results.push({
+                    test: 'trackPerformance Execution',
+                    passed: false,
+                    details: error.message
+                });
+            }
+            
+            // Test 5: Check if services are initialized
+            results.push({
+                test: 'API Service',
+                passed: window.apiService && typeof window.apiService.makeApiCall === 'function',
+                details: window.apiService ? 'Initialized' : 'Not initialized'
+            });
+            
+            results.push({
+                test: 'Lottery Service',
+                passed: window.lotteryService && typeof window.lotteryService.generateNumbers === 'function',
+                details: window.lotteryService ? 'Initialized' : 'Not initialized'
+            });
+            
+            // Display results
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<h2>Test Results:</h2>' + 
+                results.map(result => 
+                    `<div style="margin: 10px 0; padding: 10px; border: 1px solid ${result.passed ? 'green' : 'red'}; background: ${result.passed ? '#e8f5e8' : '#ffe8e8'}">
+                        <strong>${result.test}:</strong> ${result.passed ? 'PASSED' : 'FAILED'}<br>
+                        <small>${result.details}</small>
+                    </div>`
+                ).join('');
+        }
+        
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

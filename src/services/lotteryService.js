@@ -10,6 +10,101 @@ window.LotteryService = class {
         this.generatedSets = [];
     }
 
+    // Safe helper function wrappers
+    safeTrackPerformance(operation, startTime) {
+        try {
+            if (typeof window.trackPerformance === 'function') {
+                window.trackPerformance(operation, startTime);
+            } else if (window.LotteryHelpers && typeof window.LotteryHelpers.trackPerformance === 'function') {
+                window.LotteryHelpers.trackPerformance(operation, startTime);
+            }
+        } catch (error) {
+            console.warn('Performance tracking failed:', error);
+        }
+    }
+
+    safeHandleApiError(error, context) {
+        try {
+            if (typeof window.handleApiError === 'function') {
+                return window.handleApiError(error, context);
+            } else if (window.LotteryHelpers && typeof window.LotteryHelpers.handleApiError === 'function') {
+                return window.LotteryHelpers.handleApiError(error, context);
+            } else {
+                return error.message || 'An unexpected error occurred';
+            }
+        } catch (e) {
+            return error.message || 'An unexpected error occurred';
+        }
+    }
+
+    safeLoadFromStorage(key, defaultValue = null) {
+        try {
+            if (typeof window.loadFromStorage === 'function') {
+                return window.loadFromStorage(key, defaultValue);
+            } else if (window.LotteryHelpers && typeof window.LotteryHelpers.loadFromStorage === 'function') {
+                return window.LotteryHelpers.loadFromStorage(key, defaultValue);
+            } else {
+                return defaultValue;
+            }
+        } catch (error) {
+            console.warn('Failed to load from storage:', error);
+            return defaultValue;
+        }
+    }
+
+    safeSaveToStorage(key, data) {
+        try {
+            if (typeof window.saveToStorage === 'function') {
+                return window.saveToStorage(key, data);
+            } else if (window.LotteryHelpers && typeof window.LotteryHelpers.saveToStorage === 'function') {
+                return window.LotteryHelpers.saveToStorage(key, data);
+            } else {
+                return false;
+            }
+        } catch (error) {
+            console.warn('Failed to save to storage:', error);
+            return false;
+        }
+    }
+
+    safeProcessHistoricalData(rawData) {
+        try {
+            if (typeof window.processHistoricalData === 'function') {
+                return window.processHistoricalData(rawData);
+            } else if (window.LotteryHelpers && typeof window.LotteryHelpers.processHistoricalData === 'function') {
+                return window.LotteryHelpers.processHistoricalData(rawData);
+            } else {
+                // Fallback basic processing
+                return {
+                    drawings: Array.isArray(rawData) ? rawData : [],
+                    numberFrequency: {},
+                    powerballFrequency: {},
+                    hotNumbers: [],
+                    coldNumbers: [],
+                    hotPowerballs: [],
+                    coldPowerballs: [],
+                    totalDrawings: Array.isArray(rawData) ? rawData.length : 0,
+                    averageFrequency: 0,
+                    lastUpdated: new Date().toISOString()
+                };
+            }
+        } catch (error) {
+            console.warn('Failed to process historical data:', error);
+            return {
+                drawings: [],
+                numberFrequency: {},
+                powerballFrequency: {},
+                hotNumbers: [],
+                coldNumbers: [],
+                hotPowerballs: [],
+                coldPowerballs: [],
+                totalDrawings: 0,
+                averageFrequency: 0,
+                lastUpdated: new Date().toISOString()
+            };
+        }
+    }
+
     // Initialize the service
     async initialize() {
         try {
@@ -24,7 +119,7 @@ window.LotteryService = class {
             console.error('Failed to initialize lottery service:', error);
             return { 
                 success: false, 
-                error: window.handleApiError(error, 'Lottery Service Initialization')
+                error: this.safeHandleApiError(error, 'Lottery Service Initialization')
             };
         }
     }
@@ -46,11 +141,11 @@ window.LotteryService = class {
             }
 
             if (historyResult.success) {
-                this.historicalData = window.processHistoricalData(historyResult.data);
+                this.historicalData = this.safeProcessHistoricalData(historyResult.data);
                 this.saveCachedData('historicalData', this.historicalData);
             }
 
-            window.trackPerformance('lottery_data_refresh', startTime);
+            this.safeTrackPerformance('lottery_data_refresh', startTime);
 
             return {
                 success: true,
@@ -58,34 +153,62 @@ window.LotteryService = class {
                 history: historyResult.success
             };
         } catch (error) {
-            window.trackPerformance('lottery_data_refresh_error', startTime);
+            this.safeTrackPerformance('lottery_data_refresh_error', startTime);
             throw error;
         }
     }
 
     loadCachedData() {
-        this.currentDrawing = window.loadFromStorage('lottery_current_drawing');
-        this.historicalData = window.loadFromStorage('lottery_historical_data');
-        this.userSelections = window.loadFromStorage('lottery_user_selections', []);
-        this.generatedSets = window.loadFromStorage('lottery_generated_sets', []);
+        this.currentDrawing = this.safeLoadFromStorage('lottery_current_drawing');
+        this.historicalData = this.safeLoadFromStorage('lottery_historical_data');
+        this.userSelections = this.safeLoadFromStorage('lottery_user_selections', []);
+        this.generatedSets = this.safeLoadFromStorage('lottery_generated_sets', []);
     }
 
     saveCachedData(key, data) {
-        window.saveToStorage(`lottery_${key}`, data);
+        this.safeSaveToStorage(`lottery_${key}`, data);
     }
 
     // Number generation methods
-    generateNumbers(algorithm = 'hybrid', count = 5) {
+    async generateNumbers(algorithm = 'hybrid', count = 5) {
+        const startTime = performance.now();
+        
         try {
-            const startTime = performance.now();
-            
-            if (!this.algorithms.algorithms[algorithm]) {
-                throw new Error(`Unknown algorithm: ${algorithm}`);
+            if (!this.algorithms) {
+                throw new Error('Lottery algorithms not available');
             }
 
-            const results = this.algorithms.algorithms[algorithm](this.historicalData, count);
+            const results = [];
             
-            // Add metadata
+            for (let i = 0; i < count; i++) {
+                let result;
+                
+                switch (algorithm) {
+                    case 'frequency':
+                        result = this.algorithms.frequencyAnalysis(this.historicalData);
+                        break;
+                    case 'hot-cold':
+                        result = this.algorithms.hotColdAnalysis(this.historicalData);
+                        break;
+                    case 'pattern':
+                        result = this.algorithms.patternAnalysis(this.historicalData);
+                        break;
+                    case 'statistical':
+                        result = this.algorithms.statisticalAnalysis(this.historicalData);
+                        break;
+                    case 'random':
+                        result = this.algorithms.randomGeneration();
+                        break;
+                    case 'hybrid':
+                    default:
+                        result = this.algorithms.hybridAnalysis(this.historicalData);
+                        break;
+                }
+                
+                results.push(result);
+            }
+
+            // Enhance results with metadata
             const enhancedResults = results.map((result, index) => ({
                 ...result,
                 id: `${algorithm}_${Date.now()}_${index}`,
@@ -97,7 +220,7 @@ window.LotteryService = class {
             this.generatedSets = [...enhancedResults, ...this.generatedSets].slice(0, 50);
             this.saveCachedData('generatedSets', this.generatedSets);
 
-            window.trackPerformance(`generate_${algorithm}`, startTime);
+            this.safeTrackPerformance(`generate_${algorithm}`, startTime);
 
             return {
                 success: true,
@@ -107,7 +230,7 @@ window.LotteryService = class {
             console.error('Failed to generate numbers:', error);
             return {
                 success: false,
-                error: window.handleApiError(error, 'Number Generation')
+                error: this.safeHandleApiError(error, 'Number Generation')
             };
         }
     }
@@ -120,109 +243,109 @@ window.LotteryService = class {
         if (!this.historicalData) {
             return this.generateNumbers('random', 5);
         }
-
-        try {
-            const results = this.algorithms.generateAdvancedQuickSelection(this.historicalData);
-            
-            const enhancedResults = results.map((result, index) => ({
-                ...result,
-                id: `advanced_${Date.now()}_${index}`,
-                timestamp: new Date().toISOString(),
-                historicalMatch: this.checkHistoricalMatch(result.numbers, result.powerball)
-            }));
-
-            return {
-                success: true,
-                data: enhancedResults
-            };
-        } catch (error) {
-            console.error('Failed to generate advanced selection:', error);
-            return this.generateNumbers('hybrid', 5);
-        }
+        
+        return this.generateNumbers('hybrid', 3);
     }
 
     // User selection management
-    saveUserSelection(numbers, powerball, name = null) {
-        const validation = this.validateSelection(numbers, powerball);
-        if (!validation.valid) {
-            return {
-                success: false,
-                error: validation.error
-            };
-        }
-
+    addUserSelection(numbers, powerball) {
         const selection = {
             id: `user_${Date.now()}`,
             numbers: [...numbers].sort((a, b) => a - b),
             powerball,
-            name: name || `Selection ${this.userSelections.length + 1}`,
             timestamp: new Date().toISOString(),
+            type: 'user',
             historicalMatch: this.checkHistoricalMatch(numbers, powerball)
         };
 
-        this.userSelections.unshift(selection);
-        this.userSelections = this.userSelections.slice(0, 20); // Keep last 20
+        this.userSelections = [selection, ...this.userSelections].slice(0, 20);
         this.saveCachedData('userSelections', this.userSelections);
 
-        return {
-            success: true,
-            data: selection
-        };
+        return selection;
     }
 
-    deleteUserSelection(id) {
-        const index = this.userSelections.findIndex(sel => sel.id === id);
-        if (index === -1) {
-            return {
-                success: false,
-                error: 'Selection not found'
-            };
-        }
-
-        this.userSelections.splice(index, 1);
+    removeUserSelection(id) {
+        this.userSelections = this.userSelections.filter(selection => selection.id !== id);
         this.saveCachedData('userSelections', this.userSelections);
-
-        return { success: true };
     }
 
-    getUserSelections() {
-        return this.userSelections;
+    clearUserSelections() {
+        this.userSelections = [];
+        this.saveCachedData('userSelections', this.userSelections);
     }
 
-    // Validation methods
-    validateSelection(numbers, powerball) {
-        const numberValidation = window.validateLotteryNumbers(numbers);
-        if (!numberValidation.valid) {
-            return numberValidation;
+    // Historical analysis
+    checkHistoricalMatch(numbers, powerball) {
+        if (!this.historicalData || !this.historicalData.drawings) {
+            return { exactMatch: false, partialMatches: 0 };
         }
 
-        const powerballValidation = window.validatePowerball(powerball);
-        if (!powerballValidation.valid) {
-            return powerballValidation;
-        }
+        const sortedNumbers = [...numbers].sort((a, b) => a - b);
+        let exactMatch = false;
+        let partialMatches = 0;
 
-        return { valid: true };
+        this.historicalData.drawings.forEach(drawing => {
+            if (drawing.numbers && drawing.powerball) {
+                const drawingNumbers = [...drawing.numbers].sort((a, b) => a - b);
+                
+                // Check for exact match
+                if (JSON.stringify(sortedNumbers) === JSON.stringify(drawingNumbers) && 
+                    powerball === drawing.powerball) {
+                    exactMatch = true;
+                }
+
+                // Count partial matches (3+ numbers match)
+                const matchingNumbers = sortedNumbers.filter(num => drawingNumbers.includes(num));
+                if (matchingNumbers.length >= 3) {
+                    partialMatches++;
+                }
+            }
+        });
+
+        return { exactMatch, partialMatches };
     }
 
-    // Analysis methods
     analyzeNumbers(numbers, powerball) {
-        if (!this.historicalData) {
-            return {
-                success: false,
-                error: 'Historical data not available'
-            };
-        }
-
         try {
+            if (!this.historicalData) {
+                return {
+                    success: false,
+                    error: 'Historical data not available'
+                };
+            }
+
             const analysis = {
                 numbers: [...numbers].sort((a, b) => a - b),
                 powerball,
-                statistics: window.calculateStatistics(numbers),
-                frequency: this.analyzeFrequency(numbers, powerball),
-                patterns: this.analyzePatterns(numbers),
-                historicalMatch: this.checkHistoricalMatch(numbers, powerball),
-                recommendations: this.generateRecommendations(numbers, powerball)
+                timestamp: new Date().toISOString()
             };
+
+            // Basic statistics
+            const sum = numbers.reduce((acc, num) => acc + num, 0);
+            analysis.sum = sum;
+            analysis.average = Math.round((sum / numbers.length) * 100) / 100;
+            analysis.range = Math.max(...numbers) - Math.min(...numbers);
+            analysis.evenCount = numbers.filter(num => num % 2 === 0).length;
+            analysis.oddCount = numbers.length - analysis.evenCount;
+
+            // Frequency analysis
+            analysis.frequencies = numbers.map(num => ({
+                number: num,
+                frequency: this.historicalData.numberFrequency[num] || 0,
+                isHot: this.historicalData.hotNumbers.some(hot => hot.number === num),
+                isCold: this.historicalData.coldNumbers.some(cold => cold.number === num)
+            }));
+
+            analysis.powerballFrequency = this.historicalData.powerballFrequency[powerball] || 0;
+            analysis.powerballIsHot = this.historicalData.hotPowerballs.some(hot => hot.number === powerball);
+            analysis.powerballIsCold = this.historicalData.coldPowerballs.some(cold => cold.number === powerball);
+
+            // Historical matches
+            analysis.historicalMatch = this.checkHistoricalMatch(numbers, powerball);
+
+            // Pattern analysis
+            analysis.consecutiveNumbers = this.findConsecutiveNumbers(numbers);
+            analysis.numberGroups = this.analyzeNumberGroups(numbers);
 
             return {
                 success: true,
@@ -232,208 +355,42 @@ window.LotteryService = class {
             console.error('Failed to analyze numbers:', error);
             return {
                 success: false,
-                error: window.handleApiError(error, 'Number Analysis')
+                error: this.safeHandleApiError(error, 'Number Analysis')
             };
         }
-    }
-
-    analyzeFrequency(numbers, powerball) {
-        if (!this.historicalData) return null;
-
-        const numberFreqs = numbers.map(num => ({
-            number: num,
-            frequency: this.historicalData.numberFrequency[num] || 0,
-            percentile: this.calculatePercentile(this.historicalData.numberFrequency[num] || 0, this.historicalData.numberFrequency)
-        }));
-
-        const powerballFreq = {
-            number: powerball,
-            frequency: this.historicalData.powerballFrequency[powerball] || 0,
-            percentile: this.calculatePercentile(this.historicalData.powerballFrequency[powerball] || 0, this.historicalData.powerballFrequency)
-        };
-
-        return {
-            numbers: numberFreqs,
-            powerball: powerballFreq,
-            averageFrequency: this.historicalData.averageFrequency,
-            totalDrawings: this.historicalData.totalDrawings
-        };
-    }
-
-    analyzePatterns(numbers) {
-        const sortedNumbers = [...numbers].sort((a, b) => a - b);
-        
-        return {
-            consecutive: this.findConsecutiveNumbers(sortedNumbers),
-            evenOdd: this.analyzeEvenOdd(sortedNumbers),
-            decades: this.analyzeDecades(sortedNumbers),
-            sum: sortedNumbers.reduce((a, b) => a + b, 0),
-            range: Math.max(...sortedNumbers) - Math.min(...sortedNumbers),
-            gaps: this.calculateGaps(sortedNumbers)
-        };
-    }
-
-    checkHistoricalMatch(numbers, powerball) {
-        if (!this.historicalData || !this.historicalData.drawings) {
-            return { found: false };
-        }
-
-        const sortedNumbers = [...numbers].sort((a, b) => a - b);
-        
-        // Check for exact matches
-        const exactMatch = this.historicalData.drawings.find(drawing => {
-            if (!drawing.numbers || drawing.powerball !== powerball) return false;
-            
-            const drawingNumbers = [...drawing.numbers].sort((a, b) => a - b);
-            return JSON.stringify(sortedNumbers) === JSON.stringify(drawingNumbers);
-        });
-
-        if (exactMatch) {
-            return {
-                found: true,
-                type: 'exact',
-                date: exactMatch.date,
-                jackpot: exactMatch.jackpot
-            };
-        }
-
-        // Check for partial matches (4+ numbers)
-        const partialMatches = this.historicalData.drawings
-            .map(drawing => {
-                if (!drawing.numbers) return null;
-                
-                const matchingNumbers = sortedNumbers.filter(num => 
-                    drawing.numbers.includes(num)
-                ).length;
-                
-                const powerballMatch = drawing.powerball === powerball;
-                
-                if (matchingNumbers >= 4 || (matchingNumbers >= 3 && powerballMatch)) {
-                    return {
-                        date: drawing.date,
-                        matchingNumbers,
-                        powerballMatch,
-                        jackpot: drawing.jackpot
-                    };
-                }
-                
-                return null;
-            })
-            .filter(match => match !== null)
-            .slice(0, 5); // Top 5 matches
-
-        return {
-            found: partialMatches.length > 0,
-            type: 'partial',
-            matches: partialMatches
-        };
-    }
-
-    // Helper methods
-    calculatePercentile(value, data) {
-        const values = Object.values(data).sort((a, b) => a - b);
-        const index = values.indexOf(value);
-        return index >= 0 ? (index / (values.length - 1)) * 100 : 0;
     }
 
     findConsecutiveNumbers(numbers) {
+        const sorted = [...numbers].sort((a, b) => a - b);
         const consecutive = [];
-        let current = [];
-        
-        for (let i = 0; i < numbers.length; i++) {
-            if (i === 0 || numbers[i] === numbers[i - 1] + 1) {
-                current.push(numbers[i]);
+        let current = [sorted[0]];
+
+        for (let i = 1; i < sorted.length; i++) {
+            if (sorted[i] === sorted[i - 1] + 1) {
+                current.push(sorted[i]);
             } else {
-                if (current.length >= 2) {
+                if (current.length > 1) {
                     consecutive.push([...current]);
                 }
-                current = [numbers[i]];
+                current = [sorted[i]];
             }
         }
-        
-        if (current.length >= 2) {
+
+        if (current.length > 1) {
             consecutive.push(current);
         }
-        
+
         return consecutive;
     }
 
-    analyzeEvenOdd(numbers) {
-        const even = numbers.filter(num => num % 2 === 0).length;
-        const odd = numbers.length - even;
-        
-        return {
-            even,
-            odd,
-            ratio: `${even}:${odd}`,
-            balanced: Math.abs(even - odd) <= 1
+    analyzeNumberGroups(numbers) {
+        const groups = {
+            low: numbers.filter(num => num >= 1 && num <= 23).length,
+            mid: numbers.filter(num => num >= 24 && num <= 46).length,
+            high: numbers.filter(num => num >= 47 && num <= 69).length
         };
-    }
 
-    analyzeDecades(numbers) {
-        const decades = {
-            '1-10': 0, '11-20': 0, '21-30': 0, '31-40': 0,
-            '41-50': 0, '51-60': 0, '61-69': 0
-        };
-        
-        numbers.forEach(num => {
-            if (num <= 10) decades['1-10']++;
-            else if (num <= 20) decades['11-20']++;
-            else if (num <= 30) decades['21-30']++;
-            else if (num <= 40) decades['31-40']++;
-            else if (num <= 50) decades['41-50']++;
-            else if (num <= 60) decades['51-60']++;
-            else decades['61-69']++;
-        });
-        
-        return decades;
-    }
-
-    calculateGaps(numbers) {
-        const gaps = [];
-        for (let i = 1; i < numbers.length; i++) {
-            gaps.push(numbers[i] - numbers[i - 1]);
-        }
-        return gaps;
-    }
-
-    generateRecommendations(numbers, powerball) {
-        const recommendations = [];
-        
-        if (!this.historicalData) {
-            return recommendations;
-        }
-
-        // Frequency-based recommendations
-        const lowFreqNumbers = numbers.filter(num => 
-            (this.historicalData.numberFrequency[num] || 0) < this.historicalData.averageFrequency * 0.8
-        );
-        
-        if (lowFreqNumbers.length > 3) {
-            recommendations.push({
-                type: 'warning',
-                message: `${lowFreqNumbers.length} numbers (${lowFreqNumbers.join(', ')}) appear less frequently than average`
-            });
-        }
-
-        // Pattern recommendations
-        const patterns = this.analyzePatterns(numbers);
-        
-        if (patterns.consecutive.length > 0) {
-            recommendations.push({
-                type: 'info',
-                message: `Contains consecutive numbers: ${patterns.consecutive.map(seq => seq.join('-')).join(', ')}`
-            });
-        }
-
-        if (!patterns.evenOdd.balanced) {
-            recommendations.push({
-                type: 'suggestion',
-                message: `Consider balancing even/odd numbers (current: ${patterns.evenOdd.ratio})`
-            });
-        }
-
-        return recommendations;
+        return groups;
     }
 
     // Data getters
@@ -445,19 +402,122 @@ window.LotteryService = class {
         return this.historicalData;
     }
 
+    getUserSelections() {
+        return this.userSelections;
+    }
+
     getGeneratedSets() {
         return this.generatedSets;
     }
 
-    // Statistics
-    getServiceStats() {
+    // Statistics and insights
+    getStatistics() {
+        if (!this.historicalData) {
+            return null;
+        }
+
         return {
-            historicalDataAvailable: !!this.historicalData,
-            currentDrawingAvailable: !!this.currentDrawing,
-            totalUserSelections: this.userSelections.length,
-            totalGeneratedSets: this.generatedSets.length,
-            lastDataRefresh: this.historicalData?.lastUpdated || null
+            totalDrawings: this.historicalData.totalDrawings,
+            averageFrequency: this.historicalData.averageFrequency,
+            hotNumbers: this.historicalData.hotNumbers.slice(0, 10),
+            coldNumbers: this.historicalData.coldNumbers.slice(0, 10),
+            hotPowerballs: this.historicalData.hotPowerballs.slice(0, 5),
+            coldPowerballs: this.historicalData.coldPowerballs.slice(0, 5),
+            lastUpdated: this.historicalData.lastUpdated
         };
+    }
+
+    getInsights() {
+        if (!this.historicalData || !this.historicalData.drawings.length) {
+            return [];
+        }
+
+        const insights = [];
+        const recent = this.historicalData.drawings.slice(0, 10);
+
+        // Most frequent recent numbers
+        const recentNumbers = {};
+        recent.forEach(drawing => {
+            if (drawing.numbers) {
+                drawing.numbers.forEach(num => {
+                    recentNumbers[num] = (recentNumbers[num] || 0) + 1;
+                });
+            }
+        });
+
+        const mostFrequentRecent = Object.entries(recentNumbers)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 5)
+            .map(([num, freq]) => ({ number: parseInt(num), frequency: freq }));
+
+        if (mostFrequentRecent.length > 0) {
+            insights.push({
+                type: 'frequent_recent',
+                title: 'Most Frequent Recent Numbers',
+                description: `Numbers ${mostFrequentRecent.map(n => n.number).join(', ')} have appeared most frequently in the last 10 drawings.`,
+                data: mostFrequentRecent
+            });
+        }
+
+        // Overdue numbers
+        const overdueNumbers = this.historicalData.coldNumbers.slice(0, 5);
+        if (overdueNumbers.length > 0) {
+            insights.push({
+                type: 'overdue',
+                title: 'Overdue Numbers',
+                description: `Numbers ${overdueNumbers.map(n => n.number).join(', ')} haven't appeared recently and might be due.`,
+                data: overdueNumbers
+            });
+        }
+
+        // Hot streak
+        const hotNumbers = this.historicalData.hotNumbers.slice(0, 5);
+        if (hotNumbers.length > 0) {
+            insights.push({
+                type: 'hot_streak',
+                title: 'Hot Numbers',
+                description: `Numbers ${hotNumbers.map(n => n.number).join(', ')} are currently on a hot streak.`,
+                data: hotNumbers
+            });
+        }
+
+        return insights;
+    }
+
+    // Utility methods
+    clearAllData() {
+        this.currentDrawing = null;
+        this.historicalData = null;
+        this.userSelections = [];
+        this.generatedSets = [];
+        
+        // Clear storage
+        ['currentDrawing', 'historicalData', 'userSelections', 'generatedSets'].forEach(key => {
+            this.safeSaveToStorage(`lottery_${key}`, null);
+        });
+    }
+
+    exportData() {
+        return {
+            currentDrawing: this.currentDrawing,
+            historicalData: this.historicalData,
+            userSelections: this.userSelections,
+            generatedSets: this.generatedSets,
+            exportedAt: new Date().toISOString()
+        };
+    }
+
+    importData(data) {
+        if (data.currentDrawing) this.currentDrawing = data.currentDrawing;
+        if (data.historicalData) this.historicalData = data.historicalData;
+        if (data.userSelections) this.userSelections = data.userSelections;
+        if (data.generatedSets) this.generatedSets = data.generatedSets;
+
+        // Save to storage
+        this.saveCachedData('currentDrawing', this.currentDrawing);
+        this.saveCachedData('historicalData', this.historicalData);
+        this.saveCachedData('userSelections', this.userSelections);
+        this.saveCachedData('generatedSets', this.generatedSets);
     }
 };
 
