@@ -176,63 +176,66 @@ window.LotteryService = class {
         try {
             if (!this.algorithms) {
                 throw new Error('Lottery algorithms not available');
-            }
+            try {
+                const startTime = performance.now();
 
-            const results = [];
-            
-            for (let i = 0; i < count; i++) {
-                let result;
-                
+                let algorithmResults;
+
+                // Get results from the selected algorithm
                 switch (algorithm) {
                     case 'frequency':
-                        result = this.algorithms.frequencyAnalysis(this.historicalData);
+                        algorithmResults = this.algorithms.frequency(this.historicalData, count);
                         break;
                     case 'hot-cold':
-                        result = this.algorithms.hotColdAnalysis(this.historicalData);
+                    case 'hot_cold':
+                        algorithmResults = this.algorithms.hot_cold(this.historicalData, count);
                         break;
                     case 'pattern':
-                        result = this.algorithms.patternAnalysis(this.historicalData);
+                        algorithmResults = this.algorithms.pattern(this.historicalData, count);
                         break;
                     case 'statistical':
-                        result = this.algorithms.statisticalAnalysis(this.historicalData);
+                        algorithmResults = this.algorithms.statistical(this.historicalData, count);
                         break;
                     case 'random':
-                        result = this.algorithms.randomGeneration();
+                        algorithmResults = this.algorithms.random(this.historicalStats, count);
                         break;
                     case 'hybrid':
                     default:
-                        result = this.algorithms.hybridAnalysis(this.historicalData);
+                        algorithmResults = this.algorithms.hybrid(this.historicalData, count);
                         break;
                 }
-                
-                results.push(result);
+
+                // Ensure we have an array of results
+                if (!Array.isArray(algorithmResults)) {
+                    algorithmResults = [algorithmResults];
+                }
+
+                // Enhance results with metadata
+                const enhancedResults = algorithmResults.map((result, index) => ({
+                    ...result,
+                    id: `${algorithm}_${Date.now()}_${index}`,
+                    timestamp: new Date().toISOString(),
+                    historicalMatch: this.checkHistoricalMatch(result.numbers, result.powerball)
+                }));
+
+                // Cache the generated sets
+                this.generatedSets = [...enhancedResults, ...this.generatedSets].slice(0, 50);
+                this.safeSaveToStorage('generatedSets', this.generatedSets);
+
+                this.safeTrackPerformance(`generate_${algorithm}`, startTime);
+
+                return {
+                    success: true,
+                    data: enhancedResults
+                };
+            } catch (error) {
+                console.error('Failed to generate numbers:', error);
+                this.safeHandleApiError(error, 'Number Generation');
+                return {
+                    success: false,
+                    error: error.message
+                };
             }
-
-            // Enhance results with metadata
-            const enhancedResults = results.map((result, index) => ({
-                ...result,
-                id: `${algorithm}_${Date.now()}_${index}`,
-                timestamp: new Date().toISOString(),
-                historicalMatch: this.checkHistoricalMatch(result.numbers, result.powerball)
-            }));
-
-            // Cache the generated sets
-            this.generatedSets = [...enhancedResults, ...this.generatedSets].slice(0, 50);
-            this.saveCachedData('generatedSets', this.generatedSets);
-
-            this.safeTrackPerformance(`generate_${algorithm}`, startTime);
-
-            return {
-                success: true,
-                data: enhancedResults
-            };
-        } catch (error) {
-            console.error('Failed to generate numbers:', error);
-            return {
-                success: false,
-                error: this.safeHandleApiError(error, 'Number Generation')
-            };
-        }
     }
 
     generateQuickPick() {
@@ -277,6 +280,11 @@ window.LotteryService = class {
     // Historical analysis
     checkHistoricalMatch(numbers, powerball) {
         if (!this.historicalData || !this.historicalData.drawings) {
+            return { exactMatch: false, partialMatches: 0 };
+        }
+
+        // Ensure numbers is an array and contains valid numbers
+        if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
             return { exactMatch: false, partialMatches: 0 };
         }
 
