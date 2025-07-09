@@ -1,13 +1,15 @@
 // Advanced Lottery Intelligence System - Helper Utilities
 // Global helper functions and utilities
 
-// Initialize performance metrics object
-window.performanceMetrics = {
-    loadTimes: {},
-    apiCalls: 0,
-    errors: 0,
-    startTime: Date.now()
-};
+// Initialize performance metrics object first
+if (!window.performanceMetrics) {
+    window.performanceMetrics = {
+        loadTimes: {},
+        apiCalls: 0,
+        errors: 0,
+        startTime: Date.now()
+    };
+}
 
 // Helper functions object
 window.LotteryHelpers = {
@@ -210,7 +212,7 @@ window.LotteryHelpers = {
         };
     },
 
-    // Performance tracking
+    // Performance tracking - robust version
     trackPerformance: function(operation, startTime) {
         try {
             // Ensure performanceMetrics exists
@@ -253,9 +255,13 @@ window.LotteryHelpers = {
 
     // Error handling
     handleApiError: function(error, context = 'API') {
-        // Increment error counter
-        if (window.performanceMetrics) {
-            window.performanceMetrics.errors++;
+        // Increment error counter safely
+        try {
+            if (window.performanceMetrics) {
+                window.performanceMetrics.errors++;
+            }
+        } catch (e) {
+            // Ignore performance tracking errors
         }
 
         let errorMessage = 'An unexpected error occurred';
