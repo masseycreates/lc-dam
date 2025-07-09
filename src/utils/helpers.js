@@ -365,6 +365,21 @@ window.LotteryHelpers = {
 };
 
 // Make all functions available globally for backward compatibility
-Object.keys(window.LotteryHelpers).forEach(key => {
-    window[key] = window.LotteryHelpers[key];
-});
+// Use a more robust approach to ensure functions are properly assigned
+(function() {
+    try {
+        Object.keys(window.LotteryHelpers).forEach(key => {
+            if (typeof window.LotteryHelpers[key] === 'function') {
+                window[key] = window.LotteryHelpers[key];
+            }
+        });
+        
+        // Explicitly ensure critical functions are available
+        window.trackPerformance = window.LotteryHelpers.trackPerformance;
+        window.handleApiError = window.LotteryHelpers.handleApiError;
+        
+        console.log('Helper functions loaded successfully');
+    } catch (error) {
+        console.error('Error setting up global helper functions:', error);
+    }
+})();

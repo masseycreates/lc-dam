@@ -7,6 +7,34 @@ window.ApiService = class {
         this.defaultTimeout = 30000;
     }
 
+    // Safe performance tracking helper
+    safeTrackPerformance(operation, startTime) {
+        try {
+            if (typeof window.trackPerformance === 'function') {
+                window.trackPerformance(operation, startTime);
+            } else if (window.LotteryHelpers && typeof window.LotteryHelpers.trackPerformance === 'function') {
+                window.LotteryHelpers.trackPerformance(operation, startTime);
+            }
+        } catch (error) {
+            console.warn('Performance tracking failed:', error);
+        }
+    }
+
+    // Safe error handling helper
+    safeHandleApiError(error, context) {
+        try {
+            if (typeof window.handleApiError === 'function') {
+                return window.handleApiError(error, context);
+            } else if (window.LotteryHelpers && typeof window.LotteryHelpers.handleApiError === 'function') {
+                return window.LotteryHelpers.handleApiError(error, context);
+            } else {
+                return error.message || 'An unexpected error occurred';
+            }
+        } catch (e) {
+            return error.message || 'An unexpected error occurred';
+        }
+    }
+
     // Generic API call method
     async makeApiCall(endpoint, options = {}) {
         const startTime = performance.now();
@@ -32,11 +60,11 @@ window.ApiService = class {
             
             const data = await response.json();
             
-            window.trackPerformance(`api_${endpoint.replace('/', '_')}`, startTime);
+            this.safeTrackPerformance(`api_${endpoint.replace('/', '_')}`, startTime);
             
             return data;
         } catch (error) {
-            window.trackPerformance(`api_${endpoint.replace('/', '_')}_error`, startTime);
+            this.safeTrackPerformance(`api_${endpoint.replace('/', '_')}_error`, startTime);
             throw error;
         }
     }
@@ -53,7 +81,7 @@ window.ApiService = class {
             console.error('Failed to fetch current Powerball data:', error);
             return {
                 success: false,
-                error: window.handleApiError(error, 'Powerball API')
+                error: this.safeHandleApiError(error, 'Powerball API')
             };
         }
     }
@@ -69,7 +97,7 @@ window.ApiService = class {
             console.error('Failed to fetch Powerball history:', error);
             return {
                 success: false,
-                error: window.handleApiError(error, 'Powerball History API')
+                error: this.safeHandleApiError(error, 'Powerball History API')
             };
         }
     }
@@ -79,11 +107,22 @@ window.ApiService = class {
         if (!apiKey) {
             return {
                 success: false,
-                error: window.LOTTERY_CONFIG.ERROR_MESSAGES.INVALID_API_KEY
+                error: window.LOTTERY_CONFIG?.ERROR_MESSAGES?.INVALID_API_KEY || 'API key is required'
             };
         }
 
-        const validation = window.validateApiKey(apiKey);
+        // Safe validation check
+        let validation = { valid: true };
+        try {
+            if (typeof window.validateApiKey === 'function') {
+                validation = window.validateApiKey(apiKey);
+            } else if (window.LotteryHelpers && typeof window.LotteryHelpers.validateApiKey === 'function') {
+                validation = window.LotteryHelpers.validateApiKey(apiKey);
+            }
+        } catch (e) {
+            console.warn('API key validation failed:', e);
+        }
+
         if (!validation.valid) {
             return {
                 success: false,
@@ -112,135 +151,151 @@ window.ApiService = class {
             console.error('Failed to get Claude analysis:', error);
             return {
                 success: false,
-                error: window.handleApiError(error, 'Claude AI')
+                error: this.safeHandleApiError(error, 'Claude API')
             };
         }
     }
 
-    // Diagnostic methods
-    async runDiagnostics() {
-        try {
-            const data = await this.makeApiCall('/diagnose');
-            return {
-                success: true,
-                data: data
-            };
-        } catch (error) {
-            console.error('Failed to run diagnostics:', error);
-            return {
-                success: false,
-                error: window.handleApiError(error, 'Diagnostics')
-            };
-        }
-    }
-
-    // Test API connectivity
-    async testConnection() {
-        try {
-            const data = await this.makeApiCall('/test');
-            return {
-                success: true,
-                data: data
-            };
-        } catch (error) {
-            console.error('API connection test failed:', error);
-            return {
-                success: false,
-                error: window.handleApiError(error, 'Connection Test')
-            };
-        }
-    }
-
-    // Batch operations
-    async batchRequest(requests) {
-        const results = [];
-        const batchSize = 5; // Limit concurrent requests
-        
-        for (let i = 0; i < requests.length; i += batchSize) {
-            const batch = requests.slice(i, i + batchSize);
-            const batchPromises = batch.map(async (request) => {
-                try {
-                    const result = await this.makeApiCall(request.endpoint, request.options);
-                    return { success: true, data: result, id: request.id };
-                } catch (error) {
-                    return { 
-                        success: false, 
-                        error: window.handleApiError(error, 'Batch Request'),
-                        id: request.id 
-                    };
-                }
-            });
-            
-            const batchResults = await Promise.all(batchPromises);
-            results.push(...batchResults);
-        }
-        
-        return results;
-    }
-
-    // Cache management
-    getCachedData(key) {
-        return window.loadFromStorage(`api_cache_${key}`);
-    }
-
-    setCachedData(key, data, ttl = 300000) { // 5 minutes default TTL
-        const cacheItem = {
-            data,
-            timestamp: Date.now(),
-            ttl
-        };
-        return window.saveToStorage(`api_cache_${key}`, cacheItem);
-    }
-
-    isCacheValid(key) {
-        const cached = this.getCachedData(key);
-        if (!cached) return false;
-        
-        return (Date.now() - cached.timestamp) < cached.ttl;
-    }
-
-    clearCache(key = null) {
-        if (key) {
-            return window.clearStorage(`api_cache_${key}`);
-        } else {
-            // Clear all API cache
-            const keys = Object.keys(localStorage).filter(k => k.startsWith('api_cache_'));
-            keys.forEach(key => localStorage.removeItem(key));
-            return true;
-        }
-    }
-
-    // Cached API methods
+    // Cache management methods
     async getCachedPowerball() {
-        const cacheKey = 'current_powerball';
+        const cacheKey = 'powerball_current';
+        const cacheTimeout = 5 * 60 * 1000; // 5 minutes
         
-        if (this.isCacheValid(cacheKey)) {
-            const cached = this.getCachedData(cacheKey);
-            return { success: true, data: cached.data, cached: true };
+        try {
+            // Try to load from storage
+            let cachedData = null;
+            try {
+                if (typeof window.loadFromStorage === 'function') {
+                    cachedData = window.loadFromStorage(cacheKey);
+                } else if (window.LotteryHelpers && typeof window.LotteryHelpers.loadFromStorage === 'function') {
+                    cachedData = window.LotteryHelpers.loadFromStorage(cacheKey);
+                }
+            } catch (e) {
+                console.warn('Failed to load from storage:', e);
+            }
+            
+            if (cachedData && cachedData.timestamp && (Date.now() - cachedData.timestamp < cacheTimeout)) {
+                return {
+                    success: true,
+                    data: cachedData.data,
+                    cached: true
+                };
+            }
+            
+            // Fetch fresh data
+            const result = await this.getCurrentPowerball();
+            
+            if (result.success) {
+                const dataToCache = {
+                    data: result.data,
+                    timestamp: Date.now()
+                };
+                
+                // Try to save to storage
+                try {
+                    if (typeof window.saveToStorage === 'function') {
+                        window.saveToStorage(cacheKey, dataToCache);
+                    } else if (window.LotteryHelpers && typeof window.LotteryHelpers.saveToStorage === 'function') {
+                        window.LotteryHelpers.saveToStorage(cacheKey, dataToCache);
+                    }
+                } catch (e) {
+                    console.warn('Failed to save to storage:', e);
+                }
+            }
+            
+            return result;
+        } catch (error) {
+            console.error('Failed to get cached Powerball data:', error);
+            return {
+                success: false,
+                error: this.safeHandleApiError(error, 'Cached Powerball API')
+            };
         }
-        
-        const result = await this.getCurrentPowerball();
-        if (result.success) {
-            this.setCachedData(cacheKey, result.data, 300000); // 5 minutes
-        }
-        
-        return result;
     }
 
     async getCachedPowerballHistory(limit = 100) {
         const cacheKey = `powerball_history_${limit}`;
+        const cacheTimeout = 60 * 60 * 1000; // 1 hour
         
-        if (this.isCacheValid(cacheKey)) {
-            const cached = this.getCachedData(cacheKey);
-            return { success: true, data: cached.data, cached: true };
+        try {
+            // Try to load from storage
+            let cachedData = null;
+            try {
+                if (typeof window.loadFromStorage === 'function') {
+                    cachedData = window.loadFromStorage(cacheKey);
+                } else if (window.LotteryHelpers && typeof window.LotteryHelpers.loadFromStorage === 'function') {
+                    cachedData = window.LotteryHelpers.loadFromStorage(cacheKey);
+                }
+            } catch (e) {
+                console.warn('Failed to load from storage:', e);
+            }
+            
+            if (cachedData && cachedData.timestamp && (Date.now() - cachedData.timestamp < cacheTimeout)) {
+                return {
+                    success: true,
+                    data: cachedData.data,
+                    cached: true
+                };
+            }
+            
+            // Fetch fresh data
+            const result = await this.getPowerballHistory(limit);
+            
+            if (result.success) {
+                const dataToCache = {
+                    data: result.data,
+                    timestamp: Date.now()
+                };
+                
+                // Try to save to storage
+                try {
+                    if (typeof window.saveToStorage === 'function') {
+                        window.saveToStorage(cacheKey, dataToCache);
+                    } else if (window.LotteryHelpers && typeof window.LotteryHelpers.saveToStorage === 'function') {
+                        window.LotteryHelpers.saveToStorage(cacheKey, dataToCache);
+                    }
+                } catch (e) {
+                    console.warn('Failed to save to storage:', e);
+                }
+            }
+            
+            return result;
+        } catch (error) {
+            console.error('Failed to get cached Powerball history:', error);
+            return {
+                success: false,
+                error: this.safeHandleApiError(error, 'Cached Powerball History API')
+            };
         }
-        
-        const result = await this.getPowerballHistory(limit);
-        if (result.success) {
-            this.setCachedData(cacheKey, result.data, 600000); // 10 minutes
+    }
+
+    // Clear all cached data
+    clearCache() {
+        try {
+            const cacheKeys = [
+                'powerball_current',
+                'powerball_history_100',
+                'powerball_history_200',
+                'powerball_history_500'
+            ];
+            
+            cacheKeys.forEach(key => {
+                try {
+                    if (typeof window.clearStorage === 'function') {
+                        window.clearStorage(key);
+                    } else if (window.LotteryHelpers && typeof window.LotteryHelpers.clearStorage === 'function') {
+                        window.LotteryHelpers.clearStorage(key);
+                    }
+                } catch (e) {
+                    console.warn(`Failed to clear cache key ${key}:`, e);
+                }
+            });
+            
+            return { success: true };
+        } catch (error) {
+            console.error('Failed to clear cache:', error);
+            return { success: false, error: error.message };
         }
-        
-        return result;
     }
 };
 
