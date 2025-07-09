@@ -1,365 +1,384 @@
-// Lottery number generation algorithms and utilities
-export class LotteryAlgorithms {
+// Advanced Lottery Intelligence System - Lottery Algorithms
+// Global lottery algorithm implementations
+
+window.LotteryAlgorithms = class {
     constructor() {
         this.algorithms = {
             frequency: this.frequencyAnalysis.bind(this),
             hot_cold: this.hotColdAnalysis.bind(this),
             pattern: this.patternAnalysis.bind(this),
             statistical: this.statisticalAnalysis.bind(this),
-            random: this.randomGeneration.bind(this),
+            random: this.randomSelection.bind(this),
             hybrid: this.hybridAnalysis.bind(this)
         };
     }
 
-    // Generate numbers using frequency analysis
-    frequencyAnalysis(historicalData, count = 5) {
-        if (!historicalData || !historicalData.numberFrequency) {
-            return this.randomGeneration(null, count);
+    // Frequency-based analysis
+    frequencyAnalysis(historicalStats, count = 5) {
+        if (!historicalStats || !historicalStats.numberFrequency) {
+            return this.randomSelection(null, count);
         }
 
-        const { numberFrequency, powerballs } = historicalData;
         const results = [];
-
+        
         for (let i = 0; i < count; i++) {
-            // Sort numbers by frequency and add some randomness
-            const sortedNumbers = Object.entries(numberFrequency)
-                .sort(([,a], [,b]) => b - a)
-                .map(([num]) => parseInt(num));
-
-            const numbers = [];
-            const used = new Set();
-
-            // Pick top frequent numbers with some randomness
-            for (let j = 0; j < 5; j++) {
-                let attempts = 0;
-                let num;
-                do {
-                    const index = Math.floor(Math.random() * Math.min(20, sortedNumbers.length));
-                    num = sortedNumbers[index];
-                    attempts++;
-                } while (used.has(num) && attempts < 50);
-                
-                if (!used.has(num)) {
-                    numbers.push(num);
-                    used.add(num);
-                }
-            }
-
-            // Fill remaining slots if needed
-            while (numbers.length < 5) {
-                const num = Math.floor(Math.random() * 69) + 1;
-                if (!used.has(num)) {
-                    numbers.push(num);
-                    used.add(num);
-                }
-            }
-
-            // Select powerball based on frequency
-            const sortedPowerballs = Object.entries(powerballs || {})
-                .sort(([,a], [,b]) => b - a)
-                .map(([num]) => parseInt(num));
+            const numbers = this.selectByFrequency(historicalStats.numberFrequency, 5);
+            const powerball = this.selectPowerballByFrequency(historicalStats.powerballFrequency);
             
-            const powerball = sortedPowerballs.length > 0 
-                ? sortedPowerballs[Math.floor(Math.random() * Math.min(10, sortedPowerballs.length))]
-                : Math.floor(Math.random() * 26) + 1;
-
             results.push({
-                numbers: numbers.sort((a, b) => a - b),
+                numbers,
                 powerball,
                 algorithm: 'frequency',
-                confidence: 0.7
+                confidence: this.calculateConfidence(historicalStats, numbers, powerball),
+                description: 'Based on historical frequency patterns'
             });
         }
-
+        
         return results;
     }
 
     // Hot and cold number analysis
-    hotColdAnalysis(historicalData, count = 5) {
-        if (!historicalData || !historicalData.numberFrequency) {
-            return this.randomGeneration(null, count);
+    hotColdAnalysis(historicalStats, count = 5) {
+        if (!historicalStats || !historicalStats.hotNumbers) {
+            return this.randomSelection(null, count);
         }
 
-        const { numberFrequency, powerballs } = historicalData;
         const results = [];
-
-        // Identify hot and cold numbers
-        const frequencies = Object.entries(numberFrequency).map(([num, freq]) => ({
-            number: parseInt(num),
-            frequency: freq
-        }));
-
-        frequencies.sort((a, b) => b.frequency - a.frequency);
-        const hotNumbers = frequencies.slice(0, 20).map(item => item.number);
-        const coldNumbers = frequencies.slice(-20).map(item => item.number);
-
+        
         for (let i = 0; i < count; i++) {
-            const numbers = [];
-            const used = new Set();
-
+            const hotNumbers = historicalStats.hotNumbers.slice(0, 15).map(item => item.number);
+            const coldNumbers = historicalStats.coldNumbers.slice(0, 15).map(item => item.number);
+            
             // Mix hot and cold numbers
-            const hotCount = Math.floor(Math.random() * 3) + 2; // 2-4 hot numbers
-            const coldCount = 5 - hotCount;
-
-            // Add hot numbers
-            for (let j = 0; j < hotCount; j++) {
-                let attempts = 0;
-                let num;
-                do {
-                    num = hotNumbers[Math.floor(Math.random() * hotNumbers.length)];
-                    attempts++;
-                } while (used.has(num) && attempts < 20);
-                
-                if (!used.has(num)) {
-                    numbers.push(num);
-                    used.add(num);
-                }
-            }
-
-            // Add cold numbers
-            for (let j = 0; j < coldCount; j++) {
-                let attempts = 0;
-                let num;
-                do {
-                    num = coldNumbers[Math.floor(Math.random() * coldNumbers.length)];
-                    attempts++;
-                } while (used.has(num) && attempts < 20);
-                
-                if (!used.has(num)) {
-                    numbers.push(num);
-                    used.add(num);
-                }
-            }
-
-            // Fill remaining slots
-            while (numbers.length < 5) {
-                const num = Math.floor(Math.random() * 69) + 1;
-                if (!used.has(num)) {
-                    numbers.push(num);
-                    used.add(num);
-                }
-            }
-
-            const powerball = Math.floor(Math.random() * 26) + 1;
-
+            const selectedHot = window.shuffleArray(hotNumbers).slice(0, 3);
+            const selectedCold = window.shuffleArray(coldNumbers).slice(0, 2);
+            const numbers = [...selectedHot, ...selectedCold].sort((a, b) => a - b);
+            
+            const hotPowerballs = historicalStats.hotPowerballs.map(item => item.number);
+            const powerball = hotPowerballs[Math.floor(Math.random() * Math.min(5, hotPowerballs.length))];
+            
             results.push({
-                numbers: numbers.sort((a, b) => a - b),
+                numbers,
                 powerball,
                 algorithm: 'hot_cold',
-                confidence: 0.6
+                confidence: this.calculateConfidence(historicalStats, numbers, powerball),
+                description: 'Mix of trending and overdue numbers'
             });
         }
-
+        
         return results;
     }
 
-    // Pattern analysis
-    patternAnalysis(historicalData, count = 5) {
-        if (!historicalData || !historicalData.recentDrawings) {
-            return this.randomGeneration(null, count);
+    // Pattern-based analysis
+    patternAnalysis(historicalStats, count = 5) {
+        if (!historicalStats) {
+            return this.randomSelection(null, count);
         }
 
         const results = [];
-        const recentDrawings = historicalData.recentDrawings.slice(0, 20);
-
+        
         for (let i = 0; i < count; i++) {
-            const numbers = [];
-            const used = new Set();
-
-            // Analyze number gaps and patterns
-            const gaps = this.analyzeNumberGaps(recentDrawings);
-            const patterns = this.findNumberPatterns(recentDrawings);
-
-            // Generate numbers based on patterns
-            for (let j = 0; j < 5; j++) {
-                let num;
-                if (Math.random() < 0.3 && patterns.length > 0) {
-                    // Use pattern-based number
-                    num = patterns[Math.floor(Math.random() * patterns.length)];
-                } else {
-                    // Use gap analysis
-                    num = this.generateFromGaps(gaps);
-                }
-
-                let attempts = 0;
-                while (used.has(num) && attempts < 50) {
-                    num = Math.floor(Math.random() * 69) + 1;
-                    attempts++;
-                }
-
-                numbers.push(num);
-                used.add(num);
-            }
-
+            const numbers = this.generatePatternNumbers();
             const powerball = Math.floor(Math.random() * 26) + 1;
-
+            
             results.push({
-                numbers: numbers.sort((a, b) => a - b),
+                numbers,
                 powerball,
                 algorithm: 'pattern',
-                confidence: 0.5
+                confidence: this.calculateConfidence(historicalStats, numbers, powerball),
+                description: 'Based on number sequence patterns'
             });
         }
-
+        
         return results;
     }
 
-    // Statistical analysis
-    statisticalAnalysis(historicalData, count = 5) {
-        if (!historicalData) {
-            return this.randomGeneration(null, count);
-        }
-
+    // Statistical distribution analysis
+    statisticalAnalysis(historicalStats, count = 5) {
         const results = [];
-
+        
         for (let i = 0; i < count; i++) {
-            const numbers = [];
-            const used = new Set();
-
-            // Use normal distribution around mean
-            const mean = 35; // Middle of 1-69 range
-            const stdDev = 15;
-
-            for (let j = 0; j < 5; j++) {
-                let num;
-                let attempts = 0;
-                do {
-                    // Generate using normal distribution
-                    num = Math.round(this.normalRandom(mean, stdDev));
-                    num = Math.max(1, Math.min(69, num)); // Clamp to valid range
-                    attempts++;
-                } while (used.has(num) && attempts < 50);
-
-                numbers.push(num);
-                used.add(num);
-            }
-
-            const powerball = Math.floor(Math.random() * 26) + 1;
-
+            const numbers = this.generateStatisticalNumbers();
+            const powerball = this.generateStatisticalPowerball();
+            
             results.push({
-                numbers: numbers.sort((a, b) => a - b),
+                numbers,
                 powerball,
                 algorithm: 'statistical',
-                confidence: 0.4
+                confidence: this.calculateConfidence(historicalStats, numbers, powerball),
+                description: 'Mathematical probability distributions'
             });
         }
-
+        
         return results;
     }
 
-    // Random generation
-    randomGeneration(historicalData, count = 5) {
+    // Pure random selection
+    randomSelection(historicalStats, count = 5) {
         const results = [];
-
+        
         for (let i = 0; i < count; i++) {
-            const numbers = [];
-            const used = new Set();
-
-            for (let j = 0; j < 5; j++) {
-                let num;
-                do {
-                    num = Math.floor(Math.random() * 69) + 1;
-                } while (used.has(num));
-
-                numbers.push(num);
-                used.add(num);
-            }
-
+            const numbers = window.generateRandomNumbers(1, 69, 5);
             const powerball = Math.floor(Math.random() * 26) + 1;
-
+            
             results.push({
-                numbers: numbers.sort((a, b) => a - b),
+                numbers,
                 powerball,
                 algorithm: 'random',
-                confidence: 0.2
+                confidence: 0.5, // Baseline confidence for random
+                description: 'Pure random number generation'
             });
         }
-
+        
         return results;
     }
 
-    // Hybrid analysis combining multiple algorithms
-    hybridAnalysis(historicalData, count = 5) {
-        const results = [];
-        const algorithms = ['frequency', 'hot_cold', 'pattern', 'statistical'];
-
-        for (let i = 0; i < count; i++) {
-            // Randomly select algorithm for each set
-            const algorithm = algorithms[Math.floor(Math.random() * algorithms.length)];
-            const result = this.algorithms[algorithm](historicalData, 1)[0];
-            
-            // Boost confidence for hybrid approach
-            result.confidence = Math.min(0.8, result.confidence + 0.1);
-            result.algorithm = 'hybrid';
-            
-            results.push(result);
+    // Hybrid approach combining multiple algorithms
+    hybridAnalysis(historicalStats, count = 5) {
+        if (!historicalStats) {
+            return this.randomSelection(null, count);
         }
 
+        const results = [];
+        
+        for (let i = 0; i < count; i++) {
+            // Get results from different algorithms
+            const frequencyResult = this.frequencyAnalysis(historicalStats, 1)[0];
+            const hotColdResult = this.hotColdAnalysis(historicalStats, 1)[0];
+            const patternResult = this.patternAnalysis(historicalStats, 1)[0];
+            const statisticalResult = this.statisticalAnalysis(historicalStats, 1)[0];
+            
+            // Combine and weight the results
+            const combinedNumbers = this.combineAlgorithmResults([
+                { numbers: frequencyResult.numbers, weight: 0.3 },
+                { numbers: hotColdResult.numbers, weight: 0.25 },
+                { numbers: patternResult.numbers, weight: 0.2 },
+                { numbers: statisticalResult.numbers, weight: 0.25 }
+            ]);
+            
+            const combinedPowerball = this.combinePowerballResults([
+                { powerball: frequencyResult.powerball, weight: 0.4 },
+                { powerball: hotColdResult.powerball, weight: 0.3 },
+                { powerball: patternResult.powerball, weight: 0.15 },
+                { powerball: statisticalResult.powerball, weight: 0.15 }
+            ]);
+            
+            results.push({
+                numbers: combinedNumbers,
+                powerball: combinedPowerball,
+                algorithm: 'hybrid',
+                confidence: this.calculateHybridConfidence(historicalStats, combinedNumbers, combinedPowerball),
+                description: 'Combined multi-algorithm approach'
+            });
+        }
+        
         return results;
     }
 
     // Helper methods
-    analyzeNumberGaps(drawings) {
-        const gaps = {};
-        for (let i = 1; i <= 69; i++) {
-            gaps[i] = 0;
-        }
-
-        drawings.forEach(drawing => {
-            if (drawing.numbers) {
-                drawing.numbers.forEach(num => {
-                    gaps[num] = (gaps[num] || 0) + 1;
-                });
-            }
-        });
-
-        return gaps;
-    }
-
-    findNumberPatterns(drawings) {
-        const patterns = [];
-        // Simple pattern detection - consecutive numbers, same endings, etc.
-        // This is a simplified implementation
-        return patterns;
-    }
-
-    generateFromGaps(gaps) {
-        // Generate number based on gap analysis
-        const numbers = Object.keys(gaps).map(Number);
-        return numbers[Math.floor(Math.random() * numbers.length)];
-    }
-
-    normalRandom(mean, stdDev) {
-        // Box-Muller transformation for normal distribution
-        let u = 0, v = 0;
-        while(u === 0) u = Math.random();
-        while(v === 0) v = Math.random();
+    selectByFrequency(frequencyData, count) {
+        const sortedNumbers = Object.entries(frequencyData)
+            .sort(([,a], [,b]) => b - a)
+            .map(([num]) => parseInt(num));
         
-        const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-        return z * stdDev + mean;
+        // Select from top performers with some randomization
+        const topNumbers = sortedNumbers.slice(0, Math.min(20, sortedNumbers.length));
+        return window.shuffleArray(topNumbers).slice(0, count).sort((a, b) => a - b);
     }
 
-    // Generate advanced quick selection
-    async generateAdvancedQuickSelection(historicalStats) {
-        const results = [];
-        const algorithms = Object.keys(this.algorithms);
+    selectPowerballByFrequency(powerballFrequency) {
+        const sortedPowerballs = Object.entries(powerballFrequency)
+            .sort(([,a], [,b]) => b - a)
+            .map(([num]) => parseInt(num));
+        
+        const topPowerballs = sortedPowerballs.slice(0, Math.min(8, sortedPowerballs.length));
+        return topPowerballs[Math.floor(Math.random() * topPowerballs.length)];
+    }
 
-        // Generate one set from each algorithm
-        algorithms.forEach(algorithm => {
-            if (algorithm !== 'hybrid') {
-                const sets = this.algorithms[algorithm](historicalStats, 1);
-                if (sets.length > 0) {
-                    results.push(sets[0]);
+    generatePatternNumbers() {
+        const patterns = [
+            // Consecutive numbers
+            () => {
+                const start = Math.floor(Math.random() * 65) + 1;
+                return Array.from({length: 5}, (_, i) => start + i);
+            },
+            // Arithmetic sequence
+            () => {
+                const start = Math.floor(Math.random() * 20) + 1;
+                const step = Math.floor(Math.random() * 10) + 2;
+                return Array.from({length: 5}, (_, i) => Math.min(69, start + i * step));
+            },
+            // Decade distribution
+            () => {
+                const decades = [
+                    [1, 10], [11, 20], [21, 30], [31, 40], [41, 50], [51, 60], [61, 69]
+                ];
+                const numbers = [];
+                const usedDecades = [];
+                
+                while (numbers.length < 5 && usedDecades.length < decades.length) {
+                    const decadeIndex = Math.floor(Math.random() * decades.length);
+                    if (!usedDecades.includes(decadeIndex)) {
+                        const [min, max] = decades[decadeIndex];
+                        const num = Math.floor(Math.random() * (max - min + 1)) + min;
+                        if (!numbers.includes(num)) {
+                            numbers.push(num);
+                            usedDecades.push(decadeIndex);
+                        }
+                    }
                 }
+                
+                // Fill remaining with random numbers if needed
+                while (numbers.length < 5) {
+                    const num = Math.floor(Math.random() * 69) + 1;
+                    if (!numbers.includes(num)) {
+                        numbers.push(num);
+                    }
+                }
+                
+                return numbers.sort((a, b) => a - b);
+            }
+        ];
+        
+        const selectedPattern = patterns[Math.floor(Math.random() * patterns.length)];
+        return selectedPattern();
+    }
+
+    generateStatisticalNumbers() {
+        // Use normal distribution centered around the middle of the range
+        const numbers = [];
+        const mean = 35;
+        const stdDev = 15;
+        
+        while (numbers.length < 5) {
+            // Box-Muller transformation for normal distribution
+            const u1 = Math.random();
+            const u2 = Math.random();
+            const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+            
+            const num = Math.round(mean + stdDev * z0);
+            
+            if (num >= 1 && num <= 69 && !numbers.includes(num)) {
+                numbers.push(num);
+            }
+        }
+        
+        return numbers.sort((a, b) => a - b);
+    }
+
+    generateStatisticalPowerball() {
+        // Use weighted distribution for powerball
+        const weights = Array.from({length: 26}, (_, i) => {
+            // Slightly favor middle numbers
+            const distance = Math.abs(i + 1 - 13.5);
+            return Math.max(0.5, 2 - distance / 13);
+        });
+        
+        const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+        const random = Math.random() * totalWeight;
+        
+        let cumulativeWeight = 0;
+        for (let i = 0; i < weights.length; i++) {
+            cumulativeWeight += weights[i];
+            if (random <= cumulativeWeight) {
+                return i + 1;
+            }
+        }
+        
+        return Math.floor(Math.random() * 26) + 1;
+    }
+
+    combineAlgorithmResults(algorithmResults) {
+        const numberScores = {};
+        
+        // Initialize scores
+        for (let i = 1; i <= 69; i++) {
+            numberScores[i] = 0;
+        }
+        
+        // Add weighted scores from each algorithm
+        algorithmResults.forEach(result => {
+            result.numbers.forEach(num => {
+                numberScores[num] += result.weight;
+            });
+        });
+        
+        // Select top 5 numbers
+        const sortedNumbers = Object.entries(numberScores)
+            .sort(([,a], [,b]) => b - a)
+            .map(([num]) => parseInt(num));
+        
+        return sortedNumbers.slice(0, 5);
+    }
+
+    combinePowerballResults(powerballResults) {
+        const powerballScores = {};
+        
+        // Initialize scores
+        for (let i = 1; i <= 26; i++) {
+            powerballScores[i] = 0;
+        }
+        
+        // Add weighted scores
+        powerballResults.forEach(result => {
+            powerballScores[result.powerball] += result.weight;
+        });
+        
+        // Select highest scoring powerball
+        const sortedPowerballs = Object.entries(powerballScores)
+            .sort(([,a], [,b]) => b - a)
+            .map(([num]) => parseInt(num));
+        
+        return sortedPowerballs[0];
+    }
+
+    calculateConfidence(historicalStats, numbers, powerball) {
+        if (!historicalStats) return 0.5;
+        
+        let confidence = 0.5; // Base confidence
+        
+        // Factor in frequency data
+        if (historicalStats.numberFrequency) {
+            const avgFrequency = historicalStats.totalDrawings / 69;
+            const numberConfidence = numbers.reduce((sum, num) => {
+                const frequency = historicalStats.numberFrequency[num] || 0;
+                return sum + Math.min(1, frequency / avgFrequency);
+            }, 0) / 5;
+            
+            confidence += (numberConfidence - 0.5) * 0.2;
+        }
+        
+        // Factor in powerball frequency
+        if (historicalStats.powerballFrequency) {
+            const avgPowerballFreq = historicalStats.totalDrawings / 26;
+            const powerballFreq = historicalStats.powerballFrequency[powerball] || 0;
+            const powerballConfidence = Math.min(1, powerballFreq / avgPowerballFreq);
+            
+            confidence += (powerballConfidence - 0.5) * 0.1;
+        }
+        
+        return Math.max(0.1, Math.min(0.9, confidence));
+    }
+
+    calculateHybridConfidence(historicalStats, numbers, powerball) {
+        const baseConfidence = this.calculateConfidence(historicalStats, numbers, powerball);
+        
+        // Hybrid gets a slight boost for combining multiple approaches
+        return Math.min(0.95, baseConfidence + 0.1);
+    }
+
+    // Advanced quick selection for UI
+    generateAdvancedQuickSelection(historicalStats) {
+        const algorithms = ['frequency', 'hot_cold', 'pattern', 'statistical', 'hybrid'];
+        const results = [];
+        
+        algorithms.forEach(algorithm => {
+            const sets = this.algorithms[algorithm](historicalStats, 1);
+            if (sets.length > 0) {
+                results.push(sets[0]);
             }
         });
-
-        // Add hybrid sets
-        const hybridSets = this.hybridAnalysis(historicalStats, 2);
-        results.push(...hybridSets);
-
+        
         return results;
     }
-}
-
-export default LotteryAlgorithms;
+};

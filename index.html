@@ -3,267 +3,525 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Lottery Intelligence System - Claude Opus 4 + 6 Algorithms Hybrid</title>
-    <meta name="description" content="Advanced lottery number prediction system using Claude Opus 4 AI and 6 statistical algorithms for Powerball analysis">
-    <meta name="keywords" content="lottery, powerball, AI, Claude Opus 4, number prediction, statistical analysis">
+    <title>Advanced Lottery Intelligence System</title>
+    <link rel="stylesheet" href="styles.css">
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎰</text></svg>">
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="src/styles/main.css">
-    
-    <!-- React and Babel for JSX transformation -->
+    <!-- React and Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Performance and Analytics -->
-    <script>
-        // Performance monitoring
-        window.performanceMetrics = {
-            startTime: performance.now(),
-            apiCalls: 0,
-            errors: 0,
-            loadTimes: {}
-        };
-        
-        // Global error handler
-        window.addEventListener('error', function(e) {
-            window.performanceMetrics.errors++;
-            console.error('Global error:', e.error);
-        });
-        
-        // Performance tracking function
-        window.trackPerformance = function(operation, startTime) {
-            const duration = performance.now() - startTime;
-            if (!window.performanceMetrics.loadTimes[operation]) {
-                window.performanceMetrics.loadTimes[operation] = [];
-            }
-            window.performanceMetrics.loadTimes[operation].push(duration);
-        };
-        
-        // System performance metrics
-        window.getSystemPerformanceMetrics = function() {
-            return {
-                ...window.performanceMetrics,
-                totalLoadTime: performance.now() - window.performanceMetrics.startTime,
-                memoryUsage: performance.memory ? {
-                    used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
-                    total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
-                    limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
-                } : null
-            };
-        };
-    </script>
+    <!-- Load utility modules first -->
+    <script src="src/utils/constants.js"></script>
+    <script src="src/utils/helpers.js"></script>
+    <script src="src/utils/LotteryAlgorithms.js"></script>
+    
+    <!-- Load services -->
+    <script src="src/services/apiService.js"></script>
+    <script src="src/services/lotteryService.js"></script>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loading-screen" style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 30%, #10b981 60%, #f59e0b 100%);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-        z-index: 9999;
-        transition: opacity 0.5s ease;
-    ">
-        <div style="text-align: center;">
-            <div style="font-size: 4rem; margin-bottom: 1rem;">🎰</div>
-            <h1 style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">
-                Advanced Lottery Intelligence System
-            </h1>
-            <p style="font-size: 1.2rem; opacity: 0.9; margin-bottom: 2rem;">
-                Claude Opus 4 + 6 Algorithms Hybrid
-            </p>
-            <div style="
-                width: 40px;
-                height: 40px;
-                border: 4px solid rgba(255,255,255,0.3);
-                border-top: 4px solid white;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin: 0 auto;
-            "></div>
-        </div>
-    </div>
+    <div id="root"></div>
 
-    <!-- Main Application Container -->
-    <div id="app-root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useMemo } = React;
 
-    <!-- Error Boundary Fallback -->
-    <div id="error-fallback" style="display: none; padding: 2rem; text-align: center;">
-        <div style="max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #dc2626; margin-bottom: 1rem;">⚠️ Application Error</h2>
-            <p style="margin-bottom: 1rem;">
-                The lottery system encountered an unexpected error. Please refresh the page to try again.
-            </p>
-            <button onclick="window.location.reload()" style="
-                background: #3b82f6;
-                color: white;
-                border: none;
-                padding: 0.5rem 1rem;
-                border-radius: 0.375rem;
-                cursor: pointer;
-                font-weight: 600;
-            ">
-                🔄 Refresh Page
-            </button>
-        </div>
-    </div>
+        // Main Application Component
+        const LotteryApp = () => {
+            // State management
+            const [currentDrawing, setCurrentDrawing] = useState(null);
+            const [historicalData, setHistoricalData] = useState(null);
+            const [generatedSets, setGeneratedSets] = useState([]);
+            const [userSelections, setUserSelections] = useState([]);
+            const [selectedNumbers, setSelectedNumbers] = useState([]);
+            const [selectedPowerball, setSelectedPowerball] = useState(null);
+            const [claudeApiKey, setClaudeApiKey] = useState('');
+            const [analysis, setAnalysis] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [activeTab, setActiveTab] = useState('generator');
 
-    <!-- Module Scripts -->
-    <script type="text/babel" data-type="module">
-        // Import all modules
-        import AdvancedLotterySystem from './src/components/App.js';
-        
-        // Error Boundary Component
-        class ErrorBoundary extends React.Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null };
-            }
-
-            static getDerivedStateFromError(error) {
-                return { hasError: true, error };
-            }
-
-            componentDidCatch(error, errorInfo) {
-                console.error('Error Boundary caught an error:', error, errorInfo);
-                window.performanceMetrics.errors++;
-                
-                // Show fallback UI
-                document.getElementById('error-fallback').style.display = 'block';
-                document.getElementById('app-root').style.display = 'none';
-            }
-
-            render() {
-                if (this.state.hasError) {
-                    return React.createElement('div', {
-                        style: {
-                            padding: '2rem',
-                            textAlign: 'center',
-                            maxWidth: '600px',
-                            margin: '2rem auto'
+            // Initialize the application
+            useEffect(() => {
+                const initializeApp = async () => {
+                    setLoading(true);
+                    try {
+                        // Initialize lottery service
+                        const result = await window.lotteryService.initialize();
+                        if (result.success) {
+                            // Load initial data
+                            setCurrentDrawing(window.lotteryService.getCurrentDrawing());
+                            setHistoricalData(window.lotteryService.getHistoricalData());
+                            setGeneratedSets(window.lotteryService.getGeneratedSets());
+                            setUserSelections(window.lotteryService.getUserSelections());
                         }
-                    },
-                        React.createElement('h2', {
-                            style: { color: '#dc2626', marginBottom: '1rem' }
-                        }, '⚠️ Something went wrong'),
-                        React.createElement('p', {
-                            style: { marginBottom: '1rem', color: '#6b7280' }
-                        }, 'The application encountered an error. Please refresh the page.'),
-                        React.createElement('button', {
-                            onClick: () => window.location.reload(),
-                            style: {
-                                background: '#3b82f6',
-                                color: 'white',
-                                border: 'none',
-                                padding: '0.5rem 1rem',
-                                borderRadius: '0.375rem',
-                                cursor: 'pointer',
-                                fontWeight: '600'
-                            }
-                        }, '🔄 Refresh Page')
+                        
+                        // Load saved API key
+                        const savedApiKey = window.loadFromStorage(window.LOTTERY_CONFIG.STORAGE_KEYS.API_KEY);
+                        if (savedApiKey) {
+                            setClaudeApiKey(savedApiKey);
+                        }
+                    } catch (err) {
+                        setError('Failed to initialize application');
+                        console.error('Initialization error:', err);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+
+                initializeApp();
+            }, []);
+
+            // Generate numbers using selected algorithm
+            const generateNumbers = useCallback(async (algorithm = 'hybrid', count = 5) => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    const result = await window.lotteryService.generateNumbers(algorithm, count);
+                    if (result.success) {
+                        setGeneratedSets(window.lotteryService.getGeneratedSets());
+                    } else {
+                        setError(result.error);
+                    }
+                } catch (err) {
+                    setError('Failed to generate numbers');
+                    console.error('Generation error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            // Save user selection
+            const saveSelection = useCallback(() => {
+                if (selectedNumbers.length !== 5 || !selectedPowerball) {
+                    setError('Please select 5 numbers and 1 Powerball');
+                    return;
+                }
+
+                const result = window.lotteryService.saveUserSelection(
+                    selectedNumbers, 
+                    selectedPowerball
+                );
+                
+                if (result.success) {
+                    setUserSelections(window.lotteryService.getUserSelections());
+                    setSelectedNumbers([]);
+                    setSelectedPowerball(null);
+                    setError(null);
+                } else {
+                    setError(result.error);
+                }
+            }, [selectedNumbers, selectedPowerball]);
+
+            // Analyze numbers
+            const analyzeNumbers = useCallback(async (numbers, powerball) => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    const result = await window.lotteryService.analyzeNumbers(numbers, powerball);
+                    if (result.success) {
+                        setAnalysis(result.data);
+                    } else {
+                        setError(result.error);
+                    }
+                } catch (err) {
+                    setError('Failed to analyze numbers');
+                    console.error('Analysis error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            // Get Claude analysis
+            const getClaudeAnalysis = useCallback(async (prompt) => {
+                if (!claudeApiKey) {
+                    setError('Please enter your Claude API key');
+                    return;
+                }
+
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    const result = await window.apiService.getClaudeAnalysis(prompt, claudeApiKey);
+                    if (result.success) {
+                        return result.data;
+                    } else {
+                        setError(result.error);
+                        return null;
+                    }
+                } catch (err) {
+                    setError('Failed to get Claude analysis');
+                    console.error('Claude analysis error:', err);
+                    return null;
+                } finally {
+                    setLoading(false);
+                }
+            }, [claudeApiKey]);
+
+            // Save API key
+            const saveApiKey = useCallback(() => {
+                if (claudeApiKey) {
+                    window.saveToStorage(window.LOTTERY_CONFIG.STORAGE_KEYS.API_KEY, claudeApiKey);
+                }
+            }, [claudeApiKey]);
+
+            // Number selection handlers
+            const toggleNumber = useCallback((number) => {
+                setSelectedNumbers(prev => {
+                    if (prev.includes(number)) {
+                        return prev.filter(n => n !== number);
+                    } else if (prev.length < 5) {
+                        return [...prev, number].sort((a, b) => a - b);
+                    }
+                    return prev;
+                });
+            }, []);
+
+            const selectPowerball = useCallback((powerball) => {
+                setSelectedPowerball(powerball);
+            }, []);
+
+            // Quick pick
+            const quickPick = useCallback(() => {
+                const numbers = window.generateRandomNumbers(1, 69, 5);
+                const powerball = Math.floor(Math.random() * 26) + 1;
+                setSelectedNumbers(numbers);
+                setSelectedPowerball(powerball);
+            }, []);
+
+            // Render number grid
+            const renderNumberGrid = (min, max, selected, onSelect, className = '') => {
+                const numbers = [];
+                for (let i = min; i <= max; i++) {
+                    numbers.push(
+                        <button
+                            key={i}
+                            className={`number-btn ${selected.includes ? selected.includes(i) ? 'selected' : '' : selected === i ? 'selected' : ''} ${className}`}
+                            onClick={() => onSelect(i)}
+                        >
+                            {i}
+                        </button>
                     );
                 }
+                return numbers;
+            };
 
-                return this.props.children;
-            }
-        }
+            // Render generated sets
+            const renderGeneratedSets = () => {
+                return generatedSets.map((set, index) => (
+                    <div key={set.id || index} className="generated-set">
+                        <div className="set-header">
+                            <span className="algorithm-name">{set.algorithm}</span>
+                            <span className="confidence">
+                                Confidence: {window.formatPercentage(set.confidence)}
+                            </span>
+                        </div>
+                        <div className="numbers">
+                            {set.numbers.map(num => (
+                                <span key={num} className="number">{num}</span>
+                            ))}
+                            <span className="powerball">PB: {set.powerball}</span>
+                        </div>
+                        <div className="set-description">{set.description}</div>
+                        <div className="set-actions">
+                            <button onClick={() => analyzeNumbers(set.numbers, set.powerball)}>
+                                Analyze
+                            </button>
+                            <button onClick={() => {
+                                setSelectedNumbers(set.numbers);
+                                setSelectedPowerball(set.powerball);
+                            }}>
+                                Use These Numbers
+                            </button>
+                        </div>
+                    </div>
+                ));
+            };
 
-        // Initialize Application
-        function initializeApp() {
-            const startTime = performance.now();
-            
-            try {
-                // Hide loading screen
-                const loadingScreen = document.getElementById('loading-screen');
-                if (loadingScreen) {
-                    loadingScreen.style.opacity = '0';
-                    setTimeout(() => {
-                        loadingScreen.style.display = 'none';
-                    }, 500);
-                }
+            // Render user selections
+            const renderUserSelections = () => {
+                return userSelections.map((selection, index) => (
+                    <div key={selection.id || index} className="user-selection">
+                        <div className="selection-header">
+                            <span className="selection-name">{selection.name}</span>
+                            <span className="selection-date">
+                                {window.formatDate(new Date(selection.timestamp))}
+                            </span>
+                        </div>
+                        <div className="numbers">
+                            {selection.numbers.map(num => (
+                                <span key={num} className="number">{num}</span>
+                            ))}
+                            <span className="powerball">PB: {selection.powerball}</span>
+                        </div>
+                        <div className="selection-actions">
+                            <button onClick={() => analyzeNumbers(selection.numbers, selection.powerball)}>
+                                Analyze
+                            </button>
+                            <button onClick={() => window.lotteryService.deleteUserSelection(selection.id)}>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                ));
+            };
 
-                // Render the main application
-                const root = ReactDOM.createRoot(document.getElementById('app-root'));
-                root.render(
-                    React.createElement(ErrorBoundary, null,
-                        React.createElement(AdvancedLotterySystem)
-                    )
+            // Render analysis results
+            const renderAnalysis = () => {
+                if (!analysis) return null;
+
+                return (
+                    <div className="analysis-results">
+                        <h3>Number Analysis</h3>
+                        <div className="analysis-section">
+                            <h4>Selected Numbers</h4>
+                            <div className="numbers">
+                                {analysis.numbers.map(num => (
+                                    <span key={num} className="number">{num}</span>
+                                ))}
+                                <span className="powerball">PB: {analysis.powerball}</span>
+                            </div>
+                        </div>
+                        
+                        {analysis.frequency && (
+                            <div className="analysis-section">
+                                <h4>Frequency Analysis</h4>
+                                <div className="frequency-data">
+                                    {analysis.frequency.numbers.map(item => (
+                                        <div key={item.number} className="freq-item">
+                                            <span>Number {item.number}</span>
+                                            <span>Frequency: {item.frequency}</span>
+                                            <span>Percentile: {window.formatPercentage(item.percentile / 100)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {analysis.patterns && (
+                            <div className="analysis-section">
+                                <h4>Pattern Analysis</h4>
+                                <div className="pattern-data">
+                                    <div>Sum: {analysis.patterns.sum}</div>
+                                    <div>Range: {analysis.patterns.range}</div>
+                                    <div>Even/Odd: {analysis.patterns.evenOdd.ratio}</div>
+                                    {analysis.patterns.consecutive.length > 0 && (
+                                        <div>Consecutive: {analysis.patterns.consecutive.map(seq => seq.join('-')).join(', ')}</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {analysis.recommendations && analysis.recommendations.length > 0 && (
+                            <div className="analysis-section">
+                                <h4>Recommendations</h4>
+                                <div className="recommendations">
+                                    {analysis.recommendations.map((rec, index) => (
+                                        <div key={index} className={`recommendation ${rec.type}`}>
+                                            {rec.message}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 );
+            };
 
-                // Track initialization performance
-                window.trackPerformance('appInitialization', startTime);
-                
-                console.log('🎰 Advanced Lottery Intelligence System initialized successfully');
-                console.log('📊 Performance metrics:', window.getSystemPerformanceMetrics());
-                
-            } catch (error) {
-                console.error('Failed to initialize application:', error);
-                window.performanceMetrics.errors++;
-                
-                // Show error fallback
-                document.getElementById('error-fallback').style.display = 'block';
-                document.getElementById('loading-screen').style.display = 'none';
+            if (loading && !currentDrawing) {
+                return <div className="loading">Loading...</div>;
             }
-        }
 
-        // Wait for DOM to be ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApp);
-        } else {
-            initializeApp();
-        }
+            return (
+                <div className="lottery-app">
+                    <header className="app-header">
+                        <h1>Advanced Lottery Intelligence System</h1>
+                        {currentDrawing && (
+                            <div className="current-jackpot">
+                                Next Jackpot: {window.formatCurrency(currentDrawing.jackpot || 0)}
+                            </div>
+                        )}
+                    </header>
 
-        // Service Worker Registration (for future PWA capabilities)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // Service worker registration would go here
-                console.log('Service Worker support detected');
-            });
-        }
-    </script>
+                    {error && (
+                        <div className="error-message">
+                            {error}
+                            <button onClick={() => setError(null)}>×</button>
+                        </div>
+                    )}
 
-    <!-- Inline styles for loading animation -->
-    <style>
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
+                    <nav className="tab-navigation">
+                        <button 
+                            className={activeTab === 'generator' ? 'active' : ''}
+                            onClick={() => setActiveTab('generator')}
+                        >
+                            Number Generator
+                        </button>
+                        <button 
+                            className={activeTab === 'manual' ? 'active' : ''}
+                            onClick={() => setActiveTab('manual')}
+                        >
+                            Manual Selection
+                        </button>
+                        <button 
+                            className={activeTab === 'analysis' ? 'active' : ''}
+                            onClick={() => setActiveTab('analysis')}
+                        >
+                            Analysis
+                        </button>
+                        <button 
+                            className={activeTab === 'history' ? 'active' : ''}
+                            onClick={() => setActiveTab('history')}
+                        >
+                            My Selections
+                        </button>
+                        <button 
+                            className={activeTab === 'settings' ? 'active' : ''}
+                            onClick={() => setActiveTab('settings')}
+                        >
+                            Settings
+                        </button>
+                    </nav>
 
-    <!-- Analytics and Monitoring -->
-    <script>
-        // Basic analytics tracking
-        window.addEventListener('load', () => {
-            const loadTime = performance.now() - window.performanceMetrics.startTime;
-            console.log(`🚀 Application loaded in ${Math.round(loadTime)}ms`);
-        });
+                    <main className="app-content">
+                        {activeTab === 'generator' && (
+                            <div className="generator-tab">
+                                <div className="generator-controls">
+                                    <h2>AI Number Generator</h2>
+                                    <div className="algorithm-buttons">
+                                        <button onClick={() => generateNumbers('frequency')}>
+                                            Frequency Analysis
+                                        </button>
+                                        <button onClick={() => generateNumbers('hot_cold')}>
+                                            Hot & Cold Numbers
+                                        </button>
+                                        <button onClick={() => generateNumbers('pattern')}>
+                                            Pattern Analysis
+                                        </button>
+                                        <button onClick={() => generateNumbers('statistical')}>
+                                            Statistical
+                                        </button>
+                                        <button onClick={() => generateNumbers('hybrid')}>
+                                            Hybrid (Recommended)
+                                        </button>
+                                        <button onClick={() => generateNumbers('random')}>
+                                            Random
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className="generated-sets-container">
+                                    <h3>Generated Number Sets</h3>
+                                    {generatedSets.length === 0 ? (
+                                        <p>No generated sets yet. Click an algorithm button above to generate numbers.</p>
+                                    ) : (
+                                        <div className="generated-sets">
+                                            {renderGeneratedSets()}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
-        // Track user interactions
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('button, .btn')) {
-                console.log('Button clicked:', e.target.textContent?.trim());
-            }
-        });
+                        {activeTab === 'manual' && (
+                            <div className="manual-tab">
+                                <h2>Manual Number Selection</h2>
+                                
+                                <div className="selection-controls">
+                                    <button onClick={quickPick}>Quick Pick</button>
+                                    <button onClick={() => setSelectedNumbers([])}>Clear Numbers</button>
+                                    <button onClick={() => setSelectedPowerball(null)}>Clear Powerball</button>
+                                    <button 
+                                        onClick={saveSelection}
+                                        disabled={selectedNumbers.length !== 5 || !selectedPowerball}
+                                    >
+                                        Save Selection
+                                    </button>
+                                </div>
 
-        // Memory usage monitoring
-        setInterval(() => {
-            if (performance.memory) {
-                const used = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
-                if (used > 100) { // Alert if memory usage exceeds 100MB
-                    console.warn(`High memory usage detected: ${used}MB`);
-                }
-            }
-        }, 30000); // Check every 30 seconds
+                                <div className="number-selection">
+                                    <div className="selected-display">
+                                        <h3>Selected Numbers ({selectedNumbers.length}/5)</h3>
+                                        <div className="selected-numbers">
+                                            {selectedNumbers.map(num => (
+                                                <span key={num} className="selected-number">{num}</span>
+                                            ))}
+                                        </div>
+                                        <h3>Powerball: {selectedPowerball || 'None'}</h3>
+                                    </div>
+
+                                    <div className="number-grids">
+                                        <div className="main-numbers">
+                                            <h3>Select 5 Numbers (1-69)</h3>
+                                            <div className="number-grid">
+                                                {renderNumberGrid(1, 69, selectedNumbers, toggleNumber)}
+                                            </div>
+                                        </div>
+
+                                        <div className="powerball-numbers">
+                                            <h3>Select Powerball (1-26)</h3>
+                                            <div className="number-grid powerball-grid">
+                                                {renderNumberGrid(1, 26, [selectedPowerball], selectPowerball, 'powerball')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'analysis' && (
+                            <div className="analysis-tab">
+                                <h2>Number Analysis</h2>
+                                {renderAnalysis()}
+                            </div>
+                        )}
+
+                        {activeTab === 'history' && (
+                            <div className="history-tab">
+                                <h2>My Selections</h2>
+                                {userSelections.length === 0 ? (
+                                    <p>No saved selections yet.</p>
+                                ) : (
+                                    <div className="user-selections">
+                                        {renderUserSelections()}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'settings' && (
+                            <div className="settings-tab">
+                                <h2>Settings</h2>
+                                <div className="setting-group">
+                                    <label htmlFor="claude-api-key">Claude API Key:</label>
+                                    <input
+                                        id="claude-api-key"
+                                        type="password"
+                                        value={claudeApiKey}
+                                        onChange={(e) => setClaudeApiKey(e.target.value)}
+                                        onBlur={saveApiKey}
+                                        placeholder="Enter your Claude API key"
+                                    />
+                                    <small>Your API key is stored locally and never sent to our servers.</small>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {loading && (
+                        <div className="loading-overlay">
+                            <div className="loading-spinner">Loading...</div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Render the application
+        ReactDOM.render(<LotteryApp />, document.getElementById('root'));
     </script>
 </body>
 </html>
