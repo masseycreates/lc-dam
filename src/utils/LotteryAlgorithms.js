@@ -13,6 +13,11 @@ window.LotteryAlgorithms = class {
         };
     }
 
+    // Get algorithm by name
+    getAlgorithm(name) {
+        return this.algorithms[name] || this.algorithms.hybrid;
+    }
+
     // Frequency-based analysis
     frequencyAnalysis(historicalStats, count = 5) {
         if (!historicalStats || !historicalStats.numberFrequency) {
