@@ -44,9 +44,64 @@
         <div id="predictions-results"></div>
     </div>
 
+    <div class="test-section">
+        <h2>🔍 System Verification</h2>
+        <button onclick="runSystemVerification()">Run System Verification</button>
+        <div id="verification-results"></div>
+    </div>
+
     <script>
         let userId = null;
         let testResults = [];
+
+        // System verification function
+        function runSystemVerification() {
+            const resultsDiv = document.getElementById('verification-results');
+            resultsDiv.innerHTML = '⏳ Running system verification...';
+
+            const requiredFunctions = [
+                'fetchLatestPowerballData',
+                'fetchHistoricalData',
+                'initializeUserSession',
+                'generateEnhancedHybridSelection',
+                'generateClaudeHybridSelection',
+                'addManualSelection',
+                'updateSelectionResult',
+                'deleteSelectionEntry',
+                'calculatePerformanceStats',
+                'saveSelectionForTracking'
+            ];
+
+            let results = '<div class="info"><h4>🔍 Function Verification Results:</h4>';
+            let allPassed = true;
+
+            requiredFunctions.forEach(funcName => {
+                if (typeof window[funcName] === 'function') {
+                    results += `<div>✅ ${funcName} - Defined</div>`;
+                } else {
+                    results += `<div>❌ ${funcName} - Not defined or not accessible</div>`;
+                    allPassed = false;
+                }
+            });
+
+            // Check React availability
+            if (typeof React !== 'undefined') {
+                results += '<div>✅ React - Available</div>';
+            } else {
+                results += '<div>❌ React - Not available</div>';
+                allPassed = false;
+            }
+
+            results += '</div>';
+
+            if (allPassed) {
+                results = '<div class="success">' + results + '<br><strong>✅ All system functions verified successfully!</strong></div>';
+            } else {
+                results = '<div class="error">' + results + '<br><strong>❌ Some system functions are missing!</strong></div>';
+            }
+
+            resultsDiv.innerHTML = results;
+        }
 
         // Initialize test environment
         async function initializeTests() {
@@ -373,6 +428,43 @@
 
         // Initialize tests when page loads
         window.addEventListener('load', initializeTests);
+
+        // Run system verification
+        async function runSystemVerification() {
+            const resultsDiv = document.getElementById('verification-results');
+            resultsDiv.innerHTML = '⏳ Running system verification...';
+
+            try {
+                const response = await fetch('/api/system-verification', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    resultsDiv.innerHTML = `<div class="error">❌ System Verification Failed: Status ${response.status}</div>`;
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.verified) {
+                    resultsDiv.innerHTML = `
+                        <div class="success">
+                            ✅ System Verification Passed<br>
+                            🔍 Details: ${data.details || 'All systems operational'}
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="error">
+                            ❌ System Verification Failed<br>
+                            🔍 Details: ${data.details || 'Issues detected'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ System Verification Error: ${error.message}</div>`;
+            }
+        }
     </script>
 </body>
 </html>
