@@ -2449,7 +2449,8 @@
                         });
 
                         // Refresh the user session to sync with server
-                        await initializeUserSession();
+                        setTimeout(async () => {
+                            await initializeUserSession();
                         }, 100);
 
                         // Refresh the user session to load the new data
