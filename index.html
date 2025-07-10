@@ -1868,7 +1868,7 @@
                 }
 
                 setIsLoadingAI(true);
-                
+
                 try {
                     const hybridSelections = await window.claudeAnalyzer.generateHybridQuickSelection(
                         historicalStats,
@@ -1876,14 +1876,14 @@
                         5,
                         'hybrid'
                     );
-                    
+
                     setQuickSelectionSets(hybridSelections);
                     setDataStatus('🤖🧮 Claude Opus 4 + 6 Algorithms hybrid selections generated successfully!');
-                    
+
                 } catch (error) {
                     console.error('Claude hybrid selection failed:', error);
                     alert('Claude Hybrid Error: ' + error.message);
-                    
+
                     if (window.generateAdvancedQuickSelection) {
                         const fallbackSelection = await window.generateAdvancedQuickSelection(historicalStats);
                         setQuickSelectionSets(fallbackSelection);
@@ -1891,6 +1891,11 @@
                 } finally {
                     setIsLoadingAI(false);
                 }
+            };
+
+            const handleDataLimitChange = async (newLimit) => {
+                setHistoricalRecordsLimit(newLimit);
+                await fetchHistoricalData(newLimit);
             };
 
             const toggleNumber = (num) => {
