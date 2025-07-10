@@ -1933,6 +1933,11 @@
                 notes: ''
             });
 
+            // Upload functionality state
+            const [isUploading, setIsUploading] = useState(false);
+            const [uploadStatus, setUploadStatus] = useState('');
+            const [showUploadDialog, setShowUploadDialog] = useState(false);
+
             const [userId, setUserId] = useState(null);
             const [userAnalytics, setUserAnalytics] = useState(null);
             const [isLoadingUserData, setIsLoadingUserData] = useState(false);
@@ -2356,6 +2361,87 @@
                     sourceStats,
                     insights
                 };
+            };
+
+            // Upload history data from JSON file
+            const uploadHistoryData = async (file) => {
+                if (!file) {
+                    setUploadStatus('❌ Please select a file to upload.');
+                    return;
+                }
+
+                // Validate file type
+                if (!file.name.toLowerCase().endsWith('.json')) {
+                    setUploadStatus('❌ Please select a JSON file (.json).');
+                    return;
+                }
+
+                // Validate file size (10MB max)
+                if (file.size > 10 * 1024 * 1024) {
+                    setUploadStatus('❌ File too large. Maximum size is 10MB.');
+                    return;
+                }
+
+                setIsUploading(true);
+                setUploadStatus('⏳ Uploading and processing file...');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('historyFile', file);
+
+                    const response = await fetch('/api/upload-history', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        setUploadStatus(`✅ ${data.message}`);
+
+                        // Refresh the user session to load the new data
+                        await initializeUserSession();
+
+                        // Show success details
+                        if (data.data) {
+                            const details = [];
+                            if (data.data.addedCount > 0) {
+                                details.push(`${data.data.addedCount} new selections imported`);
+                            }
+                            if (data.data.duplicatesSkipped > 0) {
+                                details.push(`${data.data.duplicatesSkipped} duplicates skipped`);
+                            }
+                            if (details.length > 0) {
+                                setUploadStatus(`✅ Import complete! ${details.join(', ')}.`);
+                            }
+                        }
+
+                        // Auto-close dialog after 3 seconds
+                        setTimeout(() => {
+                            setShowUploadDialog(false);
+                            setUploadStatus('');
+                        }, 3000);
+
+                    } else {
+                        setUploadStatus(`❌ Upload failed: ${data.error}`);
+                    }
+
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    setUploadStatus('❌ Upload failed. Please check your connection and try again.');
+                } finally {
+                    setIsUploading(false);
+                }
+            };
+
+            // Handle file input change
+            const handleFileUpload = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    uploadHistoryData(file);
+                }
+                // Reset the input so the same file can be selected again
+                event.target.value = '';
             };
 
             const enableAI = async () => {
@@ -2991,6 +3077,10 @@
                                         className: 'btn btn-primary'
                                     }, '➕ Add Previous Selection'),
                                     React.createElement('button', {
+                                        onClick: () => setShowUploadDialog(true),
+                                        className: 'btn btn-primary'
+                                    }, '📤 Import Data'),
+                                    React.createElement('button', {
                                         onClick: () => {
                                             if (confirm('Are you sure you want to clear all selection history? This cannot be undone.')) {
                                                 saveSelectionHistory([]);
@@ -3518,6 +3608,74 @@
                             onClick: () => setShowHistoryInput(false),
                             className: 'btn btn-secondary'
                         }, 'Cancel')
+                    )
+                )
+            ) : null,
+
+            // Upload dialog
+            showUploadDialog ? React.createElement('div', {
+                className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50',
+                onClick: (e) => {
+                    if (e.target === e.currentTarget) {
+                        setShowUploadDialog(false);
+                        setUploadStatus('');
+                    }
+                }
+            },
+                React.createElement('div', { className: 'bg-white rounded-lg p-6 max-w-md w-full mx-4' },
+                    React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '📤 Import Selection History'),
+
+                    React.createElement('div', { className: 'mb-4' },
+                        React.createElement('p', { className: 'text-sm text-gray-600 mb-3' },
+                            'Upload a JSON file containing your previous selection history. This will merge with your existing data.'
+                        ),
+                        React.createElement('div', { className: 'border-2 border-dashed border-gray-300 rounded-lg p-4 text-center' },
+                            React.createElement('input', {
+                                type: 'file',
+                                accept: '.json',
+                                onChange: handleFileUpload,
+                                disabled: isUploading,
+                                className: 'hidden',
+                                id: 'historyFileInput'
+                            }),
+                            React.createElement('label', {
+                                htmlFor: 'historyFileInput',
+                                className: 'cursor-pointer block'
+                            },
+                                React.createElement('div', { className: 'text-4xl mb-2' }, '📁'),
+                                React.createElement('p', { className: 'text-sm font-medium text-gray-700' },
+                                    isUploading ? 'Processing...' : 'Click to select JSON file'
+                                ),
+                                React.createElement('p', { className: 'text-xs text-gray-500 mt-1' },
+                                    'Maximum file size: 10MB'
+                                )
+                            )
+                        )
+                    ),
+
+                    // Upload status
+                    uploadStatus ? React.createElement('div', {
+                        className: 'mb-4 p-3 rounded-lg text-sm ' + (
+                            uploadStatus.includes('✅') ? 'bg-green-50 text-green-700 border border-green-200' :
+                            uploadStatus.includes('❌') ? 'bg-red-50 text-red-700 border border-red-200' :
+                            'bg-blue-50 text-blue-700 border border-blue-200'
+                        )
+                    }, uploadStatus) : null,
+
+                    React.createElement('div', { className: 'flex gap-3' },
+                        React.createElement('button', {
+                            onClick: () => {
+                                setShowUploadDialog(false);
+                                setUploadStatus('');
+                            },
+                            disabled: isUploading,
+                            className: 'btn btn-secondary flex-1'
+                        }, 'Close'),
+                        React.createElement('button', {
+                            onClick: () => document.getElementById('historyFileInput').click(),
+                            disabled: isUploading,
+                            className: 'btn btn-primary flex-1'
+                        }, isUploading ? '⏳ Processing...' : '📁 Select File')
                     )
                 )
             ) : null
