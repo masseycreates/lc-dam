@@ -1,5 +1,5 @@
-// Selection History API - Manages persistent storage across browsers
-// Uses simple file-based storage for cross-browser persistence
+// Selection History API - Enhanced for cross-device persistence and algorithm integration
+// Uses simple file-based storage for cross-browser persistence with advanced analytics
 
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -52,30 +52,168 @@ async function loadUserHistory(userId) {
         if (!Array.isArray(history.selections)) {
             history.selections = [];
         }
+        if (!Array.isArray(history.savedSelections)) {
+            history.savedSelections = [];
+        }
+        if (!history.analytics) {
+            history.analytics = {
+                totalSelections: 0,
+                winningSelections: 0,
+                averageConfidence: 0,
+                preferredStrategies: {},
+                numberFrequency: {},
+                powerballFrequency: {},
+                lastAnalysisUpdate: new Date().toISOString()
+            };
+        }
         
         return history;
     } catch (error) {
         // Return empty history if file doesn't exist or is corrupted
         return {
             selections: [],
+            savedSelections: [],
+            analytics: {
+                totalSelections: 0,
+                winningSelections: 0,
+                averageConfidence: 0,
+                preferredStrategies: {},
+                numberFrequency: {},
+                powerballFrequency: {},
+                lastAnalysisUpdate: new Date().toISOString()
+            },
             lastUpdated: new Date().toISOString(),
-            version: 1
+            version: 2
         };
     }
 }
 
-// Save user's selection history
+// Analyze user's selection patterns for algorithm enhancement
+function analyzeUserPatterns(history) {
+    const analytics = {
+        totalSelections: history.selections.length + history.savedSelections.length,
+        winningSelections: 0,
+        averageConfidence: 0,
+        preferredStrategies: {},
+        numberFrequency: {},
+        powerballFrequency: {},
+        patternInsights: {
+            favoriteNumbers: [],
+            avoidedNumbers: [],
+            preferredSums: [],
+            consecutiveNumberTendency: 0,
+            evenOddBalance: { even: 0, odd: 0 },
+            highLowBalance: { high: 0, low: 0 }
+        },
+        lastAnalysisUpdate: new Date().toISOString()
+    };
+
+    const allSelections = [...history.selections, ...history.savedSelections];
+    
+    if (allSelections.length === 0) return analytics;
+
+    let totalConfidence = 0;
+    const numberCounts = {};
+    const powerballCounts = {};
+    const strategyCounts = {};
+    const sums = [];
+
+    allSelections.forEach(selection => {
+        // Count winning selections
+        if (selection.result && selection.result.isWinner) {
+            analytics.winningSelections++;
+        }
+
+        // Accumulate confidence scores
+        if (selection.confidence) {
+            totalConfidence += selection.confidence;
+        }
+
+        // Count strategy preferences
+        if (selection.strategy) {
+            strategyCounts[selection.strategy] = (strategyCounts[selection.strategy] || 0) + 1;
+        }
+
+        // Analyze number patterns
+        if (selection.numbers && Array.isArray(selection.numbers)) {
+            const sum = selection.numbers.reduce((a, b) => a + b, 0);
+            sums.push(sum);
+
+            selection.numbers.forEach(num => {
+                numberCounts[num] = (numberCounts[num] || 0) + 1;
+                
+                // Track even/odd balance
+                if (num % 2 === 0) {
+                    analytics.patternInsights.evenOddBalance.even++;
+                } else {
+                    analytics.patternInsights.evenOddBalance.odd++;
+                }
+
+                // Track high/low balance (1-34 low, 35-69 high)
+                if (num <= 34) {
+                    analytics.patternInsights.highLowBalance.low++;
+                } else {
+                    analytics.patternInsights.highLowBalance.high++;
+                }
+            });
+        }
+
+        // Analyze powerball patterns
+        if (selection.powerball) {
+            powerballCounts[selection.powerball] = (powerballCounts[selection.powerball] || 0) + 1;
+        }
+    });
+
+    // Calculate averages and insights
+    analytics.averageConfidence = allSelections.length > 0 ? totalConfidence / allSelections.length : 0;
+    analytics.preferredStrategies = strategyCounts;
+    analytics.numberFrequency = numberCounts;
+    analytics.powerballFrequency = powerballCounts;
+
+    // Find favorite and avoided numbers
+    const sortedNumbers = Object.entries(numberCounts)
+        .sort(([,a], [,b]) => b - a)
+        .map(([num]) => parseInt(num));
+    
+    analytics.patternInsights.favoriteNumbers = sortedNumbers.slice(0, 10);
+    
+    // Find avoided numbers (numbers 1-69 that appear less frequently)
+    const allPossibleNumbers = Array.from({length: 69}, (_, i) => i + 1);
+    const avoidedNumbers = allPossibleNumbers
+        .filter(num => !numberCounts[num] || numberCounts[num] < Math.max(1, allSelections.length * 0.1))
+        .slice(0, 10);
+    
+    analytics.patternInsights.avoidedNumbers = avoidedNumbers;
+
+    // Calculate preferred sum ranges
+    if (sums.length > 0) {
+        sums.sort((a, b) => a - b);
+        const q1 = sums[Math.floor(sums.length * 0.25)];
+        const q3 = sums[Math.floor(sums.length * 0.75)];
+        analytics.patternInsights.preferredSums = [q1, q3];
+    }
+
+    return analytics;
+}
+
+// Save user's selection history with analytics update
 async function saveUserHistory(userId, history) {
     try {
         await ensureStorageDir();
         
+        // Update analytics
+        history.analytics = analyzeUserPatterns(history);
+        
         // Add metadata
         history.lastUpdated = new Date().toISOString();
-        history.version = history.version || 1;
+        history.version = history.version || 2;
         
         // Limit history size
         if (history.selections.length > MAX_HISTORY_SIZE) {
             history.selections = history.selections.slice(-MAX_HISTORY_SIZE);
+        }
+        if (history.savedSelections.length > MAX_HISTORY_SIZE) {
+            history.savedSelections = history.savedSelections.slice(-MAX_HISTORY_SIZE);
         }
         
         const filePath = getUserFilePath(userId);
@@ -118,7 +256,7 @@ export default async function handler(req, res) {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-User-ID');
     
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -129,17 +267,33 @@ export default async function handler(req, res) {
         
         switch (req.method) {
             case 'GET':
-                // Get user's selection history
+                // Get user's selection history with analytics
+                const { type } = req.query;
                 const history = await loadUserHistory(userId);
-                return res.status(200).json({
-                    success: true,
-                    data: history,
-                    userId: userId
-                });
+                
+                if (type === 'analytics') {
+                    return res.status(200).json({
+                        success: true,
+                        data: history.analytics,
+                        userId: userId
+                    });
+                } else if (type === 'saved') {
+                    return res.status(200).json({
+                        success: true,
+                        data: { savedSelections: history.savedSelections },
+                        userId: userId
+                    });
+                } else {
+                    return res.status(200).json({
+                        success: true,
+                        data: history,
+                        userId: userId
+                    });
+                }
                 
             case 'POST':
-                // Add new selection to history
-                const { selection } = req.body;
+                // Add new selection to history or saved selections
+                const { selection, saveType = 'history' } = req.body;
                 
                 if (!selection || !selection.numbers || !selection.powerball) {
                     return res.status(400).json({
@@ -155,10 +309,19 @@ export default async function handler(req, res) {
                     ...selection,
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                     timestamp: new Date().toISOString(),
-                    status: 'pending'
+                    status: 'pending',
+                    saveType: saveType,
+                    deviceInfo: {
+                        userAgent: req.headers['user-agent']?.substring(0, 100) || 'unknown',
+                        timestamp: new Date().toISOString()
+                    }
                 };
                 
-                currentHistory.selections.push(newSelection);
+                if (saveType === 'saved') {
+                    currentHistory.savedSelections.push(newSelection);
+                } else {
+                    currentHistory.selections.push(newSelection);
+                }
                 
                 const saved = await saveUserHistory(userId, currentHistory);
                 
@@ -166,6 +329,7 @@ export default async function handler(req, res) {
                     return res.status(200).json({
                         success: true,
                         data: newSelection,
+                        analytics: currentHistory.analytics,
                         userId: userId
                     });
                 } else {
@@ -177,7 +341,7 @@ export default async function handler(req, res) {
                 
             case 'PUT':
                 // Update existing selection (e.g., with results)
-                const { selectionId, updates } = req.body;
+                const { selectionId, updates, targetType = 'history' } = req.body;
                 
                 if (!selectionId) {
                     return res.status(400).json({
@@ -187,7 +351,8 @@ export default async function handler(req, res) {
                 }
                 
                 const historyToUpdate = await loadUserHistory(userId);
-                const selectionIndex = historyToUpdate.selections.findIndex(s => s.id === selectionId);
+                const targetArray = targetType === 'saved' ? historyToUpdate.savedSelections : historyToUpdate.selections;
+                const selectionIndex = targetArray.findIndex(s => s.id === selectionId);
                 
                 if (selectionIndex === -1) {
                     return res.status(404).json({
@@ -197,8 +362,8 @@ export default async function handler(req, res) {
                 }
                 
                 // Update selection
-                historyToUpdate.selections[selectionIndex] = {
-                    ...historyToUpdate.selections[selectionIndex],
+                targetArray[selectionIndex] = {
+                    ...targetArray[selectionIndex],
                     ...updates,
                     lastUpdated: new Date().toISOString()
                 };
@@ -208,7 +373,8 @@ export default async function handler(req, res) {
                 if (updateSaved) {
                     return res.status(200).json({
                         success: true,
-                        data: historyToUpdate.selections[selectionIndex]
+                        data: targetArray[selectionIndex],
+                        analytics: historyToUpdate.analytics
                     });
                 } else {
                     return res.status(500).json({
@@ -219,16 +385,27 @@ export default async function handler(req, res) {
                 
             case 'DELETE':
                 // Delete selection or clear history
-                const { selectionId: deleteId, clearAll } = req.body;
+                const { selectionId: deleteId, clearAll, targetType: deleteTargetType = 'history' } = req.body;
                 
                 const historyToDelete = await loadUserHistory(userId);
                 
                 if (clearAll) {
-                    // Clear all history
-                    historyToDelete.selections = [];
+                    // Clear specified type or all history
+                    if (deleteTargetType === 'saved') {
+                        historyToDelete.savedSelections = [];
+                    } else if (deleteTargetType === 'all') {
+                        historyToDelete.selections = [];
+                        historyToDelete.savedSelections = [];
+                    } else {
+                        historyToDelete.selections = [];
+                    }
                 } else if (deleteId) {
                     // Delete specific selection
-                    historyToDelete.selections = historyToDelete.selections.filter(s => s.id !== deleteId);
+                    if (deleteTargetType === 'saved') {
+                        historyToDelete.savedSelections = historyToDelete.savedSelections.filter(s => s.id !== deleteId);
+                    } else {
+                        historyToDelete.selections = historyToDelete.selections.filter(s => s.id !== deleteId);
+                    }
                 } else {
                     return res.status(400).json({
                         success: false,
@@ -241,7 +418,8 @@ export default async function handler(req, res) {
                 if (deleteSaved) {
                     return res.status(200).json({
                         success: true,
-                        data: historyToDelete
+                        data: historyToDelete,
+                        analytics: historyToDelete.analytics
                     });
                 } else {
                     return res.status(500).json({

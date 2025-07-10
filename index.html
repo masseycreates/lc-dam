@@ -1912,115 +1912,56 @@
                 notes: ''
             });
 
+            const [userId, setUserId] = useState(null);
+            const [userAnalytics, setUserAnalytics] = useState(null);
+            const [isLoadingUserData, setIsLoadingUserData] = useState(false);
+
             const [aiApiKey, setAiApiKey] = useState('');
             const [isLoadingAI, setIsLoadingAI] = useState(false);
             const [aiEnabled, setAiEnabled] = useState(false);
 
             const [systemPerformance, setSystemPerformance] = useState(null);
 
-            // Load saved data on component mount
-            useEffect(() => {
-                loadSelectionHistory();
-                loadSavedSelections();
-            }, []);
-
-            useEffect(() => {
-                const initializeData = async () => {
-                    setDataStatus('🚀 Initializing hybrid Claude Opus 4 + 6 algorithms system...');
-                    await fetchLatestPowerballData();
-                    await fetchHistoricalData();
-
-                    const performance = window.getSystemPerformanceMetrics();
-                    setSystemPerformance(performance);
-                };
-                initializeData();
-            }, []);
-
-            const fetchLatestPowerballData = async () => {
-                setIsUpdating(true);
-                setDataStatus('🔄 Connecting to official lottery data sources...');
-                
+            // Initialize user session and load data
+            const initializeUserSession = async () => {
+                setIsLoadingUserData(true);
                 try {
-                    const response = await fetch('/api/powerball', {
+                    const response = await fetch('/api/selection-history', {
                         method: 'GET',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Cache-Control': 'no-cache'
+                        headers: {
+                            'Content-Type': 'application/json'
                         }
                     });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success && data.dataAvailable && data.jackpot) {
-                        setCurrentJackpot(data.jackpot);
-                        setLiveDataAvailable(true);
-                        window.currentJackpotData = data.jackpot;
-                        
-                        if (data.nextDrawing) {
-                            setNextDrawDate(data.nextDrawing.date + ' @ ' + data.nextDrawing.time);
-                        }
-                        
-                        setDataStatus('✅ Live data from ' + data.source);
-                        setLastUpdated(new Date().toLocaleString());
-                    } else {
-                        setCurrentJackpot(null);
-                        setLiveDataAvailable(false);
-                        window.currentJackpotData = null;
-                        setDataStatus(data.message || 'LIVE POWERBALL DATA TEMPORARILY UNAVAILABLE');
-                        
-                        if (data.nextDrawing) {
-                            setNextDrawDate(data.nextDrawing.date + ' @ ' + data.nextDrawing.time);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            setUserId(data.userId);
+                            setSelectionHistory(data.data.selections || []);
+                            setSavedSelections(data.data.savedSelections || []);
+                            setUserAnalytics(data.data.analytics);
+                            console.log('✅ User session initialized:', data.userId);
                         }
                     }
                 } catch (error) {
-                    console.error('API Error:', error);
-                    setCurrentJackpot(null);
-                    setLiveDataAvailable(false);
-                    window.currentJackpotData = null;
-                    setDataStatus('❌ Unable to connect to lottery data sources');
+                    console.error('Failed to initialize user session:', error);
+                    // Fallback to localStorage for backward compatibility
+                    loadSelectionHistoryLocal();
+                    loadSavedSelectionsLocal();
                 }
-                
-                setIsUpdating(false);
+                setIsLoadingUserData(false);
             };
 
-            const fetchHistoricalData = async (customLimit) => {
-                const limit = customLimit || historicalRecordsLimit;
-                setIsLoadingHistory(true);
-                
-                try {
-                    const response = await fetch('/api/powerball-history?limit=' + limit, {
-                        method: 'GET',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Cache-Control': 'no-cache'
-                        }
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success && data.dataAvailable && data.statistics) {
-                        setHistoricalStats(data.statistics);
-                        setHistoricalDataAvailable(true);
-                        
-                        if (window.generateAdvancedQuickSelection) {
-                            const advancedSelection = await window.generateAdvancedQuickSelection(data.statistics);
-                            setQuickSelectionSets(advancedSelection);
-                        }
-                    } else {
-                        setHistoricalStats(null);
-                        setHistoricalDataAvailable(false);
-                    }
-                } catch (error) {
-                    console.error('Historical Data Error:', error);
-                    setHistoricalStats(null);
-                    setHistoricalDataAvailable(false);
-                }
-
-                setIsLoadingHistory(false);
-            };
-
-            // Selection History Management Functions
+            // Fallback functions for localStorage compatibility
             const loadSelectionHistory = () => {
+                loadSelectionHistoryLocal();
+            };
+
+            const loadSavedSelections = () => {
+                loadSavedSelectionsLocal();
+            };
+
+            const loadSelectionHistoryLocal = () => {
                 try {
                     const saved = localStorage.getItem('powerball_selection_history');
                     if (saved) {
@@ -2032,7 +1973,7 @@
                 }
             };
 
-            const loadSavedSelections = () => {
+            const loadSavedSelectionsLocal = () => {
                 try {
                     const saved = localStorage.getItem('powerball_saved_selections');
                     if (saved) {
@@ -2062,7 +2003,62 @@
                 }
             };
 
-            const saveSelectionForTracking = (selection, notes = '') => {
+            // Initialize user session on component mount
+            React.useEffect(() => {
+                initializeUserSession();
+            }, []);
+
+            // Enhanced selection saving with cross-device persistence
+            const saveSelectionForTracking = async (selection, notes = '', saveType = 'history') => {
+                const selectionData = {
+                    ...selection,
+                    notes: notes,
+                    source: selection.claudeGenerated ? 'Claude Opus 4' : 'Algorithm',
+                    confidence: selection.confidence || 0,
+                    strategy: selection.strategy || 'Unknown'
+                };
+
+                if (userId) {
+                    try {
+                        const response = await fetch('/api/selection-history', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-User-ID': userId
+                            },
+                            body: JSON.stringify({
+                                selection: selectionData,
+                                saveType: saveType
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success) {
+                                // Update local state
+                                if (saveType === 'saved') {
+                                    setSavedSelections(prev => [...prev, data.data]);
+                                } else {
+                                    setSelectionHistory(prev => [...prev, data.data]);
+                                }
+
+                                // Update analytics
+                                if (data.analytics) {
+                                    setUserAnalytics(data.analytics);
+                                }
+
+                                setShowSaveDialog(false);
+                                setSelectedToSave(null);
+                                console.log('✅ Selection saved successfully');
+                                return;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error saving selection:', error);
+                    }
+                }
+
+                // Fallback to localStorage
                 const newEntry = {
                     id: Date.now(),
                     ...selection,
@@ -2080,7 +2076,8 @@
                 setSelectedToSave(null);
             };
 
-            const addManualSelection = () => {
+            // Enhanced manual selection with persistence
+            const addManualSelection = async () => {
                 const numbers = manualSelectionInput.numbers.split(',').map(n => parseInt(n.trim())).filter(n => n >= 1 && n <= 69);
                 const powerball = parseInt(manualSelectionInput.powerball);
 
@@ -2089,15 +2086,13 @@
                     return;
                 }
 
-                const newEntry = {
-                    id: Date.now(),
+                const selectionData = {
                     name: 'Manual Entry',
                     numbers: numbers.sort((a, b) => a - b),
                     powerball: powerball,
                     strategy: 'Manual',
                     confidence: 0,
                     description: 'Manually entered selection',
-                    dateSaved: new Date().toISOString(),
                     datePlayed: manualSelectionInput.datePlayed || new Date().toISOString().split('T')[0],
                     result: manualSelectionInput.result,
                     winAmount: parseFloat(manualSelectionInput.winAmount) || 0,
@@ -2105,8 +2100,42 @@
                     source: 'Manual Entry'
                 };
 
-                const updatedHistory = [...selectionHistory, newEntry];
-                saveSelectionHistory(updatedHistory);
+                if (userId) {
+                    try {
+                        const response = await fetch('/api/selection-history', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-User-ID': userId
+                            },
+                            body: JSON.stringify({
+                                selection: selectionData,
+                                saveType: 'history'
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success) {
+                                setSelectionHistory(prev => [...prev, data.data]);
+                                if (data.analytics) {
+                                    setUserAnalytics(data.analytics);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error adding manual selection:', error);
+                        // Fallback to local storage
+                        const newEntry = { id: Date.now(), ...selectionData, dateSaved: new Date().toISOString() };
+                        const updatedHistory = [...selectionHistory, newEntry];
+                        saveSelectionHistory(updatedHistory);
+                    }
+                } else {
+                    // Fallback to local storage
+                    const newEntry = { id: Date.now(), ...selectionData, dateSaved: new Date().toISOString() };
+                    const updatedHistory = [...selectionHistory, newEntry];
+                    saveSelectionHistory(updatedHistory);
+                }
 
                 // Reset form
                 setManualSelectionInput({
@@ -2120,7 +2149,53 @@
                 setShowHistoryInput(false);
             };
 
-            const updateSelectionResult = (id, result, winAmount = 0) => {
+            // Update selection result with persistence
+            const updateSelectionResult = async (id, result, winAmount = 0, targetType = 'history') => {
+                if (userId) {
+                    try {
+                        const response = await fetch('/api/selection-history', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-User-ID': userId
+                            },
+                            body: JSON.stringify({
+                                selectionId: id,
+                                targetType: targetType,
+                                updates: {
+                                    result: result,
+                                    winAmount: parseFloat(winAmount) || 0,
+                                    dateUpdated: new Date().toISOString()
+                                }
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success) {
+                                // Update local state
+                                if (targetType === 'saved') {
+                                    setSavedSelections(prev =>
+                                        prev.map(entry => entry.id === id ? data.data : entry)
+                                    );
+                                } else {
+                                    setSelectionHistory(prev =>
+                                        prev.map(entry => entry.id === id ? data.data : entry)
+                                    );
+                                }
+
+                                if (data.analytics) {
+                                    setUserAnalytics(data.analytics);
+                                }
+                                return;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error updating selection result:', error);
+                    }
+                }
+
+                // Fallback to local update
                 const updatedHistory = selectionHistory.map(entry =>
                     entry.id === id
                         ? { ...entry, result, winAmount: parseFloat(winAmount) || 0, dateUpdated: new Date().toISOString() }
@@ -2129,11 +2204,49 @@
                 saveSelectionHistory(updatedHistory);
             };
 
-            const deleteSelectionEntry = (id) => {
+            // Delete selection with persistence
+            const deleteSelectionEntry = async (id, targetType = 'history') => {
+                if (userId) {
+                    try {
+                        const response = await fetch('/api/selection-history', {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-User-ID': userId
+                            },
+                            body: JSON.stringify({
+                                selectionId: id,
+                                targetType: targetType
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success) {
+                                // Update local state
+                                if (targetType === 'saved') {
+                                    setSavedSelections(prev => prev.filter(entry => entry.id !== id));
+                                } else {
+                                    setSelectionHistory(prev => prev.filter(entry => entry.id !== id));
+                                }
+
+                                if (data.analytics) {
+                                    setUserAnalytics(data.analytics);
+                                }
+                                return;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error deleting selection:', error);
+                    }
+                }
+
+                // Fallback to local deletion
                 const updatedHistory = selectionHistory.filter(entry => entry.id !== id);
                 saveSelectionHistory(updatedHistory);
             };
 
+            // Enhanced performance stats with user analytics
             const calculatePerformanceStats = () => {
                 if (selectionHistory.length === 0) return null;
 
@@ -2156,6 +2269,15 @@
                     }
                 });
 
+                // Add user analytics insights
+                const insights = {
+                    favoriteNumbers: userAnalytics?.patternInsights?.favoriteNumbers || [],
+                    preferredStrategies: userAnalytics?.preferredStrategies || {},
+                    averageConfidence: userAnalytics?.averageConfidence || 0,
+                    totalSavedSelections: savedSelections.length,
+                    crossDeviceSync: userId ? true : false
+                };
+
                 return {
                     totalPlayed,
                     wins,
@@ -2163,7 +2285,8 @@
                     pending,
                     totalWinnings,
                     winRate,
-                    sourceStats
+                    sourceStats,
+                    insights
                 };
             };
 
@@ -2205,7 +2328,116 @@
                 }
             };
 
+            // Enhanced selection generation with user pattern integration
+            const generateEnhancedHybridSelection = async () => {
+                setIsLoadingAI(true);
+                setDataStatus('🤖🧮 Generating enhanced predictions with user patterns...');
+
+                try {
+                    // First try to get enhanced predictions with user data
+                    if (userId && userAnalytics && userAnalytics.totalSelections > 0) {
+                        const response = await fetch('/api/enhanced-predictions', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-User-ID': userId
+                            },
+                            body: JSON.stringify({
+                                historicalData: historicalStats,
+                                userAnalytics: userAnalytics,
+                                requestedSets: 5,
+                                enhancementLevel: 'advanced'
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success) {
+                                const enhancedSelections = data.data.predictions.map((prediction, index) => ({
+                                    id: index + 1,
+                                    name: `🧠 ${prediction.strategy} (Enhanced)`,
+                                    description: `PERSONALIZED: ${prediction.description}. Confidence boosted by your selection patterns.`,
+                                    numbers: prediction.numbers,
+                                    powerball: prediction.powerball,
+                                    strategy: `${prediction.confidence}% Enhanced Confidence`,
+                                    confidence: prediction.confidence,
+                                    actualStrategy: prediction.strategy,
+                                    technicalAnalysis: prediction.technicalAnalysis,
+                                    claudeGenerated: false,
+                                    isHybrid: true,
+                                    userEnhanced: true,
+                                    enhancementScore: prediction.userEnhancement || 0,
+                                    confidenceFactors: prediction.confidenceFactors,
+                                    personalizedFactors: prediction.personalizedFactors
+                                }));
+
+                                setQuickSelectionSets(enhancedSelections);
+                                setDataStatus(`🤖🧠 Enhanced predictions generated with ${data.data.metadata.confidenceFactors.length} personalization factors!`);
+                                return;
+                            }
+                        }
+                    }
+
+                    // Fallback to Claude hybrid if enhanced predictions fail
+                    if (aiEnabled && aiApiKey) {
+                        const hybridSelections = await window.claudeAnalyzer.generateHybridQuickSelection(
+                            historicalStats,
+                            currentJackpot,
+                            5,
+                            'hybrid'
+                        );
+                        setQuickSelectionSets(hybridSelections);
+                        setDataStatus('🤖🧮 Claude Opus 4 + 6 Algorithms hybrid selections generated!');
+                        return;
+                    }
+
+                    // Final fallback to local algorithms
+                    if (window.generateAdvancedQuickSelection) {
+                        const fallbackSelection = await window.generateAdvancedQuickSelection(historicalStats);
+                        setQuickSelectionSets(fallbackSelection);
+                        setDataStatus('🧮 Local algorithm selections generated (enhanced predictions unavailable)');
+                    }
+
+                } catch (error) {
+                    console.error('Enhanced selection generation failed:', error);
+
+                    // Try Claude hybrid as fallback
+                    if (aiEnabled && aiApiKey) {
+                        try {
+                            const hybridSelections = await window.claudeAnalyzer.generateHybridQuickSelection(
+                                historicalStats,
+                                currentJackpot,
+                                5,
+                                'hybrid'
+                            );
+                            setQuickSelectionSets(hybridSelections);
+                            setDataStatus('🤖🧮 Claude Opus 4 hybrid selections generated (enhanced mode failed)');
+                        } catch (claudeError) {
+                            console.error('Claude hybrid also failed:', claudeError);
+                            if (window.generateAdvancedQuickSelection) {
+                                const fallbackSelection = await window.generateAdvancedQuickSelection(historicalStats);
+                                setQuickSelectionSets(fallbackSelection);
+                                setDataStatus('🧮 Local algorithm selections generated (all enhanced modes failed)');
+                            }
+                        }
+                    } else if (window.generateAdvancedQuickSelection) {
+                        const fallbackSelection = await window.generateAdvancedQuickSelection(historicalStats);
+                        setQuickSelectionSets(fallbackSelection);
+                        setDataStatus('🧮 Local algorithm selections generated');
+                    }
+                } finally {
+                    setIsLoadingAI(false);
+                }
+            };
+
             const generateClaudeHybridSelection = async () => {
+                // Use enhanced generation if user data is available
+                if (userId && userAnalytics && userAnalytics.totalSelections > 0) {
+                    await generateEnhancedHybridSelection();
+                    return;
+                }
+
+                // Original Claude hybrid generation
                 if (!aiEnabled || !aiApiKey) {
                     alert('Please enable Claude Opus 4 first by entering your API key.');
                     return;
@@ -2522,6 +2754,71 @@
                                             )
                                         );
                                     })
+                                )
+                            ) : null,
+
+                            // User Analytics Insights (if available)
+                            performanceStats && performanceStats.insights && userId ? React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4 text-gray-900' }, '🧠 Your Selection Patterns'),
+                                React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+                                    // Favorite Numbers
+                                    performanceStats.insights.favoriteNumbers.length > 0 ? React.createElement('div', { className: 'bg-blue-50 p-4 rounded-lg' },
+                                        React.createElement('h4', { className: 'font-medium text-blue-900 mb-2' }, '🎯 Most Selected Numbers'),
+                                        React.createElement('div', { className: 'flex flex-wrap gap-2' },
+                                            performanceStats.insights.favoriteNumbers.slice(0, 10).map(num =>
+                                                React.createElement('span', {
+                                                    key: num.number,
+                                                    className: 'px-2 py-1 bg-blue-200 text-blue-800 rounded text-sm font-medium'
+                                                }, `${num.number} (${num.count}x)`)
+                                            )
+                                        )
+                                    ) : null,
+
+                                    // Strategy Preferences
+                                    Object.keys(performanceStats.insights.preferredStrategies).length > 0 ? React.createElement('div', { className: 'bg-green-50 p-4 rounded-lg' },
+                                        React.createElement('h4', { className: 'font-medium text-green-900 mb-2' }, '📊 Preferred Strategies'),
+                                        React.createElement('div', { className: 'space-y-1' },
+                                            Object.entries(performanceStats.insights.preferredStrategies)
+                                                .sort(([,a], [,b]) => b - a)
+                                                .slice(0, 5)
+                                                .map(([strategy, count]) =>
+                                                    React.createElement('div', {
+                                                        key: strategy,
+                                                        className: 'flex justify-between text-sm'
+                                                    },
+                                                        React.createElement('span', { className: 'text-green-800' }, strategy),
+                                                        React.createElement('span', { className: 'font-medium text-green-600' }, `${count} times`)
+                                                    )
+                                                )
+                                        )
+                                    ) : null
+                                ),
+
+                                React.createElement('div', { className: 'mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center' },
+                                    React.createElement('div', { className: 'bg-purple-50 p-3 rounded-lg' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-purple-600' },
+                                            performanceStats.insights.averageConfidence.toFixed(1) + '%'
+                                        ),
+                                        React.createElement('div', { className: 'text-sm text-purple-700' }, 'Avg Confidence')
+                                    ),
+                                    React.createElement('div', { className: 'bg-indigo-50 p-3 rounded-lg' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-indigo-600' },
+                                            performanceStats.insights.totalSavedSelections
+                                        ),
+                                        React.createElement('div', { className: 'text-sm text-indigo-700' }, 'Saved Selections')
+                                    ),
+                                    React.createElement('div', { className: 'bg-teal-50 p-3 rounded-lg' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-teal-600' },
+                                            performanceStats.insights.crossDeviceSync ? '✅' : '❌'
+                                        ),
+                                        React.createElement('div', { className: 'text-sm text-teal-700' }, 'Cross-Device Sync')
+                                    ),
+                                    userAnalytics && userAnalytics.totalSelections ? React.createElement('div', { className: 'bg-orange-50 p-3 rounded-lg' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-orange-600' },
+                                            userAnalytics.totalSelections
+                                        ),
+                                        React.createElement('div', { className: 'text-sm text-orange-700' }, 'Total Tracked')
+                                    ) : null
                                 )
                             ) : null,
 
@@ -2844,6 +3141,27 @@
                         dataStatus.includes('❌') ? 'error-banner' : 'warning-banner'
                     )
                 }, dataStatus) : null,
+
+                // User Session Status
+                React.createElement('div', { className: 'mb-3 flex items-center justify-between text-xs' },
+                    React.createElement('div', { className: 'flex items-center gap-2' },
+                        React.createElement('span', {
+                            className: userId ? 'text-green-600' : 'text-gray-500'
+                        }, userId ? '🔗 Connected' : '📱 Local Only'),
+                        userId && userAnalytics ? React.createElement('span', {
+                            className: 'text-blue-600'
+                        }, `• ${userAnalytics.totalSelections} tracked selections`) : null,
+                        isLoadingUserData ? React.createElement('span', {
+                            className: 'text-yellow-600'
+                        }, '⏳ Syncing...') : null
+                    ),
+                    userId ? React.createElement('div', { className: 'flex items-center gap-1 text-green-600' },
+                        React.createElement('span', null, '✨ Enhanced Predictions'),
+                        userAnalytics && userAnalytics.totalSelections > 5 ? React.createElement('span', {
+                            className: 'bg-green-100 text-green-800 px-2 py-1 rounded text-xs'
+                        }, 'Personalized') : null
+                    ) : React.createElement('span', { className: 'text-gray-500' }, '💾 Using Local Storage')
+                ),
 
                 React.createElement('div', { className: 'mb-4' },
                     React.createElement('div', { className: 'flex border-b border-gray-200' },
