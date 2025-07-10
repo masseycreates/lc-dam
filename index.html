@@ -428,6 +428,7 @@
         .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -2536,15 +2537,10 @@
                         }, aiEnabled ? 'Opus 4 Active' : 'Local Only'),
                         historicalStats ? ' • Using ' + historicalStats.totalDrawings + ' drawings' : ''
                     )
-                )
-            );
-        }
+                ),
 
-        // Save Selection Dialog Component
-        const SaveSelectionDialog = () => {
-            if (!showSaveDialog || !selectedToSave) return null;
-
-            return React.createElement('div', {
+                // Render dialogs conditionally
+                showSaveDialog && selectedToSave ? React.createElement('div', {
                 className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50',
                 onClick: (e) => {
                     if (e.target === e.currentTarget) {
@@ -2599,14 +2595,10 @@
                         }, 'Cancel')
                     )
                 )
-            );
-        };
+            ) : null,
 
-        // Manual Selection Input Dialog Component
-        const ManualSelectionDialog = () => {
-            if (!showHistoryInput) return null;
-
-            return React.createElement('div', {
+            // Manual input dialog
+            showHistoryInput ? React.createElement('div', {
                 className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50',
                 onClick: (e) => {
                     if (e.target === e.currentTarget) {
@@ -2701,39 +2693,9 @@
                         }, 'Cancel')
                     )
                 )
-            );
-        };
-
-        // Return the main component with dialogs
-        return React.createElement('div', { className: 'min-h-screen bg-gray-50' },
-            React.createElement('div', { className: 'container mx-auto px-4 py-6' },
-                React.createElement('div', { className: 'max-w-6xl mx-auto' },
-                    renderHeader(),
-                    renderTabContent(),
-
-                    React.createElement('div', { className: 'mt-6 text-center text-xs text-gray-500' },
-                        React.createElement('p', null,
-                            '🎰 Claude Opus 4 + 6 Algorithms Hybrid Lottery System • Educational purposes only'
-                        ),
-                        React.createElement('p', { className: 'mt-1' },
-                            'Data: ',
-                            React.createElement('span', {
-                                className: liveDataAvailable ? 'text-green-600' : 'text-orange-600'
-                            }, liveDataAvailable ? 'Live Connected' : 'Offline'),
-                            ' • AI: ',
-                            React.createElement('span', {
-                                className: aiEnabled ? 'text-purple-600' : 'text-gray-600'
-                            }, aiEnabled ? 'Opus 4 Active' : 'Local Only'),
-                            historicalStats ? ' • Using ' + historicalStats.totalDrawings + ' drawings' : ''
-                        )
-                    )
-                )
-            ),
-
-            // Render dialogs
-            React.createElement(SaveSelectionDialog),
-            React.createElement(ManualSelectionDialog)
+            ) : null
         );
+        }
 
         ReactDOM.render(React.createElement(AdvancedLotterySystem), document.getElementById('root'));
     </script>
