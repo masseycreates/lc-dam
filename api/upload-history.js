@@ -3,11 +3,12 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import os from 'os';
+
 // Simple file-based storage directory - use absolute path for consistency
 // In serverless environments, use the system temp directory
-import os from 'os';
-const STORAGE_DIR = process.env.VERCEL ?
-    path.join(os.tmpdir(), 'lottery-selections') :
+const STORAGE_DIR = process.env.VERCEL ? 
+    path.join(os.tmpdir(), 'lottery-selections') : 
     path.resolve('./data/lottery-selections');
 
 console.log('Upload API - Storage directory configured as:', STORAGE_DIR, 'CWD:', process.cwd(), 'TMPDIR:', os.tmpdir());
@@ -19,17 +20,8 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB max file size
 async function ensureStorageDir() {
     try {
         console.log('Upload API - Ensuring storage directory exists:', STORAGE_DIR);
-        console.log('Upload API - Process environment:', {
-            NODE_ENV: process.env.NODE_ENV,
-            VERCEL: process.env.VERCEL,
-            VERCEL_ENV: process.env.VERCEL_ENV,
-            cwd: process.cwd(),
-            tmpdir: os.tmpdir()
-        });
-
         await fs.mkdir(STORAGE_DIR, { recursive: true });
         console.log('Upload API - Storage directory created/verified');
-
     } catch (error) {
         console.error('Upload API - Failed to create storage directory:', error);
         throw error;
@@ -43,262 +35,150 @@ function generateUserId(req) {
     const acceptEncoding = req.headers['accept-encoding'] || '';
     
     const fingerprint = userAgent + acceptLanguage + acceptEncoding;
+    
+    // Create a simple hash
     let hash = 0;
     for (let i = 0; i < fingerprint.length; i++) {
         const char = fingerprint.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
+        hash = hash & hash; // Convert to 32-bit integer
     }
     
-    return 'user_' + Math.abs(hash).toString(36);
+    return `user_${Math.abs(hash).toString(36)}`;
 }
 
-// Get user's selection history file path
+// Get file path for user data
 function getUserFilePath(userId) {
-    const filePath = path.join(STORAGE_DIR, `${userId}.json`);
-    console.log('Upload API - Generated file path for user', userId, ':', filePath);
-    return filePath;
+    return path.join(STORAGE_DIR, `${userId}.json`);
 }
 
 // Load existing user history
 async function loadUserHistory(userId) {
+    const filePath = getUserFilePath(userId);
+    
     try {
-        const filePath = getUserFilePath(userId);
         const data = await fs.readFile(filePath, 'utf8');
-        const history = JSON.parse(data);
+        const parsed = JSON.parse(data);
         
-        // Validate and clean up data
-        if (!Array.isArray(history.selections)) {
-            history.selections = [];
-        }
-        if (!Array.isArray(history.savedSelections)) {
-            history.savedSelections = [];
-        }
-        if (!history.analytics) {
-            history.analytics = {
-                totalSelections: 0,
-                winningSelections: 0,
-                averageConfidence: 0,
-                preferredStrategies: {},
-                numberFrequency: {},
-                powerballFrequency: {},
-                lastAnalysisUpdate: new Date().toISOString()
-            };
-        }
-        
-        return history;
+        return {
+            selections: parsed.selections || [],
+            savedSelections: parsed.savedSelections || [],
+            analytics: parsed.analytics || {},
+            lastUpdated: parsed.lastUpdated || new Date().toISOString(),
+            version: parsed.version || 2
+        };
     } catch (error) {
-        // Return empty history if file doesn't exist
+        console.log('Upload API - No existing user data found, creating new:', error.message);
         return {
             selections: [],
             savedSelections: [],
-            analytics: {
-                totalSelections: 0,
-                winningSelections: 0,
-                averageConfidence: 0,
-                preferredStrategies: {},
-                numberFrequency: {},
-                powerballFrequency: {},
-                lastAnalysisUpdate: new Date().toISOString()
-            },
+            analytics: {},
             lastUpdated: new Date().toISOString(),
             version: 2
         };
     }
 }
 
-// Validate selection entry structure
+// Save user history
+async function saveUserHistory(userId, data) {
+    const filePath = getUserFilePath(userId);
+    
+    try {
+        console.log('Upload API - Saving user history to:', filePath);
+        
+        const dataToSave = {
+            ...data,
+            lastUpdated: new Date().toISOString(),
+            version: 2
+        };
+        
+        await fs.writeFile(filePath, JSON.stringify(dataToSave, null, 2));
+        console.log('Upload API - User history saved successfully');
+        
+        return true;
+    } catch (error) {
+        console.error('Upload API - Failed to save user history:', error);
+        throw error;
+    }
+}
+
+// Validate selection entry
 function validateSelectionEntry(entry) {
     if (!entry || typeof entry !== 'object') return false;
     
-    // Required fields
+    // Check required fields
+    if (!entry.id || typeof entry.id !== 'string') return false;
     if (!Array.isArray(entry.numbers) || entry.numbers.length !== 5) return false;
-    if (!entry.powerball || isNaN(parseInt(entry.powerball))) return false;
+    if (typeof entry.powerball !== 'number' || entry.powerball < 1 || entry.powerball > 26) return false;
     
-    // Validate number ranges
+    // Validate numbers
     for (const num of entry.numbers) {
-        if (isNaN(parseInt(num)) || num < 1 || num > 69) return false;
+        if (typeof num !== 'number' || num < 1 || num > 69) return false;
     }
     
-    const pb = parseInt(entry.powerball);
-    if (pb < 1 || pb > 26) return false;
+    // Check for duplicates in numbers
+    if (new Set(entry.numbers).size !== 5) return false;
     
     return true;
 }
 
-// Clean and normalize imported data
-function cleanImportedData(importedData) {
-    const cleaned = {
-        selections: [],
-        savedSelections: [],
-        analytics: {
-            totalSelections: 0,
-            winningSelections: 0,
-            averageConfidence: 0,
-            preferredStrategies: {},
-            numberFrequency: {},
-            powerballFrequency: {},
-            lastAnalysisUpdate: new Date().toISOString()
-        }
-    };
-    
-    // Handle different possible data structures
-    let selectionsToProcess = [];
-    
-    if (Array.isArray(importedData)) {
-        // Direct array of selections
-        selectionsToProcess = importedData;
-    } else if (importedData.selections && Array.isArray(importedData.selections)) {
-        // Object with selections array
-        selectionsToProcess = importedData.selections;
-        if (importedData.savedSelections && Array.isArray(importedData.savedSelections)) {
-            cleaned.savedSelections = importedData.savedSelections.filter(validateSelectionEntry);
-        }
-        if (importedData.analytics && typeof importedData.analytics === 'object') {
-            cleaned.analytics = { ...cleaned.analytics, ...importedData.analytics };
-        }
+// Clean imported data
+function cleanImportedData(data) {
+    if (!Array.isArray(data)) {
+        throw new Error('Imported data must be an array of selections');
     }
     
-    // Process and validate each selection
-    for (const entry of selectionsToProcess) {
+    const cleaned = [];
+    
+    for (const entry of data) {
         if (validateSelectionEntry(entry)) {
-            const cleanedEntry = {
-                id: entry.id || Date.now() + Math.random(),
-                numbers: entry.numbers.map(n => parseInt(n)).sort((a, b) => a - b),
-                powerball: parseInt(entry.powerball),
+            // Ensure all required fields exist with defaults
+            const cleanEntry = {
+                id: entry.id,
+                numbers: [...entry.numbers].sort((a, b) => a - b), // Sort numbers
+                powerball: entry.powerball,
                 name: entry.name || 'Imported Selection',
-                source: entry.source || 'Imported',
+                source: entry.source || 'Import',
                 dateSaved: entry.dateSaved || new Date().toISOString(),
                 datePlayed: entry.datePlayed || null,
                 result: entry.result || 'pending',
-                winAmount: parseFloat(entry.winAmount) || 0,
+                winAmount: entry.winAmount || 0,
                 notes: entry.notes || '',
-                confidence: parseFloat(entry.confidence) || 0,
+                confidence: entry.confidence || 50,
                 strategy: entry.strategy || 'Unknown'
             };
             
-            cleaned.selections.push(cleanedEntry);
+            cleaned.push(cleanEntry);
+        } else {
+            console.warn('Upload API - Invalid selection entry skipped:', entry);
         }
     }
     
     return cleaned;
 }
 
-// Merge imported data with existing data
-function mergeHistoryData(existingData, importedData) {
-    const merged = { ...existingData };
+// Merge history data
+function mergeHistoryData(existingData, newData) {
+    const existingIds = new Set(existingData.selections.map(s => s.id));
+    const newSelections = newData.filter(entry => !existingIds.has(entry.id));
     
-    // Create a set of existing selection IDs to avoid duplicates
-    const existingIds = new Set([
-        ...existingData.selections.map(s => s.id),
-        ...existingData.savedSelections.map(s => s.id)
-    ]);
+    const merged = {
+        ...existingData,
+        selections: [...existingData.selections, ...newSelections]
+    };
     
-    // Add new selections that don't already exist
-    let addedCount = 0;
-    for (const selection of importedData.selections) {
-        if (!existingIds.has(selection.id)) {
-            merged.selections.push(selection);
-            addedCount++;
-        }
-    }
-    
-    // Add new saved selections
-    for (const selection of importedData.savedSelections) {
-        if (!existingIds.has(selection.id)) {
-            merged.savedSelections.push(selection);
-            addedCount++;
-        }
-    }
-    
-    // Limit total selections to prevent excessive storage
+    // Limit total selections
     if (merged.selections.length > MAX_HISTORY_SIZE) {
         merged.selections = merged.selections.slice(-MAX_HISTORY_SIZE);
     }
     
-    if (merged.savedSelections.length > MAX_HISTORY_SIZE) {
-        merged.savedSelections = merged.savedSelections.slice(-MAX_HISTORY_SIZE);
-    }
-    
-    // Update analytics
-    merged.analytics.totalSelections = merged.selections.length + merged.savedSelections.length;
-    merged.analytics.lastAnalysisUpdate = new Date().toISOString();
-    merged.lastUpdated = new Date().toISOString();
-    merged.version = 2;
-
-    return { merged, addedCount };
+    return {
+        merged,
+        addedCount: newSelections.length
+    };
 }
 
-
-
-// Save merged data
-async function saveUserHistory(userId, historyData) {
-    try {
-        await ensureStorageDir();
-        const filePath = getUserFilePath(userId);
-
-        console.log('Upload API - About to save data:', {
-            userId,
-            filePath,
-            selectionsCount: historyData.selections?.length || 0,
-            savedSelectionsCount: historyData.savedSelections?.length || 0,
-            dataKeys: Object.keys(historyData),
-            sampleSelection: historyData.selections?.[0] || null
-        });
-
-        const dataToSave = JSON.stringify(historyData, null, 2);
-        console.log('Upload API - Data size:', dataToSave.length);
-        console.log('Upload API - Data preview:', dataToSave.substring(0, 500));
-
-        // Check if directory exists before writing
-        const dirExists = await fs.access(STORAGE_DIR).then(() => true).catch(() => false);
-        console.log('Upload API - Storage directory exists:', dirExists);
-
-        // Check directory permissions
-        try {
-            const stats = await fs.stat(STORAGE_DIR);
-            console.log('Upload API - Directory stats:', {
-                isDirectory: stats.isDirectory(),
-                mode: stats.mode.toString(8),
-                uid: stats.uid,
-                gid: stats.gid
-            });
-        } catch (statError) {
-            console.error('Upload API - Could not stat directory:', statError);
-        }
-
-        await fs.writeFile(filePath, dataToSave);
-        console.log('Upload API - Data saved successfully');
-
-        // Check if file was actually created
-        const fileExists = await fs.access(filePath).then(() => true).catch(() => false);
-        console.log('Upload API - File exists after write:', fileExists);
-
-        if (fileExists) {
-            // Immediate verification
-            const savedData = await fs.readFile(filePath, 'utf8');
-            const parsedSaved = JSON.parse(savedData);
-            console.log('Upload API - Immediate verification:', {
-                selectionsCount: parsedSaved.selections?.length || 0,
-                savedSelectionsCount: parsedSaved.savedSelections?.length || 0
-            });
-        }
-
-        // List directory contents after save
-        try {
-            const files = await fs.readdir(STORAGE_DIR);
-            console.log('Upload API - Directory contents after save:', files);
-        } catch (listError) {
-            console.error('Upload API - Could not list directory after save:', listError);
-        }
-
-    } catch (saveError) {
-        console.error('Upload API - Failed to save data:', saveError);
-        throw saveError; // Re-throw to be caught by the main handler
-    }
-}
-
-// Parse multipart form data manually (simple implementation)
+// Parse multipart form data
 function parseMultipartData(body, boundary) {
     const parts = body.split(`--${boundary}`);
     const files = {};
@@ -354,6 +234,14 @@ export default async function handler(req, res) {
         // Ensure storage directory exists before any operations
         await ensureStorageDir();
 
+        // Read the request body
+        let body = '';
+        for await (const chunk of req) {
+            body += chunk.toString();
+        }
+
+        console.log('Upload API - Body length:', body.length);
+
         // Get content type and boundary for multipart data
         const contentType = req.headers['content-type'] || '';
         
@@ -373,68 +261,41 @@ export default async function handler(req, res) {
         }
         
         const boundary = boundaryMatch[1];
-        
-        // Read the request body
-        let body = '';
-        for await (const chunk of req) {
-            body += chunk.toString();
-        }
-        
-        if (body.length > MAX_FILE_SIZE) {
-            return res.status(400).json({
-                success: false,
-                error: 'File too large. Maximum size is 10MB.'
-            });
-        }
-        
+        console.log('Upload API - Boundary:', boundary);
+
         // Parse multipart data
         const files = parseMultipartData(body, boundary);
-        
-        if (!files.historyFile) {
-            return res.status(400).json({
-                success: false,
-                error: 'No file uploaded. Please select a JSON file containing your selection history.'
-            });
-        }
-        
-        const uploadedFile = files.historyFile;
-        
-        // Validate file type
-        if (!uploadedFile.filename.toLowerCase().endsWith('.json')) {
-            return res.status(400).json({
-                success: false,
-                error: 'Please select a JSON file (.json).'
-            });
-        }
-        
-        // Parse the uploaded file content
-        let importedData;
+        console.log('Upload API - Files found:', Object.keys(files));
 
-        try {
-            console.log('Upload API - Raw file content length:', uploadedFile.content.length);
-            console.log('Upload API - Raw file content preview:', uploadedFile.content.substring(0, 200));
-            importedData = JSON.parse(uploadedFile.content);
-            console.log('Upload API - Parsed JSON type:', Array.isArray(importedData) ? 'Array' : 'Object');
-            console.log('Upload API - Parsed JSON length/keys:', Array.isArray(importedData) ? importedData.length : Object.keys(importedData));
-        } catch (parseError) {
+        // Get the uploaded file
+        const historyFile = files.historyFile;
+        if (!historyFile) {
             return res.status(400).json({
                 success: false,
-                error: 'Invalid JSON file. Please ensure the file contains valid JSON data.'
+                error: 'No history file found in upload. Please select a JSON file.'
             });
         }
-        
+
+        console.log('Upload API - File received:', historyFile.filename, 'Content length:', historyFile.content.length);
+
+        // Parse JSON content
+        let importedData;
+        try {
+            importedData = JSON.parse(historyFile.content);
+            console.log('Upload API - JSON parsed successfully, entries:', Array.isArray(importedData) ? importedData.length : 'not array');
+        } catch (parseError) {
+            console.error('Upload API - JSON parse error:', parseError);
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid JSON file. Please check the file format.'
+            });
+        }
+
         // Clean and validate the imported data
         const cleanedData = cleanImportedData(importedData);
+        console.log('Upload API - Cleaned data:', cleanedData.length, 'valid selections');
 
-        console.log('Upload API - Cleaned imported data:', {
-            selectionsCount: cleanedData.selections.length,
-            savedSelectionsCount: cleanedData.savedSelections.length,
-            sampleSelection: cleanedData.selections[0] || null,
-            importedSelectionIds: cleanedData.selections.map(s => s.id).slice(0, 5),
-            importedSavedSelectionIds: cleanedData.savedSelections.map(s => s.id).slice(0, 5)
-        });
-
-        if (cleanedData.selections.length === 0 && cleanedData.savedSelections.length === 0) {
+        if (cleanedData.length === 0) {
             return res.status(400).json({
                 success: false,
                 error: 'No valid selections found in the uploaded file. Please check the file format.'
@@ -445,10 +306,7 @@ export default async function handler(req, res) {
         const existingData = await loadUserHistory(userId);
         console.log('Upload API - Existing data loaded:', {
             selectionsCount: existingData.selections.length,
-            savedSelectionsCount: existingData.savedSelections.length,
-            sampleSelection: existingData.selections[0] || null,
-            existingSelectionIds: existingData.selections.map(s => s.id).slice(0, 5),
-            existingSavedSelectionIds: existingData.savedSelections.map(s => s.id).slice(0, 5)
+            savedSelectionsCount: existingData.savedSelections.length
         });
 
         // Merge the data
@@ -456,98 +314,30 @@ export default async function handler(req, res) {
         console.log('Upload API - Data merged:', {
             selectionsCount: merged.selections.length,
             savedSelectionsCount: merged.savedSelections.length,
-            sampleSelection: merged.selections[0] || null
-        });
-
-        // Calculate statistics
-        const totalSelections = merged.selections.length + merged.savedSelections.length;
-        const existingTotal = existingData.selections.length + existingData.savedSelections.length;
-        const newSelections = totalSelections - existingTotal;
-
-        console.log('Upload API - Statistics:', {
-            totalSelections,
-            existingTotal,
-            newSelections,
-            willSaveFile: totalSelections > 0
+            addedCount
         });
 
         // Save merged data
-        let saveSuccessful = false;
-        if (totalSelections > 0) {
-            try {
-                await saveUserHistory(userId, merged);
-                console.log('Upload API - File save completed');
-                saveSuccessful = true;
-            } catch (saveError) {
-                console.error('Upload API - File save failed:', saveError);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Failed to save data to storage. Please try again.',
-                    details: process.env.NODE_ENV === 'development' ? saveError.message : undefined
-                });
-            }
-        } else {
-            console.log('Upload API - No data to save, skipping file save');
+        if (merged.selections.length > 0) {
+            await saveUserHistory(userId, merged);
+            console.log('Upload API - File save completed');
         }
 
-        // Verify the data was saved correctly
-        if (saveSuccessful) {
-            try {
-                const verifyPath = getUserFilePath(userId);
-                const verifyData = await fs.readFile(verifyPath, 'utf8');
-                const verifyParsed = JSON.parse(verifyData);
-                console.log('Upload API - Verification: File saved with', verifyParsed.selections?.length || 0, 'selections');
-
-                // List all files in storage directory
-                try {
-                const files = await fs.readdir(STORAGE_DIR);
-                console.log('Upload API - Storage directory contents:', files);
-            } catch (listError) {
-                console.error('Upload API - Could not list storage directory:', listError.message);
-            }
-        } catch (verifyError) {
-            console.error('Upload API - Verification failed:', verifyError.message);
-        }
-
-        // Debug: Return detailed information in the response for troubleshooting
-        const debugInfo = {
-            rawFileContentLength: uploadedFile.content.length,
-            rawFileContentPreview: uploadedFile.content.substring(0, 200),
-            parsedDataType: Array.isArray(importedData) ? 'Array' : 'Object',
-            parsedDataLength: Array.isArray(importedData) ? importedData.length : Object.keys(importedData).length,
-            importedSelectionsCount: cleanedData.selections.length,
-            importedSavedSelectionsCount: cleanedData.savedSelections.length,
-            existingSelectionsCount: existingData.selections.length,
-            existingSavedSelectionsCount: existingData.savedSelections.length,
-            mergedSelectionsCount: merged.selections.length,
-            mergedSavedSelectionsCount: merged.savedSelections.length,
-            fileSaved: totalSelections > 0,
-            importedIds: cleanedData.selections.map(s => s.id),
-            existingIds: existingData.selections.map(s => s.id),
-            mergedIds: merged.selections.map(s => s.id),
-            duplicateCheck: {
-                existingIdsSet: [...new Set([...existingData.selections.map(s => s.id), ...existingData.savedSelections.map(s => s.id)])],
-                importedIdsFound: cleanedData.selections.map(s => ({
-                    id: s.id,
-                    isDuplicate: new Set([...existingData.selections.map(s => s.id), ...existingData.savedSelections.map(s => s.id)]).has(s.id)
-                }))
-            }
-        };
-
-        res.status(200).json({
+        // Return success response
+        return res.status(200).json({
             success: true,
-            message: `Successfully imported ${newSelections} new selections.`,
+            message: `Successfully imported ${addedCount} new selections.`,
             data: {
                 userId,
-                totalSelections,
-                newSelections,
-                existingTotal,
-                debug: debugInfo
+                totalSelections: merged.selections.length,
+                newSelections: addedCount,
+                existingTotal: existingData.selections.length
             }
         });
         
     } catch (error) {
         console.error('Upload history error:', error);
+        console.error('Error stack:', error.stack);
         
         return res.status(500).json({
             success: false,
