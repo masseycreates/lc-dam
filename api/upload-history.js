@@ -338,9 +338,13 @@ export default async function handler(req, res) {
         
         // Parse the uploaded file content
         let importedData;
-        
+
         try {
+            console.log('Upload API - Raw file content length:', uploadedFile.content.length);
+            console.log('Upload API - Raw file content preview:', uploadedFile.content.substring(0, 200));
             importedData = JSON.parse(uploadedFile.content);
+            console.log('Upload API - Parsed JSON type:', Array.isArray(importedData) ? 'Array' : 'Object');
+            console.log('Upload API - Parsed JSON length/keys:', Array.isArray(importedData) ? importedData.length : Object.keys(importedData));
         } catch (parseError) {
             return res.status(400).json({
                 success: false,
