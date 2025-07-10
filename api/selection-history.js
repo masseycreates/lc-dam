@@ -3,10 +3,15 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import os from 'os';
 
 // Simple file-based storage directory - use absolute path for consistency
-const STORAGE_DIR = process.env.VERCEL ? '/tmp/lottery-selections' : path.resolve('./data/lottery-selections');
-console.log('Selection History API - Storage directory configured as:', STORAGE_DIR, 'CWD:', process.cwd());
+// In serverless environments, use the system temp directory
+const STORAGE_DIR = process.env.VERCEL ?
+    path.join(os.tmpdir(), 'lottery-selections') :
+    path.resolve('./data/lottery-selections');
+
+console.log('Selection History API - Storage directory configured as:', STORAGE_DIR, 'CWD:', process.cwd(), 'TMPDIR:', os.tmpdir());
 const MAX_HISTORY_SIZE = 1000; // Maximum selections per user
 const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 

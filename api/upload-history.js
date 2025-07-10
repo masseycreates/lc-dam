@@ -4,8 +4,14 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 // Simple file-based storage directory - use absolute path for consistency
-const STORAGE_DIR = process.env.VERCEL ? '/tmp/lottery-selections' : path.resolve('./data/lottery-selections');
-console.log('Upload API - Storage directory configured as:', STORAGE_DIR, 'CWD:', process.cwd());
+// In serverless environments, use the system temp directory
+import os from 'os';
+const STORAGE_DIR = process.env.VERCEL ?
+    path.join(os.tmpdir(), 'lottery-selections') :
+    path.resolve('./data/lottery-selections');
+
+console.log('Upload API - Storage directory configured as:', STORAGE_DIR, 'CWD:', process.cwd(), 'TMPDIR:', os.tmpdir());
+
 const MAX_HISTORY_SIZE = 1000; // Maximum selections per user
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB max file size
 
@@ -13,10 +19,26 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB max file size
 async function ensureStorageDir() {
     try {
         console.log('Upload API - Ensuring storage directory exists:', STORAGE_DIR);
+        console.log('Upload API - Process environment:', {
+            NODE_ENV: process.env.NODE_ENV,
+            VERCEL: process.env.VERCEL,
+            VERCEL_ENV: process.env.VERCEL_ENV,
+            cwd: process.cwd(),
+            tmpdir: require('os').tmpdir()
+        });
+
         await fs.mkdir(STORAGE_DIR, { recursive: true });
         console.log('Upload API - Storage directory created/verified');
+
+        // Test write permissions
+        const testFile = path.join(STORAGE_DIR, 'test-write.txt');
+        await fs.writeFile(testFile, 'test');
+        await fs.unlink(testFile);
+        console.log('Upload API - Write permissions verified');
+
     } catch (error) {
-        console.error('Upload API - Failed to create storage directory:', error);
+        console.error('Upload API - Failed to create storage directory or verify permissions:', error);
+        throw error;
     }
 }
 
@@ -209,18 +231,73 @@ function mergeHistoryData(existingData, importedData) {
     merged.analytics.lastAnalysisUpdate = new Date().toISOString();
     merged.lastUpdated = new Date().toISOString();
     merged.version = 2;
-    
+
     return { merged, addedCount };
 }
+
+
 
 // Save merged data
 async function saveUserHistory(userId, historyData) {
     try {
         await ensureStorageDir();
         const filePath = getUserFilePath(userId);
-        console.log('Upload API - Saving data to file:', filePath, 'Data size:', JSON.stringify(historyData).length);
-        await fs.writeFile(filePath, JSON.stringify(historyData, null, 2));
+
+        console.log('Upload API - About to save data:', {
+            userId,
+            filePath,
+            selectionsCount: historyData.selections?.length || 0,
+            savedSelectionsCount: historyData.savedSelections?.length || 0,
+            dataKeys: Object.keys(historyData),
+            sampleSelection: historyData.selections?.[0] || null
+        });
+
+        const dataToSave = JSON.stringify(historyData, null, 2);
+        console.log('Upload API - Data size:', dataToSave.length);
+        console.log('Upload API - Data preview:', dataToSave.substring(0, 500));
+
+        // Check if directory exists before writing
+        const dirExists = await fs.access(STORAGE_DIR).then(() => true).catch(() => false);
+        console.log('Upload API - Storage directory exists:', dirExists);
+
+        // Check directory permissions
+        try {
+            const stats = await fs.stat(STORAGE_DIR);
+            console.log('Upload API - Directory stats:', {
+                isDirectory: stats.isDirectory(),
+                mode: stats.mode.toString(8),
+                uid: stats.uid,
+                gid: stats.gid
+            });
+        } catch (statError) {
+            console.error('Upload API - Could not stat directory:', statError);
+        }
+
+        await fs.writeFile(filePath, dataToSave);
         console.log('Upload API - Data saved successfully');
+
+        // Check if file was actually created
+        const fileExists = await fs.access(filePath).then(() => true).catch(() => false);
+        console.log('Upload API - File exists after write:', fileExists);
+
+        if (fileExists) {
+            // Immediate verification
+            const savedData = await fs.readFile(filePath, 'utf8');
+            const parsedSaved = JSON.parse(savedData);
+            console.log('Upload API - Immediate verification:', {
+                selectionsCount: parsedSaved.selections?.length || 0,
+                savedSelectionsCount: parsedSaved.savedSelections?.length || 0
+            });
+        }
+
+        // List directory contents after save
+        try {
+            const files = await fs.readdir(STORAGE_DIR);
+            console.log('Upload API - Directory contents after save:', files);
+        } catch (listError) {
+            console.error('Upload API - Could not list directory after save:', listError);
+        }
+
     } catch (saveError) {
         console.error('Upload API - Failed to save data:', saveError);
         throw saveError; // Re-throw to be caught by the main handler
@@ -401,22 +478,34 @@ export default async function handler(req, res) {
         });
 
         // Save merged data
+        let saveSuccessful = false;
         if (totalSelections > 0) {
-            await saveUserHistory(userId, merged);
-            console.log('Upload API - File save completed');
+            try {
+                await saveUserHistory(userId, merged);
+                console.log('Upload API - File save completed');
+                saveSuccessful = true;
+            } catch (saveError) {
+                console.error('Upload API - File save failed:', saveError);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to save data to storage. Please try again.',
+                    details: process.env.NODE_ENV === 'development' ? saveError.message : undefined
+                });
+            }
         } else {
             console.log('Upload API - No data to save, skipping file save');
         }
 
         // Verify the data was saved correctly
-        try {
-            const verifyPath = getUserFilePath(userId);
-            const verifyData = await fs.readFile(verifyPath, 'utf8');
-            const verifyParsed = JSON.parse(verifyData);
-            console.log('Upload API - Verification: File saved with', verifyParsed.selections?.length || 0, 'selections');
-
-            // List all files in storage directory
+        if (saveSuccessful) {
             try {
+                const verifyPath = getUserFilePath(userId);
+                const verifyData = await fs.readFile(verifyPath, 'utf8');
+                const verifyParsed = JSON.parse(verifyData);
+                console.log('Upload API - Verification: File saved with', verifyParsed.selections?.length || 0, 'selections');
+
+                // List all files in storage directory
+                try {
                 const files = await fs.readdir(STORAGE_DIR);
                 console.log('Upload API - Storage directory contents:', files);
             } catch (listError) {

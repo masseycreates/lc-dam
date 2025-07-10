@@ -2,7 +2,13 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
-const STORAGE_DIR = process.env.VERCEL ? '/tmp/lottery-selections' : path.resolve('./data/lottery-selections');
+import os from 'os';
+
+// Simple file-based storage directory - use absolute path for consistency
+// In serverless environments, use the system temp directory
+const STORAGE_DIR = process.env.VERCEL ?
+    path.join(os.tmpdir(), 'lottery-selections') :
+    path.resolve('./data/lottery-selections');
 
 export default async function handler(req, res) {
     // Set CORS headers
