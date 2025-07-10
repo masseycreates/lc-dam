@@ -354,7 +354,9 @@ export default async function handler(req, res) {
         console.log('Upload API - Cleaned imported data:', {
             selectionsCount: cleanedData.selections.length,
             savedSelectionsCount: cleanedData.savedSelections.length,
-            sampleSelection: cleanedData.selections[0] || null
+            sampleSelection: cleanedData.selections[0] || null,
+            importedSelectionIds: cleanedData.selections.map(s => s.id).slice(0, 5),
+            importedSavedSelectionIds: cleanedData.savedSelections.map(s => s.id).slice(0, 5)
         });
 
         if (cleanedData.selections.length === 0 && cleanedData.savedSelections.length === 0) {
@@ -369,7 +371,9 @@ export default async function handler(req, res) {
         console.log('Upload API - Existing data loaded:', {
             selectionsCount: existingData.selections.length,
             savedSelectionsCount: existingData.savedSelections.length,
-            sampleSelection: existingData.selections[0] || null
+            sampleSelection: existingData.selections[0] || null,
+            existingSelectionIds: existingData.selections.map(s => s.id).slice(0, 5),
+            existingSavedSelectionIds: existingData.savedSelections.map(s => s.id).slice(0, 5)
         });
 
         // Merge the data
