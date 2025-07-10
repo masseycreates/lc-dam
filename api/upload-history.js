@@ -428,6 +428,10 @@ export default async function handler(req, res) {
 
         // Debug: Return detailed information in the response for troubleshooting
         const debugInfo = {
+            rawFileContentLength: uploadedFile.content.length,
+            rawFileContentPreview: uploadedFile.content.substring(0, 200),
+            parsedDataType: Array.isArray(importedData) ? 'Array' : 'Object',
+            parsedDataLength: Array.isArray(importedData) ? importedData.length : Object.keys(importedData).length,
             importedSelectionsCount: cleanedData.selections.length,
             importedSavedSelectionsCount: cleanedData.savedSelections.length,
             existingSelectionsCount: existingData.selections.length,
