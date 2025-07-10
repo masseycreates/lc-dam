@@ -2007,6 +2007,8 @@
             // Initialize user session on component mount
             React.useEffect(() => {
                 const initializeApp = async () => {
+                    console.log('🚀 Starting app initialization...');
+
                     // Validate system state first
                     const issues = [];
                     if (typeof fetchLatestPowerballData !== 'function') {
@@ -2025,19 +2027,27 @@
                         return;
                     }
 
+                    console.log('✅ System validation passed');
+
                     try {
                         // Initialize user session
+                        console.log('📡 Initializing user session...');
                         await initializeUserSession();
+                        console.log('✅ User session initialized');
 
                         // Load latest Powerball data
+                        console.log('🎯 Loading latest Powerball data...');
                         await fetchLatestPowerballData();
+                        console.log('✅ Latest Powerball data loaded');
 
                         // Load historical data for analysis
+                        console.log('📊 Loading historical data with limit:', historicalRecordsLimit);
                         await fetchHistoricalData(historicalRecordsLimit);
+                        console.log('✅ Historical data loaded');
 
-                        console.log('✅ App initialization completed successfully');
+                        console.log('🎉 App initialization completed successfully');
                     } catch (error) {
-                        console.error('App initialization failed:', error);
+                        console.error('❌ App initialization failed:', error);
                         setDataStatus('❌ App initialization failed - some features may not work');
                     }
                 };
@@ -2508,49 +2518,65 @@
 
             // Fetch latest Powerball data
             const fetchLatestPowerballData = async () => {
+                console.log('🎯 fetchLatestPowerballData called');
                 setIsUpdating(true);
                 setDataStatus('🔄 Fetching latest Powerball data...');
 
                 try {
+                    console.log('🌐 Fetching from /api/powerball');
                     const response = await fetch('/api/powerball');
+                    console.log('📡 Response status:', response.status, response.statusText);
+
                     const data = await response.json();
+                    console.log('📋 Response data:', data);
 
                     if (data.success && data.data) {
+                        console.log('✅ Powerball data received:', data.data);
                         setCurrentJackpot(data.data);
                         setNextDrawDate(data.data.nextDrawDate || '');
                         setLiveDataAvailable(true);
                         setLastUpdated(new Date().toLocaleString());
                         setDataStatus('✅ Latest Powerball data updated successfully!');
                     } else {
+                        console.warn('⚠️ Powerball data request failed:', data);
                         setDataStatus('⚠️ Could not fetch latest data - using cached information');
                     }
                 } catch (error) {
-                    console.error('Error fetching Powerball data:', error);
+                    console.error('❌ Error fetching Powerball data:', error);
                     setDataStatus('❌ Failed to fetch latest data - check connection');
                 } finally {
+                    console.log('🏁 fetchLatestPowerballData completed');
                     setIsUpdating(false);
                 }
             };
 
             // Fetch historical data for analysis
             const fetchHistoricalData = async (limit = 500) => {
+                console.log('📊 fetchHistoricalData called with limit:', limit);
                 setIsLoadingHistory(true);
 
                 try {
+                    console.log('🌐 Fetching from /api/powerball-history?limit=' + limit);
                     const response = await fetch(`/api/powerball-history?limit=${limit}`);
+                    console.log('📡 Response status:', response.status, response.statusText);
+
                     const data = await response.json();
+                    console.log('📋 Response data:', data);
 
                     if (data.success && data.data) {
+                        console.log('✅ Historical data received:', data.data.totalDrawings, 'drawings');
                         setHistoricalStats(data.data);
                         setHistoricalDataAvailable(true);
                         setDataStatus('✅ Historical data loaded successfully!');
                     } else {
+                        console.warn('⚠️ Historical data request failed:', data);
                         setDataStatus('⚠️ Could not load historical data');
                     }
                 } catch (error) {
-                    console.error('Error fetching historical data:', error);
+                    console.error('❌ Error fetching historical data:', error);
                     setDataStatus('❌ Failed to load historical data');
                 } finally {
+                    console.log('🏁 fetchHistoricalData completed');
                     setIsLoadingHistory(false);
                 }
             };
@@ -2619,7 +2645,13 @@
                                                 }, option.label)
                                             )
                                         ),
-                                        isLoadingHistory ? React.createElement('div', { className: 'loading-spinner' }) : null
+                                        isLoadingHistory ? React.createElement('div', { className: 'loading-spinner' }) : null,
+                                        React.createElement('button', {
+                                            onClick: () => fetchHistoricalData(historicalRecordsLimit),
+                                            disabled: isLoadingHistory,
+                                            className: 'px-3 py-1.5 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed',
+                                            title: 'Manually refresh historical data'
+                                        }, '🔄')
                                     )
                                 ),
                                 
@@ -2635,8 +2667,20 @@
                                             historicalStats.dateRange.earliest + ' to ' + historicalStats.dateRange.latest : 
                                             'Full range')
                                     )
-                                ) : React.createElement('div', { className: 'text-xs text-gray-500' },
-                                    'No historical data loaded'
+                                ) : React.createElement('div', { className: 'text-xs text-gray-500 p-2 bg-yellow-50 rounded border' },
+                                    isLoadingHistory ?
+                                        React.createElement('div', { className: 'flex items-center gap-2' },
+                                            React.createElement('div', { className: 'loading-spinner' }),
+                                            'Loading historical data...'
+                                        ) :
+                                        React.createElement('div', null,
+                                            '⚠️ No historical data loaded. ',
+                                            React.createElement('button', {
+                                                onClick: () => fetchHistoricalData(historicalRecordsLimit),
+                                                className: 'text-blue-600 underline hover:text-blue-800',
+                                                style: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' }
+                                            }, 'Click to load')
+                                        )
                                 )
                             ),
 
