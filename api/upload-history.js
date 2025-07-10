@@ -420,12 +420,21 @@ export default async function handler(req, res) {
 
         res.status(200).json({
             success: true,
-            message: `Successfully imported ${addedCount} new selections.`,
+            message: `Successfully imported ${newSelections} new selections.`,
             data: {
-                totalSelections: merged.selections.length,
-                newSelections: merged.selections.length - (existingData.selections.length || 0),
-                duplicatesSkipped: cleanedData.selections.length + cleanedData.savedSelections.length - addedCount,
-                userId
+                userId,
+                totalSelections,
+                newSelections,
+                existingTotal,
+                debug: {
+                    importedSelectionsCount: cleanedData.selections.length,
+                    importedSavedSelectionsCount: cleanedData.savedSelections.length,
+                    existingSelectionsCount: existingData.selections.length,
+                    existingSavedSelectionsCount: existingData.savedSelections.length,
+                    mergedSelectionsCount: merged.selections.length,
+                    mergedSavedSelectionsCount: merged.savedSelections.length,
+                    fileSaved: totalSelections > 0
+                }
             }
         });
         
