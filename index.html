@@ -2460,13 +2460,13 @@
                         console.log('After upload refresh - savedSelections length:', savedSelections.length);
 
                         // Show success details
-                        if (data.data) {
+                        if (uploadData.data) {
                             const details = [];
-                            if (data.data.addedCount > 0) {
-                                details.push(`${data.data.addedCount} new selections imported`);
+                            if (uploadData.data.addedCount > 0) {
+                                details.push(`${uploadData.data.addedCount} new selections imported`);
                             }
-                            if (data.data.duplicatesSkipped > 0) {
-                                details.push(`${data.data.duplicatesSkipped} duplicates skipped`);
+                            if (uploadData.data.duplicatesSkipped > 0) {
+                                details.push(`${uploadData.data.duplicatesSkipped} duplicates skipped`);
                             }
                             if (details.length > 0) {
                                 setUploadStatus(`✅ Import complete! ${details.join(', ')}.`);
@@ -2480,7 +2480,7 @@
                         }, 3000);
 
                     } else {
-                        setUploadStatus(`❌ Upload failed: ${data.error}`);
+                        setUploadStatus(`❌ Upload failed: ${uploadData.error}`);
                     }
 
                 } catch (error) {
