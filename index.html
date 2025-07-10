@@ -1962,12 +1962,23 @@
                     if (response.ok) {
                         const data = await response.json();
                         if (data.success) {
+                            console.log('🔍 Server data loaded:', {
+                                userId: data.userId,
+                                selectionsCount: data.data.selections?.length || 0,
+                                savedSelectionsCount: data.data.savedSelections?.length || 0,
+                                analytics: data.data.analytics
+                            });
+
                             setUserId(data.userId);
                             setSelectionHistory(data.data.selections || []);
                             setSavedSelections(data.data.savedSelections || []);
                             setUserAnalytics(data.data.analytics);
                             console.log('✅ User session initialized:', data.userId);
+                        } else {
+                            console.log('❌ Server response not successful:', data);
                         }
+                    } else {
+                        console.log('❌ Server response not ok:', response.status, response.statusText);
                     }
                 } catch (error) {
                     console.error('Failed to initialize user session:', error);
@@ -2399,8 +2410,22 @@
                     if (data.success) {
                         setUploadStatus(`✅ ${data.message}`);
 
+                        // Debug: Log current state before refresh
+                        console.log('Before refresh - selectionHistory length:', selectionHistory.length);
+                        console.log('Before refresh - savedSelections length:', savedSelections.length);
+                        
+                        // Wait a bit for state to update, then check
+                        setTimeout(() => {
+                        console.log('🔍 Final state check - selectionHistory length:', selectionHistory.length);
+                        console.log('🔍 Final state check - savedSelections length:', savedSelections.length);
+                        }, 100);
+
                         // Refresh the user session to load the new data
                         await initializeUserSession();
+
+                        // Debug: Log state after refresh
+                        console.log('After refresh - selectionHistory length:', selectionHistory.length);
+                        console.log('After refresh - savedSelections length:', savedSelections.length);
 
                         // Show success details
                         if (data.data) {
@@ -3081,6 +3106,16 @@
                                         className: 'btn btn-primary'
                                     }, '📤 Import Data'),
                                     React.createElement('button', {
+                                        onClick: async () => {
+                                            console.log('🔄 Manual refresh triggered');
+                                            setIsLoadingUserData(true);
+                                            await initializeUserSession();
+                                            setIsLoadingUserData(false);
+                                            console.log('🔄 Manual refresh completed');
+                                        },
+                                        className: 'btn btn-secondary'
+                                    }, '🔄 Refresh Data'),
+                                    React.createElement('button', {
                                         onClick: () => {
                                             if (confirm('Are you sure you want to clear all selection history? This cannot be undone.')) {
                                                 saveSelectionHistory([]);
@@ -3104,10 +3139,21 @@
                             ),
 
                             // Selection History List
-                            React.createElement('div', { className: 'card' },
-                                React.createElement('h3', { className: 'text-lg font-semibold mb-4 text-gray-900' }, '📋 Selection History'),
-                                selectionHistory.length > 0 ? React.createElement('div', { className: 'space-y-3' },
-                                    selectionHistory.slice().reverse().map(entry => {
+                             // Selection History List
+                             React.createElement('div', { className: 'card' },
+                                 React.createElement('h3', { className: 'text-lg font-semibold mb-4 text-gray-900' }, '📋 Selection History'),
+
+                                 // Debug info
+                                 React.createElement('div', { className: 'mb-4 p-2 bg-gray-100 rounded text-xs' },
+                                     React.createElement('strong', null, 'Debug: '),
+                                     `selectionHistory.length = ${selectionHistory.length}, `,
+                                     `savedSelections.length = ${savedSelections.length}, `,
+                                     `userId = ${userId || 'null'}, `,
+                                     `isLoadingUserData = ${isLoadingUserData}`
+                                 ),
+
+                                 selectionHistory.length > 0 ? React.createElement('div', { className: 'space-y-3' },
+                                     selectionHistory.slice().reverse().map(entry => {
                                         const isWin = entry.result === 'win';
                                         const isLoss = entry.result === 'loss';
                                         const isPending = entry.result === 'pending';
