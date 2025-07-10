@@ -252,7 +252,7 @@ export default async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-ID');
     
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -266,8 +266,9 @@ export default async function handler(req, res) {
     }
     
     try {
-        const userId = generateUserId(req);
-        
+        const userId = req.headers['x-user-id'] || generateUserId(req);
+        console.log('Upload API - User ID:', userId, 'from header:', !!req.headers['x-user-id']);
+
         // Get content type and boundary for multipart data
         const contentType = req.headers['content-type'] || '';
         
@@ -335,6 +336,11 @@ export default async function handler(req, res) {
         
         // Clean and validate the imported data
         const cleanedData = cleanImportedData(importedData);
+
+        console.log('Upload API - Cleaned data:', {
+            selectionsCount: cleanedData.selections.length,
+            savedSelectionsCount: cleanedData.savedSelections.length
+        });
         
         if (cleanedData.selections.length === 0 && cleanedData.savedSelections.length === 0) {
             return res.status(400).json({
@@ -351,7 +357,9 @@ export default async function handler(req, res) {
         
         // Save the merged data
         await saveUserHistory(userId, merged);
-        
+
+        console.log('Upload API - Data saved for user:', userId, 'Total selections:', merged.selections.length, 'Total saved:', merged.savedSelections.length);
+
         return res.status(200).json({
             success: true,
             message: `Successfully imported ${addedCount} new selections.`,

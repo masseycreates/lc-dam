@@ -1969,6 +1969,8 @@
                                 analytics: data.data.analytics
                             });
 
+                            console.log('📊 Raw server data:', data.data);
+
                             setUserId(data.userId);
                             setSelectionHistory(data.data.selections || []);
                             setSavedSelections(data.data.savedSelections || []);
@@ -2396,69 +2398,39 @@
                 setIsUploading(true);
                 setUploadStatus('⏳ Uploading and processing file...');
 
+                console.log('📤 Starting upload with userId:', userId);
+
                 try {
                     const formData = new FormData();
                     formData.append('historyFile', file);
 
                     const response = await fetch('/api/upload-history', {
                         method: 'POST',
+                        headers: {
+                            'X-User-ID': userId
+                        },
                         body: formData
                     });
 
                     const data = await response.json();
 
+                    console.log('📥 Upload response:', data);
+
                     if (data.success) {
                         // Show success message
-                        setUploadStatus(`✅ Successfully imported ${data.addedCount || 0} selections!`);
+                        setUploadStatus(`✅ Successfully imported ${data.data.addedCount || 0} selections!`);
 
-                        // Immediately update local state with the uploaded data
-                        console.log('📥 Updating local state with uploaded data...');
+                        console.log('📥 Upload successful, refreshing user session...');
 
-                        // Parse the uploaded file data and add to current state
-                        const fileContent = await file.text();
-                        const uploadedData = JSON.parse(fileContent);
+                        // Add a small delay to ensure server has processed the data
+                        await new Promise(resolve => setTimeout(resolve, 500));
 
-                        // Ensure uploadedData is an array
-                        const dataArray = Array.isArray(uploadedData) ? uploadedData : [uploadedData];
-
-                        // Process each uploaded selection
-                        const processedSelections = dataArray.map(item => ({
-                            id: item.id || Date.now() + Math.random(),
-                            numbers: item.numbers || [],
-                            powerball: item.powerball || 0,
-                            name: item.name || 'Imported Selection',
-                            source: item.source || 'Import',
-                            dateSaved: item.dateSaved || new Date().toISOString(),
-                            result: item.result || 'pending',
-                            winAmount: item.winAmount || 0,
-                            confidence: item.confidence || 0,
-                            strategy: item.strategy || 'Import'
-                        }));
-
-                        // Update selection history state immediately
-                        const updatedHistory = [...selectionHistory, ...processedSelections];
-                        setSelectionHistory(updatedHistory);
-
-                        // Also save to localStorage for persistence
-                        localStorage.setItem('powerball_selection_history', JSON.stringify(updatedHistory));
-
-                        console.log('✅ Local state updated:', {
-                            previousCount: selectionHistory.length,
-                            addedCount: processedSelections.length,
-                            newTotal: updatedHistory.length
-                        });
-
-                        // Refresh the user session to sync with server
-                        setTimeout(async () => {
-                            await initializeUserSession();
-                        }, 100);
-
-                        // Refresh the user session to load the new data
+                        // Refresh the user session to load the new data from server
                         await initializeUserSession();
 
                         // Debug: Log state after refresh
-                        console.log('After refresh - selectionHistory length:', selectionHistory.length);
-                        console.log('After refresh - savedSelections length:', savedSelections.length);
+                        console.log('After upload refresh - selectionHistory length:', selectionHistory.length);
+                        console.log('After upload refresh - savedSelections length:', savedSelections.length);
 
                         // Show success details
                         if (data.data) {
@@ -3254,10 +3226,23 @@
                                             entry.notes ? React.createElement('p', { className: 'text-xs text-gray-600 mt-2' }, entry.notes) : null
                                         );
                                     })
-                                ) : React.createElement('div', { className: 'text-center py-6 text-gray-500' },
+                                )
+                                : React.createElement('div', { className: 'mb-4' },
+                                    React.createElement('button', {
+                                        onClick: async () => {
+                                            console.log('🔄 Manual refresh triggered');
+                                            setIsLoadingUserData(true);
+                                            await initializeUserSession();
+                                            setIsLoadingUserData(false);
+                                        },
+                                        className: 'btn btn-secondary text-sm'
+                                    }, '🔄 Refresh Data')
+                                ),
+
+                                selectionHistory.length === 0 ? React.createElement('div', { className: 'text-center py-6 text-gray-500' },
                                     React.createElement('p', null, 'No selections saved yet.'),
                                     React.createElement('p', { className: 'text-sm mt-2' }, 'Save selections from the AI Hybrid tab or add previous selections manually.')
-                                )
+                                ) : null
                             )
                         );
 
