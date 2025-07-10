@@ -2430,6 +2430,11 @@
                         newSelections: uploadData.data?.newSelections
                     });
 
+                    // Log detailed debug information
+                    if (uploadData.data?.debug) {
+                        console.log('🔍 Upload debug information:', uploadData.data.debug);
+                    }
+
                     if (uploadData.success) {
                         // Show success message
                         setUploadStatus(`✅ Successfully imported ${uploadData.data.addedCount || 0} selections!`);

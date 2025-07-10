@@ -422,6 +422,27 @@ export default async function handler(req, res) {
             console.error('Upload API - Verification failed:', verifyError.message);
         }
 
+        // Debug: Return detailed information in the response for troubleshooting
+        const debugInfo = {
+            importedSelectionsCount: cleanedData.selections.length,
+            importedSavedSelectionsCount: cleanedData.savedSelections.length,
+            existingSelectionsCount: existingData.selections.length,
+            existingSavedSelectionsCount: existingData.savedSelections.length,
+            mergedSelectionsCount: merged.selections.length,
+            mergedSavedSelectionsCount: merged.savedSelections.length,
+            fileSaved: totalSelections > 0,
+            importedIds: cleanedData.selections.map(s => s.id),
+            existingIds: existingData.selections.map(s => s.id),
+            mergedIds: merged.selections.map(s => s.id),
+            duplicateCheck: {
+                existingIdsSet: [...new Set([...existingData.selections.map(s => s.id), ...existingData.savedSelections.map(s => s.id)])],
+                importedIdsFound: cleanedData.selections.map(s => ({
+                    id: s.id,
+                    isDuplicate: new Set([...existingData.selections.map(s => s.id), ...existingData.savedSelections.map(s => s.id)]).has(s.id)
+                }))
+            }
+        };
+
         res.status(200).json({
             success: true,
             message: `Successfully imported ${newSelections} new selections.`,
@@ -430,15 +451,7 @@ export default async function handler(req, res) {
                 totalSelections,
                 newSelections,
                 existingTotal,
-                debug: {
-                    importedSelectionsCount: cleanedData.selections.length,
-                    importedSavedSelectionsCount: cleanedData.savedSelections.length,
-                    existingSelectionsCount: existingData.selections.length,
-                    existingSavedSelectionsCount: existingData.savedSelections.length,
-                    mergedSelectionsCount: merged.selections.length,
-                    mergedSavedSelectionsCount: merged.savedSelections.length,
-                    fileSaved: totalSelections > 0
-                }
+                debug: debugInfo
             }
         });
         
