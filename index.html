@@ -2448,35 +2448,33 @@
                             });
 
                             // Load existing data from localStorage
-                            const existingData = loadUserDataFromStorage(userId);
+                            const existingSelectionHistory = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                            const existingSavedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+
                             console.log('📥 Existing data:', {
-                                selections: existingData.selections?.length || 0,
-                                savedSelections: existingData.savedSelections?.length || 0
+                                selections: existingSelectionHistory.length || 0,
+                                savedSelections: existingSavedSelections.length || 0
                             });
 
                             // Merge imported selections with existing data
-                            const existingIds = new Set(existingData.selections.map(s => s.id));
+                            const existingIds = new Set(existingSelectionHistory.map(s => s.id));
                             const newSelections = importedData.selections.filter(s => !existingIds.has(s.id));
 
-                            const mergedData = {
-                                ...existingData,
-                                selections: [...existingData.selections, ...newSelections],
-                                lastUpdated: new Date().toISOString(),
-                                version: 2
-                            };
+                            const mergedSelectionHistory = [...existingSelectionHistory, ...newSelections];
 
                             console.log('📥 Merged data:', {
-                                selections: mergedData.selections?.length || 0,
+                                selections: mergedSelectionHistory.length || 0,
                                 newSelections: newSelections.length,
-                                savedSelections: mergedData.savedSelections?.length || 0
+                                savedSelections: existingSavedSelections.length || 0
                             });
 
-                            // Save merged data to localStorage
-                            saveUserDataToStorage(userId, mergedData);
+                            // Save merged data to localStorage using existing functions
+                            saveSelectionHistory(mergedSelectionHistory);
 
-                            // Update the UI state immediately
-                            selectionHistory = mergedData.selections || [];
-                            savedSelections = mergedData.savedSelections || [];
+                            console.log('📥 UI state updated:', {
+                                selectionHistory: selectionHistory.length,
+                                savedSelections: savedSelections.length
+                            });
 
                             console.log('📥 UI state updated:', {
                                 selectionHistory: selectionHistory.length,
