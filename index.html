@@ -2409,7 +2409,7 @@
 
                     if (data.success) {
                         // Show success message
-                        setUploadStatus({ type: 'success', message: `Successfully imported ${response.addedCount} selections!` });
+                        setUploadStatus(`✅ Successfully imported ${data.addedCount || 0} selections!`);
 
                         // Immediately update local state with the uploaded data
                         console.log('📥 Updating local state with uploaded data...');
@@ -3735,11 +3735,11 @@
                     // Upload status
                     uploadStatus ? React.createElement('div', {
                         className: 'mb-4 p-3 rounded-lg text-sm ' + (
-                            uploadStatus.includes('✅') ? 'bg-green-50 text-green-700 border border-green-200' :
-                            uploadStatus.includes('❌') ? 'bg-red-50 text-red-700 border border-red-200' :
+                            (typeof uploadStatus === 'string' && uploadStatus.includes('✅')) ? 'bg-green-50 text-green-700 border border-green-200' :
+                            (typeof uploadStatus === 'string' && uploadStatus.includes('❌')) ? 'bg-red-50 text-red-700 border border-red-200' :
                             'bg-blue-50 text-blue-700 border border-blue-200'
                         )
-                    }, uploadStatus) : null,
+                    }, typeof uploadStatus === 'string' ? uploadStatus : JSON.stringify(uploadStatus)) : null,
 
                     React.createElement('div', { className: 'flex gap-3' },
                         React.createElement('button', {
