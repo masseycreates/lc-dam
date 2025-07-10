@@ -1054,6 +1054,350 @@
             }
         };
 
+        // NEW: Performance-Based Algorithm Enhancement System
+        window.generatePerformanceEnhancedSelection = function(historicalStats, selectionHistory = []) {
+            try {
+                console.log('🎯 Generating performance-enhanced selections...');
+
+                // Calculate algorithm performance weights
+                const performanceWeights = calculateAlgorithmPerformance(selectionHistory);
+
+                // Analyze winning patterns from history
+                const winningPatterns = analyzeWinningPatterns(selectionHistory);
+
+                // Generate base selections using enhanced algorithms
+                const baseSelections = generateEnhancedLocalSelections(historicalStats);
+
+                // Apply performance enhancements
+                const enhancedSelections = applyPerformanceEnhancements(baseSelections, winningPatterns, performanceWeights);
+
+                console.log('✅ Performance-enhanced selections generated with', winningPatterns.totalWins, 'winning patterns');
+                return enhancedSelections;
+
+            } catch (error) {
+                console.error('Performance enhancement failed:', error);
+                return generateEnhancedLocalSelections(historicalStats);
+            }
+        };
+
+        function calculateAlgorithmPerformance(selectionHistory) {
+            const algorithmStats = {
+                frequency: { wins: 0, total: 0, winnings: 0 },
+                gap: { wins: 0, total: 0, winnings: 0 },
+                consecutive: { wins: 0, total: 0, winnings: 0 },
+                sumRange: { wins: 0, total: 0, winnings: 0 },
+                oddEven: { wins: 0, total: 0, winnings: 0 },
+                highLow: { wins: 0, total: 0, winnings: 0 },
+                mixed: { wins: 0, total: 0, winnings: 0 }
+            };
+
+            // Analyze performance by algorithm
+            selectionHistory.forEach(entry => {
+                if (entry.algorithm && algorithmStats[entry.algorithm]) {
+                    algorithmStats[entry.algorithm].total++;
+
+                    if (entry.result === 'win') {
+                        algorithmStats[entry.algorithm].wins++;
+                        algorithmStats[entry.algorithm].winnings += (entry.winAmount || 0);
+                    }
+                }
+            });
+
+            // Calculate performance weights
+            const weights = {};
+            let totalPerformance = 0;
+
+            Object.keys(algorithmStats).forEach(algo => {
+                const stats = algorithmStats[algo];
+                const winRate = stats.total > 0 ? stats.wins / stats.total : 0;
+                const avgWinning = stats.wins > 0 ? stats.winnings / stats.wins : 0;
+
+                // Performance score combines win rate and average winnings
+                const performanceScore = (winRate * 0.7) + (Math.min(avgWinning / 1000, 1) * 0.3);
+                weights[algo] = Math.max(performanceScore, 0.1); // Minimum weight of 0.1
+                totalPerformance += weights[algo];
+            });
+
+            // Normalize weights
+            if (totalPerformance > 0) {
+                Object.keys(weights).forEach(algo => {
+                    weights[algo] /= totalPerformance;
+                });
+            } else {
+                // Default equal weights if no performance data
+                const defaultWeight = 1 / Object.keys(algorithmStats).length;
+                Object.keys(algorithmStats).forEach(algo => {
+                    weights[algo] = defaultWeight;
+                });
+            }
+
+            return weights;
+        }
+
+        function analyzeWinningPatterns(selectionHistory) {
+            const patterns = {
+                numberFrequency: {},
+                powerballFrequency: {},
+                sumRanges: [],
+                oddEvenRatios: [],
+                highLowRatios: [],
+                consecutivePairs: 0,
+                totalWins: 0,
+                avgWinAmount: 0,
+                bestPerformingRanges: {
+                    sum: { min: 0, max: 0 },
+                    oddCount: { min: 0, max: 0 },
+                    highCount: { min: 0, max: 0 }
+                }
+            };
+
+            // Initialize frequency maps
+            for (let i = 1; i <= 69; i++) {
+                patterns.numberFrequency[i] = 0;
+            }
+            for (let i = 1; i <= 26; i++) {
+                patterns.powerballFrequency[i] = 0;
+            }
+
+            let totalWinnings = 0;
+
+            // Analyze winning selections
+            selectionHistory.forEach(entry => {
+                if (entry.result === 'win' && entry.numbers && entry.powerball) {
+                    patterns.totalWins++;
+                    totalWinnings += (entry.winAmount || 0);
+
+                    // Track winning number frequencies
+                    entry.numbers.forEach(num => {
+                        patterns.numberFrequency[num]++;
+                    });
+                    patterns.powerballFrequency[entry.powerball]++;
+
+                    // Analyze sum patterns
+                    const sum = entry.numbers.reduce((a, b) => a + b, 0);
+                    patterns.sumRanges.push(sum);
+
+                    // Analyze odd/even patterns
+                    const oddCount = entry.numbers.filter(n => n % 2 === 1).length;
+                    patterns.oddEvenRatios.push(oddCount);
+
+                    // Analyze high/low patterns
+                    const highCount = entry.numbers.filter(n => n > 35).length;
+                    patterns.highLowRatios.push(highCount);
+
+                    // Check for consecutive numbers
+                    const sortedNumbers = [...entry.numbers].sort((a, b) => a - b);
+                    for (let i = 0; i < sortedNumbers.length - 1; i++) {
+                        if (sortedNumbers[i + 1] - sortedNumbers[i] === 1) {
+                            patterns.consecutivePairs++;
+                            break;
+                        }
+                    }
+                }
+            });
+
+            // Calculate averages and best performing ranges
+            if (patterns.totalWins > 0) {
+                patterns.avgWinAmount = totalWinnings / patterns.totalWins;
+
+                // Find optimal ranges
+                if (patterns.sumRanges.length > 0) {
+                    patterns.bestPerformingRanges.sum.min = Math.min(...patterns.sumRanges);
+                    patterns.bestPerformingRanges.sum.max = Math.max(...patterns.sumRanges);
+                }
+
+                if (patterns.oddEvenRatios.length > 0) {
+                    patterns.bestPerformingRanges.oddCount.min = Math.min(...patterns.oddEvenRatios);
+                    patterns.bestPerformingRanges.oddCount.max = Math.max(...patterns.oddEvenRatios);
+                }
+
+                if (patterns.highLowRatios.length > 0) {
+                    patterns.bestPerformingRanges.highCount.min = Math.min(...patterns.highLowRatios);
+                    patterns.bestPerformingRanges.highCount.max = Math.max(...patterns.highLowRatios);
+                }
+            }
+
+            return patterns;
+        }
+
+        function applyPerformanceEnhancements(baseSelections, winningPatterns, performanceWeights) {
+            if (winningPatterns.totalWins === 0) {
+                // No winning history, return base selections with performance tracking
+                return baseSelections.map(selection => ({
+                    ...selection,
+                    performanceEnhanced: false,
+                    confidence: selection.confidence || 0.5,
+                    patternMatch: 'No History'
+                }));
+            }
+
+            return baseSelections.map(selection => {
+                let enhancedConfidence = selection.confidence || 0.5;
+                let patternMatchScore = 0;
+                let patternMatches = [];
+
+                // Enhance based on winning number frequencies
+                const numberBoost = selection.numbers.reduce((boost, num) => {
+                    const frequency = winningPatterns.numberFrequency[num] / winningPatterns.totalWins;
+                    if (frequency > 0.2) { // Number appears in >20% of wins
+                        patternMatches.push(`Hot Number: ${num}`);
+                        return boost + frequency;
+                    }
+                    return boost;
+                }, 0);
+
+                // Enhance based on powerball frequency
+                const pbFrequency = winningPatterns.powerballFrequency[selection.powerball] / winningPatterns.totalWins;
+                const powerballBoost = pbFrequency > 0.15 ? pbFrequency : 0;
+                if (powerballBoost > 0) {
+                    patternMatches.push(`Hot Powerball: ${selection.powerball}`);
+                }
+
+                // Check sum range match
+                const selectionSum = selection.numbers.reduce((a, b) => a + b, 0);
+                const sumInRange = selectionSum >= winningPatterns.bestPerformingRanges.sum.min &&
+                                 selectionSum <= winningPatterns.bestPerformingRanges.sum.max;
+                if (sumInRange && winningPatterns.sumRanges.length > 2) {
+                    patternMatches.push(`Optimal Sum Range: ${selectionSum}`);
+                    patternMatchScore += 0.2;
+                }
+
+                // Check odd/even ratio match
+                const oddCount = selection.numbers.filter(n => n % 2 === 1).length;
+                const oddInRange = oddCount >= winningPatterns.bestPerformingRanges.oddCount.min &&
+                                 oddCount <= winningPatterns.bestPerformingRanges.oddCount.max;
+                if (oddInRange && winningPatterns.oddEvenRatios.length > 2) {
+                    patternMatches.push(`Optimal Odd/Even: ${oddCount}/5`);
+                    patternMatchScore += 0.15;
+                }
+
+                // Check high/low ratio match
+                const highCount = selection.numbers.filter(n => n > 35).length;
+                const highInRange = highCount >= winningPatterns.bestPerformingRanges.highCount.min &&
+                                  highCount <= winningPatterns.bestPerformingRanges.highCount.max;
+                if (highInRange && winningPatterns.highLowRatios.length > 2) {
+                    patternMatches.push(`Optimal High/Low: ${highCount}/5`);
+                    patternMatchScore += 0.15;
+                }
+
+                // Apply algorithm performance weight
+                const algorithmWeight = performanceWeights[selection.algorithm] || 0.5;
+
+                // Calculate final enhanced confidence
+                enhancedConfidence = Math.min(1.0,
+                    enhancedConfidence +
+                    (numberBoost * 0.3) +
+                    (powerballBoost * 0.2) +
+                    (patternMatchScore * 0.3) +
+                    (algorithmWeight * 0.2)
+                );
+
+                return {
+                    ...selection,
+                    performanceEnhanced: true,
+                    confidence: enhancedConfidence,
+                    patternMatch: patternMatches.length > 0 ? 'High' : 'Low',
+                    patternDetails: patternMatches,
+                    algorithmWeight: algorithmWeight,
+                    description: selection.description +
+                        (patternMatches.length > 0 ? ` • ${patternMatches.join(', ')}` : ' • No pattern matches')
+                };
+            });
+        }
+
+        // Enhanced result checking and updating
+        window.checkAndUpdateSelectionResults = async function(selectionHistory, saveCallback) {
+            try {
+                console.log('🔍 Checking for new drawing results...');
+
+                const response = await fetch('/api/powerball-history');
+                const data = await response.json();
+
+                if (data.success && data.drawings && data.drawings.length > 0) {
+                    const latestDrawings = data.drawings.slice(0, 5); // Check last 5 drawings
+                    let updatesFound = false;
+
+                    const updatedHistory = selectionHistory.map(entry => {
+                        if (entry.result === 'pending') {
+                            // Find matching drawing
+                            const matchingDrawing = latestDrawings.find(drawing => {
+                                const drawingDate = new Date(drawing.date).toISOString().split('T')[0];
+                                return entry.datePlayed <= drawingDate;
+                            });
+
+                            if (matchingDrawing) {
+                                const matchedNumbers = entry.numbers.filter(num =>
+                                    matchingDrawing.numbers.includes(num)
+                                ).length;
+
+                                const powerballMatch = entry.powerball === matchingDrawing.powerball;
+
+                                // Calculate winnings based on Powerball prize structure
+                                let winAmount = 0;
+                                let prizeLevel = 'No Prize';
+
+                                if (matchedNumbers === 5 && powerballMatch) {
+                                    winAmount = matchingDrawing.jackpot || 100000000;
+                                    prizeLevel = 'Jackpot';
+                                } else if (matchedNumbers === 5) {
+                                    winAmount = 1000000;
+                                    prizeLevel = 'Match 5';
+                                } else if (matchedNumbers === 4 && powerballMatch) {
+                                    winAmount = 50000;
+                                    prizeLevel = 'Match 4 + PB';
+                                } else if (matchedNumbers === 4) {
+                                    winAmount = 100;
+                                    prizeLevel = 'Match 4';
+                                } else if (matchedNumbers === 3 && powerballMatch) {
+                                    winAmount = 100;
+                                    prizeLevel = 'Match 3 + PB';
+                                } else if (matchedNumbers === 3) {
+                                    winAmount = 7;
+                                    prizeLevel = 'Match 3';
+                                } else if (matchedNumbers === 2 && powerballMatch) {
+                                    winAmount = 7;
+                                    prizeLevel = 'Match 2 + PB';
+                                } else if (matchedNumbers === 1 && powerballMatch) {
+                                    winAmount = 4;
+                                    prizeLevel = 'Match 1 + PB';
+                                } else if (powerballMatch) {
+                                    winAmount = 4;
+                                    prizeLevel = 'Powerball Only';
+                                }
+
+                                updatesFound = true;
+
+                                return {
+                                    ...entry,
+                                    result: winAmount > 0 ? 'win' : 'loss',
+                                    winAmount: winAmount,
+                                    prizeLevel: prizeLevel,
+                                    matchedNumbers: matchedNumbers,
+                                    powerballMatch: powerballMatch,
+                                    drawingDate: new Date(matchingDrawing.date).toISOString().split('T')[0],
+                                    winningNumbers: matchingDrawing.numbers,
+                                    winningPowerball: matchingDrawing.powerball
+                                };
+                            }
+                        }
+                        return entry;
+                    });
+
+                    if (updatesFound) {
+                        saveCallback(updatedHistory);
+                        console.log('✅ Selection results updated automatically');
+                        return { updated: true, history: updatedHistory };
+                    }
+                }
+
+                return { updated: false, history: selectionHistory };
+
+            } catch (error) {
+                console.error('Error checking results:', error);
+                return { updated: false, history: selectionHistory };
+            }
+        };
+
         function generateEnhancedLocalSelections(historicalStats) {
             try {
                 const predictor = window.globalLotteryPredictor;
