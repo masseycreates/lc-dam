@@ -215,11 +215,16 @@ function mergeHistoryData(existingData, importedData) {
 
 // Save merged data
 async function saveUserHistory(userId, historyData) {
-    await ensureStorageDir();
-    const filePath = getUserFilePath(userId);
-    console.log('Upload API - Saving data to file:', filePath, 'Data size:', JSON.stringify(historyData).length);
-    await fs.writeFile(filePath, JSON.stringify(historyData, null, 2));
-    console.log('Upload API - Data saved successfully');
+    try {
+        await ensureStorageDir();
+        const filePath = getUserFilePath(userId);
+        console.log('Upload API - Saving data to file:', filePath, 'Data size:', JSON.stringify(historyData).length);
+        await fs.writeFile(filePath, JSON.stringify(historyData, null, 2));
+        console.log('Upload API - Data saved successfully');
+    } catch (saveError) {
+        console.error('Upload API - Failed to save data:', saveError);
+        throw saveError; // Re-throw to be caught by the main handler
+    }
 }
 
 // Parse multipart form data manually (simple implementation)
@@ -274,6 +279,9 @@ export default async function handler(req, res) {
     try {
         const userId = req.headers['x-user-id'] || generateUserId(req);
         console.log('Upload API - User ID:', userId, 'from header:', !!req.headers['x-user-id']);
+
+        // Ensure storage directory exists before any operations
+        await ensureStorageDir();
 
         // Get content type and boundary for multipart data
         const contentType = req.headers['content-type'] || '';

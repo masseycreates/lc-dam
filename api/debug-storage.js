@@ -21,7 +21,15 @@ export default async function handler(req, res) {
     try {
         console.log('Debug API - Storage directory:', STORAGE_DIR);
         console.log('Debug API - Current working directory:', process.cwd());
-        
+
+        // Ensure storage directory exists
+        try {
+            await fs.mkdir(STORAGE_DIR, { recursive: true });
+            console.log('Debug API - Storage directory created/verified');
+        } catch (mkdirError) {
+            console.error('Debug API - Failed to create storage directory:', mkdirError);
+        }
+
         // List all files in storage directory
         const files = await fs.readdir(STORAGE_DIR);
         console.log('Debug API - Files found:', files);
