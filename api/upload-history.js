@@ -1,32 +1,20 @@
 // Upload History API - Handle importing selection history from JSON files
-// Processes exported selection history data and merges with existing data
+// Uses localStorage-like approach for serverless environments
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import os from 'os';
 
-// Simple file-based storage directory - use absolute path for consistency
-// In serverless environments, use the system temp directory
-const STORAGE_DIR = process.env.VERCEL ? 
-    path.join(os.tmpdir(), 'lottery-selections') : 
-    path.resolve('./data/lottery-selections');
+// For serverless environments, we'll use a different approach
+// Since /tmp is ephemeral, we'll store data in the response and use localStorage on client
+const IS_SERVERLESS = process.env.VERCEL || process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
-console.log('Upload API - Storage directory configured as:', STORAGE_DIR, 'CWD:', process.cwd(), 'TMPDIR:', os.tmpdir());
+console.log('Upload API - Environment:', {
+    VERCEL: process.env.VERCEL,
+    IS_SERVERLESS,
+    NODE_ENV: process.env.NODE_ENV
+});
 
 const MAX_HISTORY_SIZE = 1000; // Maximum selections per user
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB max file size
-
-// Ensure storage directory exists
-async function ensureStorageDir() {
-    try {
-        console.log('Upload API - Ensuring storage directory exists:', STORAGE_DIR);
-        await fs.mkdir(STORAGE_DIR, { recursive: true });
-        console.log('Upload API - Storage directory created/verified');
-    } catch (error) {
-        console.error('Upload API - Failed to create storage directory:', error);
-        throw error;
-    }
-}
 
 // Generate user ID from browser fingerprint (same logic as selection-history.js)
 function generateUserId(req) {
@@ -45,61 +33,6 @@ function generateUserId(req) {
     }
     
     return `user_${Math.abs(hash).toString(36)}`;
-}
-
-// Get file path for user data
-function getUserFilePath(userId) {
-    return path.join(STORAGE_DIR, `${userId}.json`);
-}
-
-// Load existing user history
-async function loadUserHistory(userId) {
-    const filePath = getUserFilePath(userId);
-    
-    try {
-        const data = await fs.readFile(filePath, 'utf8');
-        const parsed = JSON.parse(data);
-        
-        return {
-            selections: parsed.selections || [],
-            savedSelections: parsed.savedSelections || [],
-            analytics: parsed.analytics || {},
-            lastUpdated: parsed.lastUpdated || new Date().toISOString(),
-            version: parsed.version || 2
-        };
-    } catch (error) {
-        console.log('Upload API - No existing user data found, creating new:', error.message);
-        return {
-            selections: [],
-            savedSelections: [],
-            analytics: {},
-            lastUpdated: new Date().toISOString(),
-            version: 2
-        };
-    }
-}
-
-// Save user history
-async function saveUserHistory(userId, data) {
-    const filePath = getUserFilePath(userId);
-    
-    try {
-        console.log('Upload API - Saving user history to:', filePath);
-        
-        const dataToSave = {
-            ...data,
-            lastUpdated: new Date().toISOString(),
-            version: 2
-        };
-        
-        await fs.writeFile(filePath, JSON.stringify(dataToSave, null, 2));
-        console.log('Upload API - User history saved successfully');
-        
-        return true;
-    } catch (error) {
-        console.error('Upload API - Failed to save user history:', error);
-        throw error;
-    }
 }
 
 // Validate selection entry
@@ -157,27 +90,6 @@ function cleanImportedData(data) {
     return cleaned;
 }
 
-// Merge history data
-function mergeHistoryData(existingData, newData) {
-    const existingIds = new Set(existingData.selections.map(s => s.id));
-    const newSelections = newData.filter(entry => !existingIds.has(entry.id));
-    
-    const merged = {
-        ...existingData,
-        selections: [...existingData.selections, ...newSelections]
-    };
-    
-    // Limit total selections
-    if (merged.selections.length > MAX_HISTORY_SIZE) {
-        merged.selections = merged.selections.slice(-MAX_HISTORY_SIZE);
-    }
-    
-    return {
-        merged,
-        addedCount: newSelections.length
-    };
-}
-
 // Parse multipart form data
 function parseMultipartData(body, boundary) {
     const parts = body.split(`--${boundary}`);
@@ -230,9 +142,6 @@ export default async function handler(req, res) {
     try {
         const userId = req.headers['x-user-id'] || generateUserId(req);
         console.log('Upload API - User ID:', userId, 'from header:', !!req.headers['x-user-id']);
-
-        // Ensure storage directory exists before any operations
-        await ensureStorageDir();
 
         // Read the request body
         let body = '';
@@ -302,36 +211,28 @@ export default async function handler(req, res) {
             });
         }
 
-        // Load existing user data
-        const existingData = await loadUserHistory(userId);
-        console.log('Upload API - Existing data loaded:', {
-            selectionsCount: existingData.selections.length,
-            savedSelectionsCount: existingData.savedSelections.length
-        });
+        // For serverless environments, return the data to be stored client-side
+        // The client will merge this with existing data and store in localStorage
+        const responseData = {
+            selections: cleanedData,
+            savedSelections: [], // Imported data goes to selections, not savedSelections
+            analytics: {},
+            lastUpdated: new Date().toISOString(),
+            version: 2
+        };
 
-        // Merge the data
-        const { merged, addedCount } = mergeHistoryData(existingData, cleanedData);
-        console.log('Upload API - Data merged:', {
-            selectionsCount: merged.selections.length,
-            savedSelectionsCount: merged.savedSelections.length,
-            addedCount
-        });
+        console.log('Upload API - Returning data for client-side storage');
 
-        // Save merged data
-        if (merged.selections.length > 0) {
-            await saveUserHistory(userId, merged);
-            console.log('Upload API - File save completed');
-        }
-
-        // Return success response
+        // Return success response with data for client-side storage
         return res.status(200).json({
             success: true,
-            message: `Successfully imported ${addedCount} new selections.`,
+            message: `Successfully processed ${cleanedData.length} selections.`,
             data: {
                 userId,
-                totalSelections: merged.selections.length,
-                newSelections: addedCount,
-                existingTotal: existingData.selections.length
+                importedData: responseData,
+                totalSelections: cleanedData.length,
+                newSelections: cleanedData.length,
+                storageMethod: 'client-side'
             }
         });
         

@@ -2436,52 +2436,74 @@
                     }
 
                     if (uploadData.success) {
-                        // Show success message
-                        setUploadStatus(`✅ Successfully imported ${uploadData.data.addedCount || 0} selections!`);
+                        // Handle the new client-side storage response
+                        if (uploadData.data?.importedData && uploadData.data?.storageMethod === 'client-side') {
+                            console.log('📥 Processing client-side storage data...');
 
-                        console.log('📥 Upload successful, refreshing user session...');
-
-                        // Add a longer delay to ensure server has processed the data
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-
-                        // Refresh the user session to load the new data from server
-                        await initializeUserSession();
-
-                        // Additional verification: Make a direct call to check the data
-                        try {
-                            const verifyResponse = await fetch('/api/selection-history', {
-                                headers: {
-                                    'X-User-ID': userId
-                                }
+                            // Get the imported data
+                            const importedData = uploadData.data.importedData;
+                            console.log('📥 Imported data:', {
+                                selections: importedData.selections?.length || 0,
+                                savedSelections: importedData.savedSelections?.length || 0
                             });
-                            const verifyData = await verifyResponse.json();
-                            console.log('📋 Verification check - Full server response:', verifyData);
-                            console.log('📋 Verification check - Server data:', {
-                                success: verifyData.success,
-                                selectionsCount: verifyData.data?.selections?.length || 0,
-                                savedSelectionsCount: verifyData.data?.savedSelections?.length || 0,
-                                userId: verifyData.userId,
-                                error: verifyData.error
+
+                            // Load existing data from localStorage
+                            const existingData = loadUserDataFromStorage(userId);
+                            console.log('📥 Existing data:', {
+                                selections: existingData.selections?.length || 0,
+                                savedSelections: existingData.savedSelections?.length || 0
                             });
-                        } catch (verifyError) {
-                            console.error('❌ Verification check failed:', verifyError);
+
+                            // Merge imported selections with existing data
+                            const existingIds = new Set(existingData.selections.map(s => s.id));
+                            const newSelections = importedData.selections.filter(s => !existingIds.has(s.id));
+
+                            const mergedData = {
+                                ...existingData,
+                                selections: [...existingData.selections, ...newSelections],
+                                lastUpdated: new Date().toISOString(),
+                                version: 2
+                            };
+
+                            console.log('📥 Merged data:', {
+                                selections: mergedData.selections?.length || 0,
+                                newSelections: newSelections.length,
+                                savedSelections: mergedData.savedSelections?.length || 0
+                            });
+
+                            // Save merged data to localStorage
+                            saveUserDataToStorage(userId, mergedData);
+
+                            // Update the UI state immediately
+                            selectionHistory = mergedData.selections || [];
+                            savedSelections = mergedData.savedSelections || [];
+
+                            console.log('📥 UI state updated:', {
+                                selectionHistory: selectionHistory.length,
+                                savedSelections: savedSelections.length
+                            });
+
+                            // Show success message
+                            setUploadStatus(`✅ Successfully imported ${newSelections.length} new selections!`);
+
+                            // Refresh the UI to show the new data
+                            renderSelectionHistory();
+
+                        } else {
+                            // Fallback for old server-side storage (shouldn't happen now)
+                            setUploadStatus(`✅ Successfully imported ${uploadData.data?.newSelections || 0} selections!`);
+
+                            console.log('📥 Upload successful, refreshing user session...');
+
+                            // Refresh the user session to load the new data
+                            await initializeUserSession();
                         }
-
-                        // Debug: Log state after refresh
-                        console.log('After upload refresh - selectionHistory length:', selectionHistory.length);
-                        console.log('After upload refresh - savedSelections length:', savedSelections.length);
 
                         // Show success details
                         if (uploadData.data) {
-                            const details = [];
-                            if (uploadData.data.addedCount > 0) {
-                                details.push(`${uploadData.data.addedCount} new selections imported`);
-                            }
-                            if (uploadData.data.duplicatesSkipped > 0) {
-                                details.push(`${uploadData.data.duplicatesSkipped} duplicates skipped`);
-                            }
-                            if (details.length > 0) {
-                                setUploadStatus(`✅ Import complete! ${details.join(', ')}.`);
+                            const newCount = uploadData.data.newSelections || 0;
+                            if (newCount > 0) {
+                                setUploadStatus(`✅ Import complete! ${newCount} new selections imported.`);
                             }
                         }
 
