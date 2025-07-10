@@ -70,11 +70,12 @@
 
         .card-compact {
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(229, 231, 235, 0.8);
+            transition: all 0.2s ease;
         }
 
         /* Enhanced Buttons with Better Contrast */
@@ -1548,21 +1549,42 @@
             const [historicalStats, setHistoricalStats] = useState(null);
             const [isLoadingHistory, setIsLoadingHistory] = useState(false);
             const [historicalRecordsLimit, setHistoricalRecordsLimit] = useState(500);
-            
+
             const [quickSelectionSets, setQuickSelectionSets] = useState([]);
-            
+
+            // Selection History Management
+            const [selectionHistory, setSelectionHistory] = useState([]);
+            const [savedSelections, setSavedSelections] = useState([]);
+            const [showSaveDialog, setShowSaveDialog] = useState(false);
+            const [selectedToSave, setSelectedToSave] = useState(null);
+            const [showHistoryInput, setShowHistoryInput] = useState(false);
+            const [manualSelectionInput, setManualSelectionInput] = useState({
+                numbers: '',
+                powerball: '',
+                datePlayed: '',
+                result: 'pending',
+                winAmount: '',
+                notes: ''
+            });
+
             const [aiApiKey, setAiApiKey] = useState('');
             const [isLoadingAI, setIsLoadingAI] = useState(false);
             const [aiEnabled, setAiEnabled] = useState(false);
-            
+
             const [systemPerformance, setSystemPerformance] = useState(null);
+
+            // Load saved data on component mount
+            useEffect(() => {
+                loadSelectionHistory();
+                loadSavedSelections();
+            }, []);
 
             useEffect(() => {
                 const initializeData = async () => {
                     setDataStatus('🚀 Initializing hybrid Claude Opus 4 + 6 algorithms system...');
                     await fetchLatestPowerballData();
                     await fetchHistoricalData();
-                    
+
                     const performance = window.getSystemPerformanceMetrics();
                     setSystemPerformance(performance);
                 };
@@ -1648,34 +1670,177 @@
                     setHistoricalStats(null);
                     setHistoricalDataAvailable(false);
                 }
-                
+
                 setIsLoadingHistory(false);
             };
 
-            const handleDataLimitChange = async (newLimit) => {
-                setHistoricalRecordsLimit(newLimit);
-                await fetchHistoricalData(newLimit);
+            // Selection History Management Functions
+            const loadSelectionHistory = () => {
+                try {
+                    const saved = localStorage.getItem('powerball_selection_history');
+                    if (saved) {
+                        const history = JSON.parse(saved);
+                        setSelectionHistory(history);
+                    }
+                } catch (error) {
+                    console.error('Error loading selection history:', error);
+                }
+            };
+
+            const loadSavedSelections = () => {
+                try {
+                    const saved = localStorage.getItem('powerball_saved_selections');
+                    if (saved) {
+                        const selections = JSON.parse(saved);
+                        setSavedSelections(selections);
+                    }
+                } catch (error) {
+                    console.error('Error loading saved selections:', error);
+                }
+            };
+
+            const saveSelectionHistory = (history) => {
+                try {
+                    localStorage.setItem('powerball_selection_history', JSON.stringify(history));
+                    setSelectionHistory(history);
+                } catch (error) {
+                    console.error('Error saving selection history:', error);
+                }
+            };
+
+            const saveSavedSelections = (selections) => {
+                try {
+                    localStorage.setItem('powerball_saved_selections', JSON.stringify(selections));
+                    setSavedSelections(selections);
+                } catch (error) {
+                    console.error('Error saving selections:', error);
+                }
+            };
+
+            const saveSelectionForTracking = (selection, notes = '') => {
+                const newEntry = {
+                    id: Date.now(),
+                    ...selection,
+                    dateSaved: new Date().toISOString(),
+                    datePlayed: null,
+                    result: 'pending',
+                    winAmount: 0,
+                    notes: notes,
+                    source: selection.claudeGenerated ? 'Claude Opus 4' : 'Algorithm'
+                };
+
+                const updatedHistory = [...selectionHistory, newEntry];
+                saveSelectionHistory(updatedHistory);
+                setShowSaveDialog(false);
+                setSelectedToSave(null);
+            };
+
+            const addManualSelection = () => {
+                const numbers = manualSelectionInput.numbers.split(',').map(n => parseInt(n.trim())).filter(n => n >= 1 && n <= 69);
+                const powerball = parseInt(manualSelectionInput.powerball);
+
+                if (numbers.length !== 5 || !powerball || powerball < 1 || powerball > 26) {
+                    alert('Please enter 5 valid numbers (1-69) and 1 Powerball (1-26)');
+                    return;
+                }
+
+                const newEntry = {
+                    id: Date.now(),
+                    name: 'Manual Entry',
+                    numbers: numbers.sort((a, b) => a - b),
+                    powerball: powerball,
+                    strategy: 'Manual',
+                    confidence: 0,
+                    description: 'Manually entered selection',
+                    dateSaved: new Date().toISOString(),
+                    datePlayed: manualSelectionInput.datePlayed || new Date().toISOString().split('T')[0],
+                    result: manualSelectionInput.result,
+                    winAmount: parseFloat(manualSelectionInput.winAmount) || 0,
+                    notes: manualSelectionInput.notes,
+                    source: 'Manual Entry'
+                };
+
+                const updatedHistory = [...selectionHistory, newEntry];
+                saveSelectionHistory(updatedHistory);
+
+                // Reset form
+                setManualSelectionInput({
+                    numbers: '',
+                    powerball: '',
+                    datePlayed: '',
+                    result: 'pending',
+                    winAmount: '',
+                    notes: ''
+                });
+                setShowHistoryInput(false);
+            };
+
+            const updateSelectionResult = (id, result, winAmount = 0) => {
+                const updatedHistory = selectionHistory.map(entry =>
+                    entry.id === id
+                        ? { ...entry, result, winAmount: parseFloat(winAmount) || 0, dateUpdated: new Date().toISOString() }
+                        : entry
+                );
+                saveSelectionHistory(updatedHistory);
+            };
+
+            const deleteSelectionEntry = (id) => {
+                const updatedHistory = selectionHistory.filter(entry => entry.id !== id);
+                saveSelectionHistory(updatedHistory);
+            };
+
+            const calculatePerformanceStats = () => {
+                if (selectionHistory.length === 0) return null;
+
+                const totalPlayed = selectionHistory.length;
+                const wins = selectionHistory.filter(entry => entry.result === 'win').length;
+                const losses = selectionHistory.filter(entry => entry.result === 'loss').length;
+                const pending = selectionHistory.filter(entry => entry.result === 'pending').length;
+                const totalWinnings = selectionHistory.reduce((sum, entry) => sum + (entry.winAmount || 0), 0);
+                const winRate = totalPlayed > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : 0;
+
+                const sourceStats = {};
+                selectionHistory.forEach(entry => {
+                    if (!sourceStats[entry.source]) {
+                        sourceStats[entry.source] = { total: 0, wins: 0, winnings: 0 };
+                    }
+                    sourceStats[entry.source].total++;
+                    if (entry.result === 'win') {
+                        sourceStats[entry.source].wins++;
+                        sourceStats[entry.source].winnings += entry.winAmount || 0;
+                    }
+                });
+
+                return {
+                    totalPlayed,
+                    wins,
+                    losses,
+                    pending,
+                    totalWinnings,
+                    winRate,
+                    sourceStats
+                };
             };
 
             const enableAI = async () => {
                 const trimmedKey = aiApiKey.trim();
-                
+
                 if (!trimmedKey) {
                     alert('Please enter your Anthropic API key');
                     return;
                 }
-                
+
                 if (!window.claudeAnalyzer.validateApiKey(trimmedKey)) {
                     alert('Please enter a valid Anthropic API key (starts with sk-ant-)');
                     return;
                 }
-                
+
                 try {
                     window.claudeAnalyzer.initialize(trimmedKey);
-                    
+
                     setDataStatus('🔄 Testing Claude Opus 4 hybrid connection...');
                     setIsLoadingAI(true);
-                    
+
                     const connectionTest = await window.claudeAnalyzer.testConnection();
                     
                     if (connectionTest.success) {
@@ -1927,15 +2092,195 @@
                                                 }, 'PB: ' + selection.powerball)
                                             ),
                                             
-                                            React.createElement('p', { className: 'text-xs text-gray-600 line-clamp-2' }, 
-                                                selection.description && selection.description.length > 80 ? 
-                                                    selection.description.substring(0, 80) + '...' : 
+                                            React.createElement('p', { className: 'text-xs text-gray-600 line-clamp-2 mb-2' },
+                                                selection.description && selection.description.length > 80 ?
+                                                    selection.description.substring(0, 80) + '...' :
                                                     selection.description || 'Advanced mathematical analysis'
+                                            ),
+
+                                            React.createElement('div', { className: 'flex gap-2 mt-2' },
+                                                React.createElement('button', {
+                                                    onClick: () => {
+                                                        setSelectedToSave(selection);
+                                                        setShowSaveDialog(true);
+                                                    },
+                                                    className: 'btn btn-sm bg-green-100 text-green-700 hover:bg-green-200 border border-green-300 text-xs px-2 py-1'
+                                                }, '💾 Save & Track'),
+                                                React.createElement('button', {
+                                                    onClick: () => {
+                                                        const numbersText = selection.numbers.join(', ');
+                                                        const selectionText = `Numbers: ${numbersText} | Powerball: ${selection.powerball}`;
+                                                        navigator.clipboard.writeText(selectionText);
+                                                        // Could add a toast notification here
+                                                    },
+                                                    className: 'btn btn-sm bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300 text-xs px-2 py-1'
+                                                }, '📋 Copy')
                                             )
                                         );
                                     })
                                 ) : React.createElement('div', { className: 'text-center py-6 text-gray-500' },
                                     React.createElement('p', { className: 'text-sm' }, 'No selections generated yet.')
+                                )
+                            )
+                        );
+
+                    case 'history':
+                        const performanceStats = calculatePerformanceStats();
+
+                        return React.createElement('div', { className: 'space-y-6' },
+                            // Performance Overview Card
+                            performanceStats ? React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4 text-gray-900' }, '📈 Performance Overview'),
+                                React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4 mb-4' },
+                                    React.createElement('div', { className: 'text-center p-3 bg-blue-50 rounded-lg' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-blue-600' }, performanceStats.totalPlayed),
+                                        React.createElement('div', { className: 'text-sm text-gray-600' }, 'Total Played')
+                                    ),
+                                    React.createElement('div', { className: 'text-center p-3 bg-green-50 rounded-lg' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-green-600' }, performanceStats.wins),
+                                        React.createElement('div', { className: 'text-sm text-gray-600' }, 'Wins')
+                                    ),
+                                    React.createElement('div', { className: 'text-center p-3 bg-red-50 rounded-lg' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-red-600' }, performanceStats.losses),
+                                        React.createElement('div', { className: 'text-sm text-gray-600' }, 'Losses')
+                                    ),
+                                    React.createElement('div', { className: 'text-center p-3 bg-purple-50 rounded-lg' },
+                                        React.createElement('div', { className: 'text-2xl font-bold text-purple-600' }, performanceStats.winRate + '%'),
+                                        React.createElement('div', { className: 'text-sm text-gray-600' }, 'Win Rate')
+                                    )
+                                ),
+                                React.createElement('div', { className: 'text-center p-3 bg-yellow-50 rounded-lg' },
+                                    React.createElement('div', { className: 'text-2xl font-bold text-yellow-600' }, '$' + performanceStats.totalWinnings.toFixed(2)),
+                                    React.createElement('div', { className: 'text-sm text-gray-600' }, 'Total Winnings')
+                                )
+                            ) : null,
+
+                            // Source Performance Breakdown
+                            performanceStats && Object.keys(performanceStats.sourceStats).length > 0 ? React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4 text-gray-900' }, '🎯 Performance by Source'),
+                                React.createElement('div', { className: 'space-y-3' },
+                                    Object.entries(performanceStats.sourceStats).map(([source, stats]) => {
+                                        const winRate = stats.total > 0 ? ((stats.wins / stats.total) * 100).toFixed(1) : 0;
+                                        return React.createElement('div', { key: source, className: 'flex items-center justify-between p-3 bg-gray-50 rounded-lg' },
+                                            React.createElement('div', null,
+                                                React.createElement('div', { className: 'font-medium' }, source),
+                                                React.createElement('div', { className: 'text-sm text-gray-600' }, `${stats.wins}/${stats.total} wins (${winRate}%)`)
+                                            ),
+                                            React.createElement('div', { className: 'text-right' },
+                                                React.createElement('div', { className: 'font-medium text-green-600' }, '$' + stats.winnings.toFixed(2)),
+                                                React.createElement('div', { className: 'text-sm text-gray-600' }, 'Winnings')
+                                            )
+                                        );
+                                    })
+                                )
+                            ) : null,
+
+                            // Action Buttons
+                            React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4 text-gray-900' }, '⚡ Quick Actions'),
+                                React.createElement('div', { className: 'flex gap-3 flex-wrap' },
+                                    React.createElement('button', {
+                                        onClick: () => setShowHistoryInput(true),
+                                        className: 'btn btn-primary'
+                                    }, '➕ Add Previous Selection'),
+                                    React.createElement('button', {
+                                        onClick: () => {
+                                            if (confirm('Are you sure you want to clear all selection history? This cannot be undone.')) {
+                                                saveSelectionHistory([]);
+                                            }
+                                        },
+                                        className: 'btn btn-secondary'
+                                    }, '🗑️ Clear History'),
+                                    React.createElement('button', {
+                                        onClick: () => {
+                                            const dataStr = JSON.stringify(selectionHistory, null, 2);
+                                            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                                            const url = URL.createObjectURL(dataBlob);
+                                            const link = document.createElement('a');
+                                            link.href = url;
+                                            link.download = 'powerball_selection_history.json';
+                                            link.click();
+                                        },
+                                        className: 'btn btn-secondary'
+                                    }, '💾 Export Data')
+                                )
+                            ),
+
+                            // Selection History List
+                            React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4 text-gray-900' }, '📋 Selection History'),
+                                selectionHistory.length > 0 ? React.createElement('div', { className: 'space-y-3' },
+                                    selectionHistory.slice().reverse().map(entry => {
+                                        const isWin = entry.result === 'win';
+                                        const isLoss = entry.result === 'loss';
+                                        const isPending = entry.result === 'pending';
+
+                                        return React.createElement('div', {
+                                            key: entry.id,
+                                            className: 'p-4 border rounded-lg ' + (
+                                                isWin ? 'border-green-200 bg-green-50' :
+                                                isLoss ? 'border-red-200 bg-red-50' :
+                                                'border-gray-200 bg-gray-50'
+                                            )
+                                        },
+                                            React.createElement('div', { className: 'flex items-start justify-between mb-2' },
+                                                React.createElement('div', null,
+                                                    React.createElement('h4', { className: 'font-medium' }, entry.name),
+                                                    React.createElement('p', { className: 'text-sm text-gray-600' }, entry.source)
+                                                ),
+                                                React.createElement('div', { className: 'flex gap-2' },
+                                                    React.createElement('select', {
+                                                        value: entry.result,
+                                                        onChange: (e) => {
+                                                            const newResult = e.target.value;
+                                                            if (newResult === 'win') {
+                                                                const winAmount = prompt('Enter win amount (e.g., 4.00):');
+                                                                if (winAmount !== null) {
+                                                                    updateSelectionResult(entry.id, newResult, winAmount);
+                                                                }
+                                                            } else {
+                                                                updateSelectionResult(entry.id, newResult, 0);
+                                                            }
+                                                        },
+                                                        className: 'text-xs px-2 py-1 border rounded'
+                                                    },
+                                                        React.createElement('option', { value: 'pending' }, 'Pending'),
+                                                        React.createElement('option', { value: 'win' }, 'Win'),
+                                                        React.createElement('option', { value: 'loss' }, 'Loss')
+                                                    ),
+                                                    React.createElement('button', {
+                                                        onClick: () => deleteSelectionEntry(entry.id),
+                                                        className: 'text-red-600 hover:text-red-800 text-xs px-2 py-1'
+                                                    }, '🗑️')
+                                                )
+                                            ),
+
+                                            React.createElement('div', { className: 'flex items-center gap-3 mb-2' },
+                                                React.createElement('div', { className: 'flex gap-1.5' },
+                                                    entry.numbers.map(num =>
+                                                        React.createElement('span', {
+                                                            key: num,
+                                                            className: 'number-display text-xs'
+                                                        }, num)
+                                                    )
+                                                ),
+                                                React.createElement('span', { className: 'powerball-display text-xs' }, 'PB: ' + entry.powerball)
+                                            ),
+
+                                            React.createElement('div', { className: 'flex items-center justify-between text-xs text-gray-600' },
+                                                React.createElement('div', null,
+                                                    React.createElement('span', null, 'Saved: ' + new Date(entry.dateSaved).toLocaleDateString()),
+                                                    entry.datePlayed ? React.createElement('span', { className: 'ml-3' }, 'Played: ' + new Date(entry.datePlayed).toLocaleDateString()) : null
+                                                ),
+                                                entry.winAmount > 0 ? React.createElement('span', { className: 'font-medium text-green-600' }, '$' + entry.winAmount.toFixed(2)) : null
+                                            ),
+
+                                            entry.notes ? React.createElement('p', { className: 'text-xs text-gray-600 mt-2' }, entry.notes) : null
+                                        );
+                                    })
+                                ) : React.createElement('div', { className: 'text-center py-6 text-gray-500' },
+                                    React.createElement('p', null, 'No selections saved yet.'),
+                                    React.createElement('p', { className: 'text-sm mt-2' }, 'Save selections from the AI Hybrid tab or add previous selections manually.')
                                 )
                             )
                         );
@@ -2155,6 +2500,7 @@
                         [
                             { id: 'quick-selection', label: aiEnabled ? '🤖✨ AI Hybrid' : '🧮 Algorithms', icon: aiEnabled ? '🤖✨' : '🧮' },
                             { id: 'calculator', label: '🎯 Calculator', icon: '🎯' },
+                            { id: 'history', label: '📈 Selection History', icon: '📈' },
                             { id: 'tax-calculator', label: '💰 Tax Calculator', icon: '💰' },
                             { id: 'analysis', label: '📊 Analysis', icon: '📊' }
                         ].map(tab =>
@@ -2193,6 +2539,201 @@
                 )
             );
         }
+
+        // Save Selection Dialog Component
+        const SaveSelectionDialog = () => {
+            if (!showSaveDialog || !selectedToSave) return null;
+
+            return React.createElement('div', {
+                className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50',
+                onClick: (e) => {
+                    if (e.target === e.currentTarget) {
+                        setShowSaveDialog(false);
+                        setSelectedToSave(null);
+                    }
+                }
+            },
+                React.createElement('div', { className: 'bg-white rounded-lg p-6 max-w-md w-full mx-4' },
+                    React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '💾 Save Selection for Tracking'),
+
+                    React.createElement('div', { className: 'mb-4 p-3 bg-gray-50 rounded-lg' },
+                        React.createElement('div', { className: 'font-medium mb-2' }, selectedToSave.name),
+                        React.createElement('div', { className: 'flex items-center gap-3 mb-2' },
+                            React.createElement('div', { className: 'flex gap-1.5' },
+                                selectedToSave.numbers.map(num =>
+                                    React.createElement('span', {
+                                        key: num,
+                                        className: 'number-display text-xs'
+                                    }, num)
+                                )
+                            ),
+                            React.createElement('span', { className: 'powerball-display text-xs' }, 'PB: ' + selectedToSave.powerball)
+                        ),
+                        React.createElement('p', { className: 'text-sm text-gray-600' }, selectedToSave.description)
+                    ),
+
+                    React.createElement('div', { className: 'mb-4' },
+                        React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Notes (optional):'),
+                        React.createElement('textarea', {
+                            placeholder: 'Add any notes about this selection...',
+                            className: 'w-full p-2 border rounded-lg text-sm',
+                            rows: 3,
+                            id: 'saveNotes'
+                        })
+                    ),
+
+                    React.createElement('div', { className: 'flex gap-3' },
+                        React.createElement('button', {
+                            onClick: () => {
+                                const notes = document.getElementById('saveNotes').value;
+                                saveSelectionForTracking(selectedToSave, notes);
+                            },
+                            className: 'btn btn-primary flex-1'
+                        }, '💾 Save & Track'),
+                        React.createElement('button', {
+                            onClick: () => {
+                                setShowSaveDialog(false);
+                                setSelectedToSave(null);
+                            },
+                            className: 'btn btn-secondary'
+                        }, 'Cancel')
+                    )
+                )
+            );
+        };
+
+        // Manual Selection Input Dialog Component
+        const ManualSelectionDialog = () => {
+            if (!showHistoryInput) return null;
+
+            return React.createElement('div', {
+                className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50',
+                onClick: (e) => {
+                    if (e.target === e.currentTarget) {
+                        setShowHistoryInput(false);
+                    }
+                }
+            },
+                React.createElement('div', { className: 'bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-96 overflow-y-auto' },
+                    React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '➕ Add Previous Selection'),
+
+                    React.createElement('div', { className: 'space-y-4' },
+                        React.createElement('div', null,
+                            React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Numbers (1-69):'),
+                            React.createElement('input', {
+                                type: 'text',
+                                placeholder: 'e.g., 5, 12, 23, 34, 45',
+                                value: manualSelectionInput.numbers,
+                                onChange: (e) => setManualSelectionInput({...manualSelectionInput, numbers: e.target.value}),
+                                className: 'w-full p-2 border rounded-lg text-sm'
+                            })
+                        ),
+
+                        React.createElement('div', null,
+                            React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Powerball (1-26):'),
+                            React.createElement('input', {
+                                type: 'number',
+                                min: '1',
+                                max: '26',
+                                placeholder: 'e.g., 12',
+                                value: manualSelectionInput.powerball,
+                                onChange: (e) => setManualSelectionInput({...manualSelectionInput, powerball: e.target.value}),
+                                className: 'w-full p-2 border rounded-lg text-sm'
+                            })
+                        ),
+
+                        React.createElement('div', null,
+                            React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Date Played:'),
+                            React.createElement('input', {
+                                type: 'date',
+                                value: manualSelectionInput.datePlayed,
+                                onChange: (e) => setManualSelectionInput({...manualSelectionInput, datePlayed: e.target.value}),
+                                className: 'w-full p-2 border rounded-lg text-sm'
+                            })
+                        ),
+
+                        React.createElement('div', null,
+                            React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Result:'),
+                            React.createElement('select', {
+                                value: manualSelectionInput.result,
+                                onChange: (e) => setManualSelectionInput({...manualSelectionInput, result: e.target.value}),
+                                className: 'w-full p-2 border rounded-lg text-sm'
+                            },
+                                React.createElement('option', { value: 'pending' }, 'Pending'),
+                                React.createElement('option', { value: 'win' }, 'Win'),
+                                React.createElement('option', { value: 'loss' }, 'Loss')
+                            )
+                        ),
+
+                        manualSelectionInput.result === 'win' ? React.createElement('div', null,
+                            React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Win Amount ($):'),
+                            React.createElement('input', {
+                                type: 'number',
+                                step: '0.01',
+                                min: '0',
+                                placeholder: 'e.g., 4.00',
+                                value: manualSelectionInput.winAmount,
+                                onChange: (e) => setManualSelectionInput({...manualSelectionInput, winAmount: e.target.value}),
+                                className: 'w-full p-2 border rounded-lg text-sm'
+                            })
+                        ) : null,
+
+                        React.createElement('div', null,
+                            React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Notes (optional):'),
+                            React.createElement('textarea', {
+                                placeholder: 'Add any notes...',
+                                value: manualSelectionInput.notes,
+                                onChange: (e) => setManualSelectionInput({...manualSelectionInput, notes: e.target.value}),
+                                className: 'w-full p-2 border rounded-lg text-sm',
+                                rows: 3
+                            })
+                        )
+                    ),
+
+                    React.createElement('div', { className: 'flex gap-3 mt-6' },
+                        React.createElement('button', {
+                            onClick: addManualSelection,
+                            className: 'btn btn-primary flex-1'
+                        }, '➕ Add Selection'),
+                        React.createElement('button', {
+                            onClick: () => setShowHistoryInput(false),
+                            className: 'btn btn-secondary'
+                        }, 'Cancel')
+                    )
+                )
+            );
+        };
+
+        // Return the main component with dialogs
+        return React.createElement('div', { className: 'min-h-screen bg-gray-50' },
+            React.createElement('div', { className: 'container mx-auto px-4 py-6' },
+                React.createElement('div', { className: 'max-w-6xl mx-auto' },
+                    renderHeader(),
+                    renderTabContent(),
+
+                    React.createElement('div', { className: 'mt-6 text-center text-xs text-gray-500' },
+                        React.createElement('p', null,
+                            '🎰 Claude Opus 4 + 6 Algorithms Hybrid Lottery System • Educational purposes only'
+                        ),
+                        React.createElement('p', { className: 'mt-1' },
+                            'Data: ',
+                            React.createElement('span', {
+                                className: liveDataAvailable ? 'text-green-600' : 'text-orange-600'
+                            }, liveDataAvailable ? 'Live Connected' : 'Offline'),
+                            ' • AI: ',
+                            React.createElement('span', {
+                                className: aiEnabled ? 'text-purple-600' : 'text-gray-600'
+                            }, aiEnabled ? 'Opus 4 Active' : 'Local Only'),
+                            historicalStats ? ' • Using ' + historicalStats.totalDrawings + ' drawings' : ''
+                        )
+                    )
+                )
+            ),
+
+            // Render dialogs
+            React.createElement(SaveSelectionDialog),
+            React.createElement(ManualSelectionDialog)
+        );
 
         ReactDOM.render(React.createElement(AdvancedLotterySystem), document.getElementById('root'));
     </script>
