@@ -10,9 +10,30 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS - CDN for rapid prototyping -->
+    <!-- Note: For production deployment, consider installing Tailwind CSS as a PostCSS plugin -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <script>
+        // Suppress development warnings for this demo application
+        if (typeof console !== 'undefined' && console.warn) {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                const message = args[0];
+                    if (message && message.includes) {
+                // Suppress Tailwind CDN production warning
+                if (message.includes('cdn.tailwindcss.com should not be used in production')) {
+            return;
+        }
+    // Suppress Babel in-browser transformer warning
+    if (message.includes('You are using the in-browser Babel transformer')) {
+    return;
+    }
+    }
+    originalWarn.apply(console, args);
+    };
+    }
+    </script>
+
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎰</text></svg>">
     
@@ -2530,10 +2551,19 @@
                     const data = await response.json();
                     console.log('📋 Response data:', data);
 
-                    if (data.success && data.data) {
-                        console.log('✅ Powerball data received:', data.data);
-                        setCurrentJackpot(data.data);
-                        setNextDrawDate(data.data.nextDrawDate || '');
+                    if (data.success && (data.jackpot || data.latestNumbers)) {
+                        console.log('✅ Powerball data received:', data);
+
+                        // Set jackpot data if available
+                        if (data.jackpot) {
+                            setCurrentJackpot(data.jackpot);
+                        }
+
+                        // Set next draw date if available
+                        if (data.nextDrawing) {
+                            setNextDrawDate(data.nextDrawing.date || '');
+                        }
+
                         setLiveDataAvailable(true);
                         setLastUpdated(new Date().toLocaleString());
                         setDataStatus('✅ Latest Powerball data updated successfully!');
@@ -2563,9 +2593,9 @@
                     const data = await response.json();
                     console.log('📋 Response data:', data);
 
-                    if (data.success && data.data) {
-                        console.log('✅ Historical data received:', data.data.totalDrawings, 'drawings');
-                        setHistoricalStats(data.data);
+                    if (data.success && data.drawings) {
+                        console.log('✅ Historical data received:', data.drawings.length, 'drawings');
+                        setHistoricalStats(data);
                         setHistoricalDataAvailable(true);
                         setDataStatus('✅ Historical data loaded successfully!');
                     } else {
