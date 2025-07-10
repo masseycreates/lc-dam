@@ -3,8 +3,6 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-
-import path from 'path';
 // Simple file-based storage directory - use absolute path for consistency
 const STORAGE_DIR = process.env.VERCEL ? '/tmp/lottery-selections' : path.resolve('./data/lottery-selections');
 console.log('Upload API - Storage directory configured as:', STORAGE_DIR, 'CWD:', process.cwd());
