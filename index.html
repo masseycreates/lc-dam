@@ -1952,11 +1952,18 @@
             const initializeUserSession = async () => {
                 setIsLoadingUserData(true);
                 try {
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+
+                    // Include user ID header if we have one
+                    if (userId) {
+                        headers['X-User-ID'] = userId;
+                    }
+
                     const response = await fetch('/api/selection-history', {
                         method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
+                        headers: headers
                     });
 
                     if (response.ok) {
