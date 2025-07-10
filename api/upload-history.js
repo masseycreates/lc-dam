@@ -351,26 +351,54 @@ export default async function handler(req, res) {
         // Clean and validate the imported data
         const cleanedData = cleanImportedData(importedData);
 
-        console.log('Upload API - Cleaned data:', {
+        console.log('Upload API - Cleaned imported data:', {
             selectionsCount: cleanedData.selections.length,
-            savedSelectionsCount: cleanedData.savedSelections.length
+            savedSelectionsCount: cleanedData.savedSelections.length,
+            sampleSelection: cleanedData.selections[0] || null
         });
-        
+
         if (cleanedData.selections.length === 0 && cleanedData.savedSelections.length === 0) {
             return res.status(400).json({
                 success: false,
                 error: 'No valid selections found in the uploaded file. Please check the file format.'
             });
         }
-        
+
         // Load existing user data
         const existingData = await loadUserHistory(userId);
-        
+        console.log('Upload API - Existing data loaded:', {
+            selectionsCount: existingData.selections.length,
+            savedSelectionsCount: existingData.savedSelections.length,
+            sampleSelection: existingData.selections[0] || null
+        });
+
         // Merge the data
         const { merged, addedCount } = mergeHistoryData(existingData, cleanedData);
-        
-        // Save the merged data
-        await saveUserHistory(userId, merged);
+        console.log('Upload API - Data merged:', {
+            selectionsCount: merged.selections.length,
+            savedSelectionsCount: merged.savedSelections.length,
+            sampleSelection: merged.selections[0] || null
+        });
+
+        // Calculate statistics
+        const totalSelections = merged.selections.length + merged.savedSelections.length;
+        const existingTotal = existingData.selections.length + existingData.savedSelections.length;
+        const newSelections = totalSelections - existingTotal;
+
+        console.log('Upload API - Statistics:', {
+            totalSelections,
+            existingTotal,
+            newSelections,
+            willSaveFile: totalSelections > 0
+        });
+
+        // Save merged data
+        if (totalSelections > 0) {
+            await saveUserHistory(userId, merged);
+            console.log('Upload API - File save completed');
+        } else {
+            console.log('Upload API - No data to save, skipping file save');
+        }
 
         // Verify the data was saved correctly
         try {
