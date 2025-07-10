@@ -24,20 +24,14 @@ async function ensureStorageDir() {
             VERCEL: process.env.VERCEL,
             VERCEL_ENV: process.env.VERCEL_ENV,
             cwd: process.cwd(),
-            tmpdir: require('os').tmpdir()
+            tmpdir: os.tmpdir()
         });
 
         await fs.mkdir(STORAGE_DIR, { recursive: true });
         console.log('Upload API - Storage directory created/verified');
 
-        // Test write permissions
-        const testFile = path.join(STORAGE_DIR, 'test-write.txt');
-        await fs.writeFile(testFile, 'test');
-        await fs.unlink(testFile);
-        console.log('Upload API - Write permissions verified');
-
     } catch (error) {
-        console.error('Upload API - Failed to create storage directory or verify permissions:', error);
+        console.error('Upload API - Failed to create storage directory:', error);
         throw error;
     }
 }

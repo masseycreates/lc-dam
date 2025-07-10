@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Upload Test</title>
+</head>
+<body>
+    <h1>Simple Upload Test</h1>
+    <input type="file" id="fileInput" accept=".json">
+    <button onclick="testSimpleUpload()">Test Simple Upload</button>
+    <div id="results"></div>
+
+    <script>
+        async function testSimpleUpload() {
+            const resultsDiv = document.getElementById('results');
+            const fileInput = document.getElementById('fileInput');
+            
+            if (!fileInput.files[0]) {
+                resultsDiv.innerHTML = '<p style="color: red;">Please select a file first</p>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = 'Testing simple upload...';
+
+            try {
+                // Create form data
+                const formData = new FormData();
+                formData.append('historyFile', fileInput.files[0]);
+
+                // Upload
+                const response = await fetch('/api/upload-test', {
+                    method: 'POST',
+                    headers: {
+                        'X-User-ID': 'test_user_123'
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                console.log('Simple upload result:', result);
+
+                // Display results
+                resultsDiv.innerHTML = `
+                    <h3>Simple Upload Result (Status: ${response.status}):</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+
+            } catch (error) {
+                console.error('Simple upload error:', error);
+                resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
