@@ -2408,16 +2408,48 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        setUploadStatus(`✅ ${data.message}`);
+                        // Show success message
+                        setUploadStatus({ type: 'success', message: `Successfully imported ${response.addedCount} selections!` });
 
-                        // Debug: Log current state before refresh
-                        console.log('Before refresh - selectionHistory length:', selectionHistory.length);
-                        console.log('Before refresh - savedSelections length:', savedSelections.length);
-                        
-                        // Wait a bit for state to update, then check
-                        setTimeout(() => {
-                        console.log('🔍 Final state check - selectionHistory length:', selectionHistory.length);
-                        console.log('🔍 Final state check - savedSelections length:', savedSelections.length);
+                        // Immediately update local state with the uploaded data
+                        console.log('📥 Updating local state with uploaded data...');
+
+                        // Parse the uploaded file data and add to current state
+                        const fileContent = await file.text();
+                        const uploadedData = JSON.parse(fileContent);
+
+                        // Ensure uploadedData is an array
+                        const dataArray = Array.isArray(uploadedData) ? uploadedData : [uploadedData];
+
+                        // Process each uploaded selection
+                        const processedSelections = dataArray.map(item => ({
+                            id: item.id || Date.now() + Math.random(),
+                            numbers: item.numbers || [],
+                            powerball: item.powerball || 0,
+                            name: item.name || 'Imported Selection',
+                            source: item.source || 'Import',
+                            dateSaved: item.dateSaved || new Date().toISOString(),
+                            result: item.result || 'pending',
+                            winAmount: item.winAmount || 0,
+                            confidence: item.confidence || 0,
+                            strategy: item.strategy || 'Import'
+                        }));
+
+                        // Update selection history state immediately
+                        const updatedHistory = [...selectionHistory, ...processedSelections];
+                        setSelectionHistory(updatedHistory);
+
+                        // Also save to localStorage for persistence
+                        localStorage.setItem('powerball_selection_history', JSON.stringify(updatedHistory));
+
+                        console.log('✅ Local state updated:', {
+                            previousCount: selectionHistory.length,
+                            addedCount: processedSelections.length,
+                            newTotal: updatedHistory.length
+                        });
+
+                        // Refresh the user session to sync with server
+                        await initializeUserSession();
                         }, 100);
 
                         // Refresh the user session to load the new data

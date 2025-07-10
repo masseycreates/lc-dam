@@ -4,8 +4,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// Simple file-based storage directory
-const STORAGE_DIR = '/tmp/lottery-selections';
+// Simple file-based storage directory - use current directory for better persistence
+const STORAGE_DIR = process.env.VERCEL ? '/tmp/lottery-selections' : './data/lottery-selections';
 const MAX_HISTORY_SIZE = 1000; // Maximum selections per user
 const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 

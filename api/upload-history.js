@@ -4,8 +4,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// Simple file-based storage directory (same as selection-history.js)
-const STORAGE_DIR = '/tmp/lottery-selections';
+// Simple file-based storage directory - use current directory for better persistence
+const STORAGE_DIR = process.env.VERCEL ? '/tmp/lottery-selections' : './data/lottery-selections';
 const MAX_HISTORY_SIZE = 1000; // Maximum selections per user
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB max file size
 
