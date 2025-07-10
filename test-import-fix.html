@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .btn:hover { background: #0056b3; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Import Fix Test</h1>
+    
+    <div>
+        <input type="file" id="fileInput" accept=".json" />
+        <button class="btn" onclick="testImport()">Test Import (Fixed Version)</button>
+        <button class="btn" onclick="clearResults()">Clear</button>
+    </div>
+    
+    <div id="status"></div>
+    <div id="results"></div>
+
+    <script>
+        let selectionHistory = [];
+        let userId = 'test_user_' + Date.now();
+
+        function showStatus(message, type = 'info') {
+            document.getElementById('status').innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('status').innerHTML = '';
+        }
+
+        // Fixed upload function that doesn't refresh the page
+        const uploadHistoryData = async (file) => {
+            if (!file) {
+                showStatus('❌ Please select a file to upload.', 'error');
+                return;
+            }
+
+            // Validate file type
+            if (!file.name.toLowerCase().endsWith('.json')) {
+                showStatus('❌ Please select a JSON file (.json).', 'error');
+                return;
+            }
+
+            // Validate file size (10MB max)
+            if (file.size > 10 * 1024 * 1024) {
+                showStatus('❌ File too large. Maximum size is 10MB.', 'error');
+                return;
+            }
+
+            showStatus('⏳ Uploading and processing file...', 'info');
+
+            console.log('📤 Starting upload with userId:', userId);
+
+            try {
+                const formData = new FormData();
+                formData.append('historyFile', file);
+
+                const response = await fetch('/api/upload-history', {
+                    method: 'POST',
+                    headers: {
+                        'X-User-ID': userId
+                    },
+                    body: formData
+                });
+
+                const uploadData = await response.json();
+
+                console.log('📥 Upload response:', uploadData);
+
+                if (uploadData.success) {
+                    // Handle the new client-side storage response
+                    if (uploadData.data?.importedData && uploadData.data?.storageMethod === 'client-side') {
+                        console.log('📥 Processing client-side storage data...');
+
+                        // Get the imported data
+                        const importedData = uploadData.data.importedData;
+                        console.log('📥 Imported data:', {
+                            selections: importedData.selections?.length || 0,
+                            savedSelections: importedData.savedSelections?.length || 0
+                        });
+
+                        // Load existing data from localStorage
+                        const existingSelectionHistory = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+
+                        console.log('📥 Existing data:', {
+                            selections: existingSelectionHistory.length || 0
+                        });
+
+                        // Merge imported selections with existing data
+                        const existingIds = new Set(existingSelectionHistory.map(s => s.id));
+                        const newSelections = importedData.selections.filter(s => !existingIds.has(s.id));
+
+                        const mergedSelectionHistory = [...existingSelectionHistory, ...newSelections];
+
+                        console.log('📥 Merged data:', {
+                            selections: mergedSelectionHistory.length || 0,
+                            newSelections: newSelections.length
+                        });
+
+                        // Save merged data to localStorage
+                        localStorage.setItem('powerball_selection_history', JSON.stringify(mergedSelectionHistory));
+                        
+                        // Update the UI state directly instead of refreshing the page
+                        selectionHistory = mergedSelectionHistory;
+
+                        // Show success message
+                        showStatus(`✅ Successfully imported ${newSelections.length} new selections! Data is now available in the app.`, 'success');
+
+                        console.log('📥 Data saved to localStorage and UI updated successfully - NO PAGE REFRESH!');
+
+                        // Display the imported data
+                        document.getElementById('results').innerHTML = `
+                            <h3>Import Results</h3>
+                            <p><strong>Total selections after import:</strong> ${mergedSelectionHistory.length}</p>
+                            <p><strong>New selections imported:</strong> ${newSelections.length}</p>
+                            <p><strong>Status:</strong> ✅ Data persisted without page refresh!</p>
+                            <details>
+                                <summary>View imported selections</summary>
+                                <pre>${JSON.stringify(newSelections, null, 2)}</pre>
+                            </details>
+                        `;
+
+                    } else {
+                        // Fallback for old server-side storage
+                        showStatus(`✅ Successfully imported ${uploadData.data?.newSelections || 0} selections!`, 'success');
+                        console.log('📥 Upload successful, using server-side storage');
+                    }
+
+                } else {
+                    showStatus(`❌ Upload failed: ${uploadData.error}`, 'error');
+                    console.error('Upload failed:', uploadData.error);
+                }
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showStatus('❌ Upload failed. Please check your connection and try again.', 'error');
+            }
+        };
+
+        function testImport() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('❌ Please select a JSON file first.', 'error');
+                return;
+            }
+            
+            uploadHistoryData(file);
+        }
+
+        // Show initial status
+        showStatus('Ready to test import functionality. Select a JSON file and click "Test Import".', 'info');
+    </script>
+</body>
+</html>

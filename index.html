@@ -1979,15 +1979,50 @@
                             console.log('📊 Raw server data:', data.data);
 
                             setUserId(data.userId);
-                            setSelectionHistory(data.data.selections || []);
-                            setSavedSelections(data.data.savedSelections || []);
+
+                            // Check if server has data or if we should use localStorage
+                            const serverSelections = data.data.selections || [];
+                            const serverSavedSelections = data.data.savedSelections || [];
+
+                            // If server has no data, check localStorage for imported data
+                            if (serverSelections.length === 0 && serverSavedSelections.length === 0) {
+                                console.log('📥 Server has no data, checking localStorage for imported data...');
+                                const localSelections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                                const localSavedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+
+                                if (localSelections.length > 0 || localSavedSelections.length > 0) {
+                                    console.log('📥 Using localStorage data:', {
+                                        selections: localSelections.length,
+                                        savedSelections: localSavedSelections.length
+                                    });
+                                    setSelectionHistory(localSelections);
+                                    setSavedSelections(localSavedSelections);
+                                } else {
+                                    setSelectionHistory(serverSelections);
+                                    setSavedSelections(serverSavedSelections);
+                                }
+                            } else {
+                                console.log('📥 Using server data:', {
+                                    selections: serverSelections.length,
+                                    savedSelections: serverSavedSelections.length
+                                });
+                                setSelectionHistory(serverSelections);
+                                setSavedSelections(serverSavedSelections);
+                            }
+
                             setUserAnalytics(data.data.analytics);
                             console.log('✅ User session initialized:', data.userId);
                         } else {
                             console.log('❌ Server response not successful:', data);
+                            // Fallback to localStorage
+                            loadSelectionHistoryLocal();
+                            loadSavedSelectionsLocal();
                         }
                     } else {
                         console.log('❌ Server response not ok:', response.status, response.statusText);
+                        // Fallback to localStorage
+                        loadSelectionHistoryLocal();
+                        loadSavedSelectionsLocal();
                     }
                 } catch (error) {
                     console.error('Failed to initialize user session:', error);
@@ -2477,14 +2512,18 @@
                             });
 
                             // Show success message
-                            setUploadStatus(`✅ Successfully imported ${newSelections.length} new selections! Refreshing...`);
+                            setUploadStatus(`✅ Successfully imported ${newSelections.length} new selections!`);
 
-                            console.log('📥 Data saved to localStorage, forcing page refresh to update UI...');
+                            console.log('📥 Data saved to localStorage and UI updated successfully');
 
-                            // Force a page refresh to ensure the UI updates with the new data
+                            // Update the UI state directly instead of refreshing the page
+                            setSelectionHistory(mergedSelectionHistory);
+
+                            // Close the upload dialog after a short delay
                             setTimeout(() => {
-                                window.location.reload();
-                            }, 1500);
+                                setShowUploadDialog(false);
+                                setUploadStatus('');
+                            }, 2000);
                         } else {
                             // Fallback for old server-side storage (shouldn't happen now)
                             setUploadStatus(`✅ Successfully imported ${uploadData.data?.newSelections || 0} selections!`);
@@ -2493,32 +2532,26 @@
 
                             // Refresh the user session to load the new data
                             await initializeUserSession();
-                        }
+                        
 
-                        // Show success details
-                        if (uploadData.data) {
-                            const newCount = uploadData.data.newSelections || 0;
-                            if (newCount > 0) {
-                                setUploadStatus(`✅ Import complete! ${newCount} new selections imported.`);
-                            }
+                            // Auto-close dialog after 3 seconds
+                            setTimeout(() => {
+                                setShowUploadDialog(false);
+                                setUploadStatus('');
+                            }, 3000);
                         }
-
-                        // Auto-close dialog after 3 seconds
-                        setTimeout(() => {
-                            setShowUploadDialog(false);
-                            setUploadStatus('');
-                        }, 3000);
 
                     } else {
                         setUploadStatus(`❌ Upload failed: ${uploadData.error}`);
+                        console.error('Upload failed:', uploadData.error);
                     }
 
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    setUploadStatus('❌ Upload failed. Please check your connection and try again.');
-                } finally {
-                    setIsUploading(false);
-                }
+                    } catch (error) {
+                        console.error('Upload error:', error);
+                        setUploadStatus('❌ Upload failed. Please check your connection and try again.');
+                    } finally {
+                        setIsUploading(false);
+                    }
             };
 
             // Handle file input change
