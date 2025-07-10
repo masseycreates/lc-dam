@@ -4,17 +4,21 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// Simple file-based storage directory - use current directory for better persistence
-const STORAGE_DIR = process.env.VERCEL ? '/tmp/lottery-selections' : './data/lottery-selections';
+import path from 'path';
+// Simple file-based storage directory - use absolute path for consistency
+const STORAGE_DIR = process.env.VERCEL ? '/tmp/lottery-selections' : path.resolve('./data/lottery-selections');
+console.log('Upload API - Storage directory configured as:', STORAGE_DIR, 'CWD:', process.cwd());
 const MAX_HISTORY_SIZE = 1000; // Maximum selections per user
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB max file size
 
 // Ensure storage directory exists
 async function ensureStorageDir() {
     try {
+        console.log('Upload API - Ensuring storage directory exists:', STORAGE_DIR);
         await fs.mkdir(STORAGE_DIR, { recursive: true });
+        console.log('Upload API - Storage directory created/verified');
     } catch (error) {
-        console.error('Failed to create storage directory:', error);
+        console.error('Upload API - Failed to create storage directory:', error);
     }
 }
 
@@ -37,7 +41,9 @@ function generateUserId(req) {
 
 // Get user's selection history file path
 function getUserFilePath(userId) {
-    return path.join(STORAGE_DIR, `${userId}.json`);
+    const filePath = path.join(STORAGE_DIR, `${userId}.json`);
+    console.log('Upload API - Generated file path for user', userId, ':', filePath);
+    return filePath;
 }
 
 // Load existing user history
@@ -213,7 +219,9 @@ function mergeHistoryData(existingData, importedData) {
 async function saveUserHistory(userId, historyData) {
     await ensureStorageDir();
     const filePath = getUserFilePath(userId);
+    console.log('Upload API - Saving data to file:', filePath, 'Data size:', JSON.stringify(historyData).length);
     await fs.writeFile(filePath, JSON.stringify(historyData, null, 2));
+    console.log('Upload API - Data saved successfully');
 }
 
 // Parse multipart form data manually (simple implementation)
@@ -358,17 +366,32 @@ export default async function handler(req, res) {
         // Save the merged data
         await saveUserHistory(userId, merged);
 
-        console.log('Upload API - Data saved for user:', userId, 'Total selections:', merged.selections.length, 'Total saved:', merged.savedSelections.length);
+        // Verify the data was saved correctly
+        try {
+            const verifyPath = getUserFilePath(userId);
+            const verifyData = await fs.readFile(verifyPath, 'utf8');
+            const verifyParsed = JSON.parse(verifyData);
+            console.log('Upload API - Verification: File saved with', verifyParsed.selections?.length || 0, 'selections');
 
-        return res.status(200).json({
+            // List all files in storage directory
+            try {
+                const files = await fs.readdir(STORAGE_DIR);
+                console.log('Upload API - Storage directory contents:', files);
+            } catch (listError) {
+                console.error('Upload API - Could not list storage directory:', listError.message);
+            }
+        } catch (verifyError) {
+            console.error('Upload API - Verification failed:', verifyError.message);
+        }
+
+        res.status(200).json({
             success: true,
             message: `Successfully imported ${addedCount} new selections.`,
             data: {
-                userId,
-                addedCount,
                 totalSelections: merged.selections.length,
-                totalSavedSelections: merged.savedSelections.length,
-                duplicatesSkipped: cleanedData.selections.length + cleanedData.savedSelections.length - addedCount
+                newSelections: merged.selections.length - (existingData.selections.length || 0),
+                duplicatesSkipped: cleanedData.selections.length + cleanedData.savedSelections.length - addedCount,
+                userId
             }
         });
         

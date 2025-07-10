@@ -4,15 +4,18 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// Simple file-based storage directory - use current directory for better persistence
-const STORAGE_DIR = process.env.VERCEL ? '/tmp/lottery-selections' : './data/lottery-selections';
+// Simple file-based storage directory - use absolute path for consistency
+const STORAGE_DIR = process.env.VERCEL ? '/tmp/lottery-selections' : path.resolve('./data/lottery-selections');
+console.log('Selection History API - Storage directory configured as:', STORAGE_DIR, 'CWD:', process.cwd());
 const MAX_HISTORY_SIZE = 1000; // Maximum selections per user
 const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Ensure storage directory exists
 async function ensureStorageDir() {
     try {
+        console.log('Selection History API - Ensuring storage directory exists:', STORAGE_DIR);
         await fs.mkdir(STORAGE_DIR, { recursive: true });
+        console.log('Selection History API - Storage directory created/verified');
     } catch (error) {
         console.error('Failed to create storage directory:', error);
     }
@@ -38,16 +41,33 @@ function generateUserId(req) {
 
 // Get user's selection history file path
 function getUserFilePath(userId) {
-    return path.join(STORAGE_DIR, `${userId}.json`);
+    const filePath = path.join(STORAGE_DIR, `${userId}.json`);
+    console.log('Selection History API - Generated file path for user', userId, ':', filePath);
+    return filePath;
 }
 
 // Load user's selection history
 async function loadUserHistory(userId) {
     try {
         const filePath = getUserFilePath(userId);
+        console.log('Selection History API - Loading data for user:', userId, 'from path:', filePath);
+
+        // List all files in storage directory
+        try {
+            const files = await fs.readdir(STORAGE_DIR);
+            console.log('Selection History API - Storage directory contents:', files);
+        } catch (listError) {
+            console.error('Selection History API - Could not list storage directory:', listError.message);
+        }
+
         const data = await fs.readFile(filePath, 'utf8');
         const history = JSON.parse(data);
-        
+
+        console.log('Selection History API - File loaded successfully:', {
+            selectionsCount: history.selections?.length || 0,
+            savedSelectionsCount: history.savedSelections?.length || 0
+        });
+
         // Validate and clean up data
         if (!Array.isArray(history.selections)) {
             history.selections = [];
@@ -66,9 +86,10 @@ async function loadUserHistory(userId) {
                 lastAnalysisUpdate: new Date().toISOString()
             };
         }
-        
+
         return history;
     } catch (error) {
+        console.log('Selection History API - File not found or error loading for user:', userId, 'Error:', error.message);
         // Return empty history if file doesn't exist or is corrupted
         return {
             selections: [],
@@ -264,10 +285,12 @@ export default async function handler(req, res) {
     
     try {
         const userId = req.headers['x-user-id'] || generateUserId(req);
-        
+        console.log('Selection History API - Processing request for user:', userId, 'Method:', req.method, 'Has header:', !!req.headers['x-user-id']);
+
         switch (req.method) {
             case 'GET':
                 // Get user's selection history with analytics
+                await ensureStorageDir();
                 const { type } = req.query;
                 const history = await loadUserHistory(userId);
                 

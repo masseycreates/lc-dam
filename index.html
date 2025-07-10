@@ -2422,11 +2422,28 @@
 
                         console.log('📥 Upload successful, refreshing user session...');
 
-                        // Add a small delay to ensure server has processed the data
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                        // Add a longer delay to ensure server has processed the data
+                        await new Promise(resolve => setTimeout(resolve, 2000));
 
                         // Refresh the user session to load the new data from server
                         await initializeUserSession();
+
+                        // Additional verification: Make a direct call to check the data
+                        try {
+                            const verifyResponse = await fetch('/api/selection-history', {
+                                headers: {
+                                    'X-User-ID': userId
+                                }
+                            });
+                            const verifyData = await verifyResponse.json();
+                            console.log('📋 Verification check - Server data:', {
+                                success: verifyData.success,
+                                selectionsCount: verifyData.data?.selections?.length || 0,
+                                savedSelectionsCount: verifyData.data?.savedSelections?.length || 0
+                            });
+                        } catch (verifyError) {
+                            console.error('❌ Verification check failed:', verifyError);
+                        }
 
                         // Debug: Log state after refresh
                         console.log('After upload refresh - selectionHistory length:', selectionHistory.length);
