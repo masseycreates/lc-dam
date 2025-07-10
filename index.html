@@ -2412,13 +2412,20 @@
                         body: formData
                     });
 
-                    const data = await response.json();
+                    const uploadData = await response.json();
 
-                    console.log('📥 Upload response:', data);
+                    console.log('📥 Upload response:', uploadData);
+                    console.log('📥 Upload response details:', {
+                        success: uploadData.success,
+                        message: uploadData.message,
+                        userId: uploadData.data?.userId,
+                        totalSelections: uploadData.data?.totalSelections,
+                        newSelections: uploadData.data?.newSelections
+                    });
 
-                    if (data.success) {
+                    if (uploadData.success) {
                         // Show success message
-                        setUploadStatus(`✅ Successfully imported ${data.data.addedCount || 0} selections!`);
+                        setUploadStatus(`✅ Successfully imported ${uploadData.data.addedCount || 0} selections!`);
 
                         console.log('📥 Upload successful, refreshing user session...');
 
@@ -2436,10 +2443,13 @@
                                 }
                             });
                             const verifyData = await verifyResponse.json();
+                            console.log('📋 Verification check - Full server response:', verifyData);
                             console.log('📋 Verification check - Server data:', {
                                 success: verifyData.success,
                                 selectionsCount: verifyData.data?.selections?.length || 0,
-                                savedSelectionsCount: verifyData.data?.savedSelections?.length || 0
+                                savedSelectionsCount: verifyData.data?.savedSelections?.length || 0,
+                                userId: verifyData.userId,
+                                error: verifyData.error
                             });
                         } catch (verifyError) {
                             console.error('❌ Verification check failed:', verifyError);
@@ -3127,6 +3137,29 @@
                                         onClick: () => setShowUploadDialog(true),
                                         className: 'btn btn-primary'
                                     }, '📤 Import Data'),
+                                    // Manual refresh button for debugging
+                                    React.createElement('div', { className: 'mb-4' },
+                                        React.createElement('button', {
+                                            onClick: async () => {
+                                                console.log('🔄 Manual refresh triggered');
+                                                await initializeUserSession();
+                                            },
+                                            className: 'btn btn-secondary text-sm mr-2'
+                                        }, '🔄 Refresh Data'),
+                                        React.createElement('button', {
+                                            onClick: async () => {
+                                                console.log('🔍 Debug storage triggered');
+                                                try {
+                                                    const response = await fetch('/api/debug-storage');
+                                                    const data = await response.json();
+                                                    console.log('🗂️ Storage debug data:', data);
+                                                } catch (error) {
+                                                    console.error('❌ Storage debug failed:', error);
+                                                }
+                                            },
+                                            className: 'btn btn-secondary text-sm'
+                                        }, '🗂️ Debug Storage')
+                                    ),
                                     React.createElement('button', {
                                         onClick: async () => {
                                             console.log('🔄 Manual refresh triggered');
