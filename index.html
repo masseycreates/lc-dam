@@ -2476,17 +2476,15 @@
                                 savedSelections: savedSelections.length
                             });
 
-                            console.log('📥 UI state updated:', {
-                                selectionHistory: selectionHistory.length,
-                                savedSelections: savedSelections.length
-                            });
-
                             // Show success message
-                            setUploadStatus(`✅ Successfully imported ${newSelections.length} new selections!`);
+                            setUploadStatus(`✅ Successfully imported ${newSelections.length} new selections! Refreshing...`);
 
-                            // Refresh the UI to show the new data
-                            renderSelectionHistory();
+                            console.log('📥 Data saved to localStorage, forcing page refresh to update UI...');
 
+                            // Force a page refresh to ensure the UI updates with the new data
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
                         } else {
                             // Fallback for old server-side storage (shouldn't happen now)
                             setUploadStatus(`✅ Successfully imported ${uploadData.data?.newSelections || 0} selections!`);
