@@ -27,12 +27,22 @@ export default async function handler(req, res) {
         console.log('Enhancement Level:', enhancementLevel);
         console.log('Requested Sets:', requestedSets);
 
+        // Log saved selections usage
+        if (userAnalytics) {
+            console.log('User Analytics Summary:');
+            console.log('- Total Selections (including saved):', userAnalytics.totalSelections);
+            console.log('- Favorite Numbers from saved selections:', userAnalytics.patternInsights?.favoriteNumbers?.slice(0, 5));
+            console.log('- Preferred Strategies from saved selections:', Object.keys(userAnalytics.preferredStrategies || {}));
+            console.log('- Even/Odd Balance from saved selections:', userAnalytics.patternInsights?.evenOddBalance);
+        }
+
         // Generate base predictions
         const basePredictions = await generateBasePredictions(historicalData, requestedSets);
         
         // Enhance predictions with user patterns if available
         let enhancedPredictions = basePredictions;
         if (userAnalytics && userAnalytics.totalSelections > 0) {
+            console.log('🧠 Applying saved selections patterns to enhance predictions...');
             enhancedPredictions = await enhancePredictionsWithUserData(basePredictions, userAnalytics, enhancementLevel);
         }
 
@@ -47,6 +57,7 @@ export default async function handler(req, res) {
                     userEnhanced: userAnalytics && userAnalytics.totalSelections > 0,
                     enhancementLevel: enhancementLevel,
                     confidenceFactors: getConfidenceFactors(userAnalytics),
+                    savedSelectionsUsed: userAnalytics ? userAnalytics.totalSelections : 0,
                     generatedAt: new Date().toISOString()
                 }
             }
@@ -138,19 +149,25 @@ function calculateUserPatternEnhancement(prediction, userAnalytics, enhancementL
         avoidedNumberPenalty: 0,
         strategyPreference: 0,
         sumRangeAlignment: 0,
-        balancePreference: 0
+        balancePreference: 0,
+        savedSelectionsInfluence: 0
     };
 
     let enhancementScore = 0;
     let adjustedNumbers = [...prediction.numbers];
     let adjustedPowerball = prediction.powerball;
 
-    // Apply favorite number boost
+    console.log(`🔍 Enhancing prediction using patterns from ${userAnalytics.totalSelections} total selections (including saved)`);
+
+    // Apply favorite number boost (derived from saved selections)
     if (userAnalytics.patternInsights?.favoriteNumbers?.length > 0) {
         const favoriteNumbers = userAnalytics.patternInsights.favoriteNumbers.slice(0, 5);
         const favoriteInPrediction = prediction.numbers.filter(num => favoriteNumbers.includes(num)).length;
         factors.favoriteNumberBoost = favoriteInPrediction * 0.1;
         enhancementScore += factors.favoriteNumberBoost;
+
+        console.log(`📊 Favorite numbers from saved selections: ${favoriteNumbers.join(', ')}`);
+        console.log(`✨ ${favoriteInPrediction} favorite numbers found in prediction, boost: +${factors.favoriteNumberBoost.toFixed(2)}`);
 
         // For advanced enhancement, consider replacing some numbers with favorites
         if (enhancementLevel === 'advanced' && favoriteInPrediction < 2) {
@@ -158,27 +175,51 @@ function calculateUserPatternEnhancement(prediction, userAnalytics, enhancementL
             if (availableFavorites.length > 0) {
                 // Replace the highest number with a favorite (conservative approach)
                 const highestIndex = adjustedNumbers.indexOf(Math.max(...adjustedNumbers));
+                const originalNumber = adjustedNumbers[highestIndex];
                 adjustedNumbers[highestIndex] = availableFavorites[0];
+                adjustedNumbers.sort((a, b) => a - b);
+                enhancementScore += 0.15;
+                factors.savedSelectionsInfluence += 0.15;
+
+                console.log(`🔄 Advanced mode: Replaced ${originalNumber} with favorite ${availableFavorites[0]} from saved selections`);
                 adjustedNumbers.sort((a, b) => a - b);
                 enhancementScore += 0.15;
             }
         }
     }
 
-    // Apply avoided number penalty
+    // Apply avoided number penalty (derived from saved selections)
     if (userAnalytics.patternInsights?.avoidedNumbers?.length > 0) {
         const avoidedNumbers = userAnalytics.patternInsights.avoidedNumbers;
         const avoidedInPrediction = prediction.numbers.filter(num => avoidedNumbers.includes(num)).length;
         factors.avoidedNumberPenalty = avoidedInPrediction * -0.05;
         enhancementScore += factors.avoidedNumberPenalty;
+
+        if (avoidedInPrediction > 0) {
+            console.log(`⚠️ ${avoidedInPrediction} avoided numbers from saved selections found in prediction, penalty: ${factors.avoidedNumberPenalty.toFixed(2)}`);
+        }
     }
 
-    // Apply strategy preference boost
+    // Apply strategy preference boost (derived from saved selections)
     if (userAnalytics.preferredStrategies && userAnalytics.preferredStrategies[prediction.strategy]) {
         const strategyCount = userAnalytics.preferredStrategies[prediction.strategy];
         const totalStrategies = Object.values(userAnalytics.preferredStrategies).reduce((a, b) => a + b, 0);
         factors.strategyPreference = (strategyCount / totalStrategies) * 0.2;
         enhancementScore += factors.strategyPreference;
+
+        console.log(`🎯 Strategy "${prediction.strategy}" used ${strategyCount}/${totalStrategies} times in saved selections, boost: +${factors.strategyPreference.toFixed(2)}`);
+    }
+
+    // Apply sum range alignment (derived from saved selections)
+    if (userAnalytics.patternInsights?.preferredSums?.length === 2) {
+        const [minSum, maxSum] = userAnalytics.patternInsights.preferredSums;
+        const currentSum = adjustedNumbers.reduce((a, b) => a + b, 0);
+
+        if (currentSum >= minSum && currentSum <= maxSum) {
+            factors.sumRangeAlignment = 0.1;
+            enhancementScore += factors.sumRangeAlignment;
+            console.log(`📈 Sum ${currentSum} aligns with saved selections preference range [${minSum}-${maxSum}], boost: +${factors.sumRangeAlignment.toFixed(2)}`);
+        }
     }
 
     // Apply sum range alignment
@@ -192,7 +233,7 @@ function calculateUserPatternEnhancement(prediction, userAnalytics, enhancementL
         }
     }
 
-    // Apply balance preference (even/odd, high/low)
+    // Apply balance preference (even/odd, high/low) derived from saved selections
     if (userAnalytics.patternInsights?.evenOddBalance) {
         const { even, odd } = userAnalytics.patternInsights.evenOddBalance;
         const total = even + odd;
@@ -200,13 +241,35 @@ function calculateUserPatternEnhancement(prediction, userAnalytics, enhancementL
             const evenRatio = even / total;
             const predictionEvenCount = adjustedNumbers.filter(n => n % 2 === 0).length;
             const predictionEvenRatio = predictionEvenCount / 5;
-            
-            // Bonus if prediction matches user's even/odd preference
+
+            // Bonus if prediction matches user's even/odd preference from saved selections
             if (Math.abs(evenRatio - predictionEvenRatio) < 0.2) {
                 factors.balancePreference = 0.08;
                 enhancementScore += factors.balancePreference;
+                console.log(`⚖️ Even/odd balance matches saved selections pattern (${(evenRatio*100).toFixed(1)}% even), boost: +${factors.balancePreference.toFixed(2)}`);
             }
         }
+    }
+
+    // Apply powerball preference (derived from saved selections)
+    if (userAnalytics.powerballFrequency) {
+        const powerballCounts = Object.entries(userAnalytics.powerballFrequency)
+            .sort(([,a], [,b]) => b - a);
+
+        if (powerballCounts.length > 0) {
+            const [mostUsedPowerball, count] = powerballCounts[0];
+            if (enhancementLevel === 'advanced' && Math.random() < 0.3) {
+                const originalPowerball = adjustedPowerball;
+                adjustedPowerball = parseInt(mostUsedPowerball);
+                enhancementScore += 0.1;
+                factors.savedSelectionsInfluence += 0.1;
+                console.log(`🎱 Advanced mode: Changed powerball from ${originalPowerball} to ${adjustedPowerball} (used ${count} times in saved selections)`);
+            }
+        }
+    }
+
+    const finalEnhancementScore = Math.max(0, Math.min(1, enhancementScore));
+    console.log(`🎯 Total enhancement score from saved selections: ${finalEnhancementScore.toFixed(3)}`);
     }
 
     // Apply powerball preference

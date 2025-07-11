@@ -2689,7 +2689,7 @@
                                 const enhancedSelections = data.data.predictions.map((prediction, index) => ({
                                     id: index + 1,
                                     name: `🧠 ${prediction.strategy} (Enhanced)`,
-                                    description: `PERSONALIZED: ${prediction.description}. Confidence boosted by your selection patterns.`,
+                                    description: `PERSONALIZED: ${prediction.description}. Enhanced using patterns from your ${data.data.metadata.savedSelectionsUsed} saved selections.`,
                                     numbers: prediction.numbers,
                                     powerball: prediction.powerball,
                                     strategy: `${prediction.confidence}% Enhanced Confidence`,
@@ -2701,11 +2701,13 @@
                                     userEnhanced: true,
                                     enhancementScore: prediction.userEnhancement || 0,
                                     confidenceFactors: prediction.confidenceFactors,
-                                    personalizedFactors: prediction.personalizedFactors
+                                    personalizedFactors: prediction.personalizedFactors,
+                                    savedSelectionsUsed: data.data.metadata.savedSelectionsUsed
                                 }));
 
                                 setQuickSelectionSets(enhancedSelections);
-                                setDataStatus(`🤖🧠 Enhanced predictions generated with ${data.data.metadata.confidenceFactors.length} personalization factors!`);
+                                const savedCount = data.data.metadata.savedSelectionsUsed || 0;
+                                setDataStatus(`🤖🧠 Enhanced predictions generated using patterns from ${savedCount} saved selections with ${data.data.metadata.confidenceFactors.length} personalization factors!`);
                                 return;
                             }
                         }
@@ -3098,12 +3100,22 @@
                                                     className: 'powerball-display text-xs ' + (isOpus4 ? 'opus4-powerball' : '')
                                                 }, 'PB: ' + selection.powerball)
                                             ),
-                                            
+
                                             React.createElement('p', { className: 'text-xs text-gray-600 line-clamp-2 mb-2' },
                                                 selection.description && selection.description.length > 80 ?
                                                     selection.description.substring(0, 80) + '...' :
                                                     selection.description || 'Advanced mathematical analysis'
                                             ),
+
+                                            // Show saved selections influence indicator
+                                            selection.userEnhanced && selection.savedSelectionsUsed ? React.createElement('div', {
+                                                className: 'flex items-center gap-1 mb-2 px-2 py-1 bg-purple-50 border border-purple-200 rounded text-xs'
+                                            },
+                                                React.createElement('span', { className: 'text-purple-600' }, '💾'),
+                                                React.createElement('span', { className: 'text-purple-700 font-medium' },
+                                                    `Enhanced using ${selection.savedSelectionsUsed} saved selections`
+                                                )
+                                            ) : null,
 
                                             React.createElement('div', { className: 'flex gap-2 mt-2' },
                                                 React.createElement('button', {
