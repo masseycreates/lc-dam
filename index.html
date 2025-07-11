@@ -3865,8 +3865,22 @@
                                      `isLoadingUserData = ${isLoadingUserData}`
                                  ),
 
-                                 selectionHistory.length > 0 ? React.createElement('div', { className: 'space-y-3' },
-                                     selectionHistory.slice().reverse().map(entry => {
+                                 selectionHistory.length > 0 || savedSelections.length > 0 ? React.createElement('div', { className: 'space-y-3' },
+                                     (() => {
+                                         // Combine both selectionHistory and savedSelections for display
+                                         const allSelections = [
+                                             ...selectionHistory.map(entry => ({ ...entry, source: entry.source || 'Manual Entry', type: 'history' })),
+                                             ...savedSelections.map(entry => ({ ...entry, source: entry.source || 'Saved Selection', type: 'saved' }))
+                                         ];
+
+                                         // Sort by timestamp/dateSaved (newest first)
+                                         allSelections.sort((a, b) => {
+                                             const dateA = new Date(a.dateSaved || a.timestamp || 0);
+                                             const dateB = new Date(b.dateSaved || b.timestamp || 0);
+                                             return dateB - dateA;
+                                         });
+
+                                         return allSelections.map(entry => {
                                         const isWin = entry.result === 'win';
                                         const isLoss = entry.result === 'loss';
                                         const isPending = entry.result === 'pending';
@@ -3925,7 +3939,7 @@
                                                             if (newResult === 'win') {
                                                                 const winAmount = prompt('Enter win amount (e.g., 4.00):');
                                                                 if (winAmount !== null) {
-                                                                    updateSelectionResult(entry.id, newResult, winAmount);
+                                                                    updateSelectionResult(entry.id, newResult, winAmount, entry.type);
                                                                 }
                                                             } else {
                                                                 updateSelectionResult(entry.id, newResult, 0);
@@ -3938,7 +3952,7 @@
                                                         React.createElement('option', { value: 'loss' }, 'Loss')
                                                     ),
                                                     React.createElement('button', {
-                                                        onClick: () => deleteSelectionEntry(entry.id),
+                                                        onClick: () => deleteSelectionEntry(entry.id, entry.type),
                                                         className: 'text-red-600 hover:text-red-800 text-xs px-2 py-1'
                                                     }, '🗑️')
                                                 )
