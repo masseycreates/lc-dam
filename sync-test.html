@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sync Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .info { background: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔄 Sync Integration Test</h1>
+        <p>This page tests the sync functionality integration.</p>
+        
+        <div class="card">
+            <h3>📊 Current Status</h3>
+            <div id="status">Loading...</div>
+            <div id="stats"></div>
+        </div>
+        
+        <div class="card">
+            <h3>🧪 Test Actions</h3>
+            <button class="btn" onclick="testAddSelection()">➕ Add Test Selection</button>
+            <button class="btn" onclick="testSync()">🔄 Test Sync</button>
+            <button class="btn" onclick="testLoad()">📥 Test Load</button>
+            <button class="btn" onclick="toggleAutoSync()">⚡ Toggle Auto-Sync</button>
+            <button class="btn" onclick="clearData()">🗑️ Clear Test Data</button>
+        </div>
+        
+        <div class="card">
+            <h3>📋 Test Data</h3>
+            <div id="testData">No data</div>
+        </div>
+        
+        <div class="card">
+            <h3>🔗 Navigation</h3>
+            <a href="index.html" class="btn">🏠 Main App</a>
+            <a href="sync-manager.html" class="btn">⚙️ Sync Manager</a>
+        </div>
+    </div>
+
+    <script>
+        let testCounter = 1;
+        
+        function updateStatus() {
+            const statusEl = document.getElementById('status');
+            const statsEl = document.getElementById('stats');
+            
+            const isOnline = navigator.onLine;
+            const autoSync = localStorage.getItem('autoSyncEnabled') === 'true';
+            const lastSync = localStorage.getItem('lastSyncTime');
+            
+            statusEl.innerHTML = `
+                <div>🌐 Connection: ${isOnline ? '🟢 Online' : '🔴 Offline'}</div>
+                <div>⚡ Auto-sync: ${autoSync ? '✅ Enabled' : '❌ Disabled'}</div>
+                <div>🕒 Last sync: ${lastSync ? new Date(lastSync).toLocaleString() : 'Never'}</div>
+            `;
+            
+            const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+            const savedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+            
+            statsEl.innerHTML = `
+                <div>📈 Selection History: ${selections.length} entries</div>
+                <div>💾 Saved Selections: ${savedSelections.length} entries</div>
+                <div>📊 Total: ${selections.length + savedSelections.length} entries</div>
+            `;
+            
+            updateTestData();
+        }
+        
+        function updateTestData() {
+            const dataEl = document.getElementById('testData');
+            const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+            
+            if (selections.length === 0) {
+                dataEl.innerHTML = '<p>No test data available</p>';
+                return;
+            }
+            
+            const testSelections = selections.filter(s => s.name && s.name.includes('Test'));
+            
+            if (testSelections.length === 0) {
+                dataEl.innerHTML = '<p>No test selections found</p>';
+                return;
+            }
+            
+            dataEl.innerHTML = testSelections.map(s => `
+                <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 6px;">
+                    <strong>${s.name}</strong><br>
+                    Numbers: ${s.numbers.join(', ')} | PB: ${s.powerball}<br>
+                    <small>Saved: ${new Date(s.dateSaved).toLocaleString()}</small>
+                    ${s.syncedAt ? `<br><small style="color: #0066cc;">Synced: ${new Date(s.syncedAt).toLocaleString()}</small>` : ''}
+                </div>
+            `).join('');
+        }
+        
+        function testAddSelection() {
+            const selection = {
+                id: 'test_' + Date.now(),
+                name: `Test Selection ${testCounter++}`,
+                numbers: [Math.floor(Math.random() * 69) + 1, Math.floor(Math.random() * 69) + 1, Math.floor(Math.random() * 69) + 1, Math.floor(Math.random() * 69) + 1, Math.floor(Math.random() * 69) + 1].sort((a, b) => a - b),
+                powerball: Math.floor(Math.random() * 26) + 1,
+                dateSaved: new Date().toISOString(),
+                source: 'Test Data',
+                result: 'pending'
+            };
+            
+            const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+            selections.push(selection);
+            localStorage.setItem('powerball_selection_history', JSON.stringify(selections));
+            
+            showMessage('✅ Test selection added!', 'success');
+            updateStatus();
+        }
+        
+        async function testSync() {
+            if (!navigator.onLine) {
+                showMessage('❌ Cannot sync - offline', 'error');
+                return;
+            }
+            
+            try {
+                showMessage('⏳ Testing sync...', 'info');
+                
+                const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                const savedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+                
+                const response = await fetch('/api/selection-sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        selections,
+                        savedSelections,
+                        metadata: {
+                            userAgent: navigator.userAgent,
+                            source: 'test-sync',
+                            deviceId: 'test_device_' + Date.now()
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    localStorage.setItem('lastSyncTime', new Date().toISOString());
+                    showMessage('✅ Sync test successful!', 'success');
+                } else {
+                    throw new Error(result.error || 'Sync failed');
+                }
+            } catch (error) {
+                showMessage(`❌ Sync test failed: ${error.message}`, 'error');
+            }
+            
+            updateStatus();
+        }
+        
+        async function testLoad() {
+            if (!navigator.onLine) {
+                showMessage('❌ Cannot load - offline', 'error');
+                return;
+            }
+            
+            try {
+                showMessage('⏳ Testing load from sync...', 'info');
+                
+                const response = await fetch('/api/selection-sync');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    showMessage(`✅ Load test successful! Found ${(result.data.selections?.length || 0) + (result.data.savedSelections?.length || 0)} selections`, 'success');
+                } else {
+                    showMessage('ℹ️ No sync data available', 'info');
+                }
+            } catch (error) {
+                showMessage(`❌ Load test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function toggleAutoSync() {
+            const current = localStorage.getItem('autoSyncEnabled') === 'true';
+            localStorage.setItem('autoSyncEnabled', (!current).toString());
+            showMessage(`⚡ Auto-sync ${!current ? 'enabled' : 'disabled'}`, 'success');
+            updateStatus();
+        }
+        
+        function clearData() {
+            if (confirm('Clear all test data? This will remove test selections but keep real data.')) {
+                const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                const filtered = selections.filter(s => !s.name || !s.name.includes('Test'));
+                localStorage.setItem('powerball_selection_history', JSON.stringify(filtered));
+                showMessage('🗑️ Test data cleared', 'success');
+                updateStatus();
+            }
+        }
+        
+        function showMessage(message, type) {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            document.body.appendChild(div);
+            
+            setTimeout(() => {
+                div.remove();
+            }, 5000);
+        }
+        
+        // Initialize
+        updateStatus();
+        
+        // Update status when online/offline
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+        
+        // Update when storage changes
+        window.addEventListener('storage', updateStatus);
+    </script>
+</body>
+</html>
