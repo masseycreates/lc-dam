@@ -15,6 +15,80 @@ console.log('Selection History API - Storage directory configured as:', STORAGE_
 const MAX_HISTORY_SIZE = 1000; // Maximum selections per user
 const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 
+// Calculate next PowerBall drawing (same logic as powerball.js)
+function calculateNextDrawing() {
+    try {
+        const now = new Date();
+        const etNow = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+
+        const dayOfWeek = etNow.getDay();
+        const hour = etNow.getHours();
+
+        const drawingDays = [1, 3, 6]; // Monday, Wednesday, Saturday
+        const drawingHour = 22;
+        const drawingMinute = 59;
+
+        let nextDrawingDate = new Date(etNow);
+        let found = false;
+
+        if (drawingDays.includes(dayOfWeek)) {
+            const todayDrawingTime = new Date(etNow);
+            todayDrawingTime.setHours(drawingHour, drawingMinute, 0, 0);
+
+            if (etNow <= todayDrawingTime) {
+                nextDrawingDate = todayDrawingTime;
+                found = true;
+            }
+        }
+
+        if (!found) {
+            let daysToAdd = 1;
+
+            while (daysToAdd <= 7 && !found) {
+                const checkDate = new Date(etNow);
+                checkDate.setDate(etNow.getDate() + daysToAdd);
+                checkDate.setHours(drawingHour, drawingMinute, 0, 0);
+
+                const checkDay = checkDate.getDay();
+
+                if (drawingDays.includes(checkDay)) {
+                    nextDrawingDate = checkDate;
+                    found = true;
+                }
+
+                daysToAdd++;
+            }
+        }
+
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const nextDrawingDayName = dayNames[nextDrawingDate.getDay()];
+
+        return {
+            date: nextDrawingDate.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                timeZone: 'America/New_York'
+            }),
+            time: '10:59 PM ET',
+            dayOfWeek: nextDrawingDayName,
+            timestamp: nextDrawingDate.toISOString(),
+            dateOnly: nextDrawingDate.toISOString().split('T')[0]
+        };
+
+    } catch (error) {
+        console.error('Next drawing calculation failed:', error.message);
+        return {
+            date: 'Check powerball.com',
+            time: '10:59 PM ET',
+            dayOfWeek: 'Mon/Wed/Sat',
+            timestamp: null,
+            dateOnly: null
+        };
+    }
+}
+
 // Ensure storage directory exists
 async function ensureStorageDir() {
     try {
@@ -296,9 +370,9 @@ export default async function handler(req, res) {
             case 'GET':
                 // Get user's selection history with analytics
                 await ensureStorageDir();
-                const { type } = req.query;
+                const { type, drawingDate, nextDrawing } = req.query;
                 const history = await loadUserHistory(userId);
-                
+
                 if (type === 'analytics') {
                     return res.status(200).json({
                         success: true,
@@ -306,9 +380,39 @@ export default async function handler(req, res) {
                         userId: userId
                     });
                 } else if (type === 'saved') {
+                    let savedSelections = history.savedSelections;
+
+                    // Filter by drawing date if specified
+                    if (drawingDate) {
+                        savedSelections = savedSelections.filter(selection =>
+                            selection.drawingInfo?.targetDrawingDate === drawingDate
+                        );
+                    }
+
+                    // Filter for next drawing if specified
+                    if (nextDrawing === 'true') {
+                        const nextDrawingInfo = calculateNextDrawing();
+                        savedSelections = savedSelections.filter(selection =>
+                            selection.drawingInfo?.targetDrawingDate === nextDrawingInfo.dateOnly ||
+                            selection.drawingInfo?.isForNextDrawing === true
+                        );
+                    }
+
                     return res.status(200).json({
                         success: true,
-                        data: { savedSelections: history.savedSelections },
+                        data: {
+                            savedSelections: savedSelections,
+                            nextDrawing: nextDrawing === 'true' ? calculateNextDrawing() : null,
+                            totalSavedSelections: history.savedSelections.length,
+                            filteredCount: savedSelections.length
+                        },
+                        userId: userId
+                    });
+                } else if (type === 'nextDrawing') {
+                    // Return next drawing info
+                    return res.status(200).json({
+                        success: true,
+                        data: calculateNextDrawing(),
                         userId: userId
                     });
                 } else {
@@ -331,7 +435,13 @@ export default async function handler(req, res) {
                 }
                 
                 const currentHistory = await loadUserHistory(userId);
-                
+
+                // Get next drawing info for saved selections
+                let nextDrawingInfo = null;
+                if (saveType === 'saved') {
+                    nextDrawingInfo = calculateNextDrawing();
+                }
+
                 // Add new selection with metadata
                 const newSelection = {
                     ...selection,
@@ -342,7 +452,18 @@ export default async function handler(req, res) {
                     deviceInfo: {
                         userAgent: req.headers['user-agent']?.substring(0, 100) || 'unknown',
                         timestamp: new Date().toISOString()
-                    }
+                    },
+                    // Add drawing association for saved selections
+                    drawingInfo: saveType === 'saved' ? {
+                        targetDrawingDate: selection.targetDrawingDate || nextDrawingInfo?.dateOnly || null,
+                        targetDrawingTimestamp: selection.targetDrawingTimestamp || nextDrawingInfo?.timestamp || null,
+                        drawingDay: selection.drawingDay || nextDrawingInfo?.dayOfWeek || null,
+                        drawingDisplayDate: nextDrawingInfo?.date || null,
+                        drawingTime: nextDrawingInfo?.time || null,
+                        associatedAt: new Date().toISOString(),
+                        isForNextDrawing: selection.isForNextDrawing !== false, // Default to true for saved selections
+                        autoAssociated: !selection.targetDrawingDate // Mark if we auto-associated with next drawing
+                    } : null
                 };
                 
                 if (saveType === 'saved') {

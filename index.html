@@ -1933,6 +1933,11 @@
                 notes: ''
             });
 
+            // Next drawing association state
+            const [nextDrawingInfo, setNextDrawingInfo] = useState(null);
+            const [associateWithNextDrawing, setAssociateWithNextDrawing] = useState(true);
+            const [customDrawingDate, setCustomDrawingDate] = useState('');
+
             // Upload functionality state
             const [isUploading, setIsUploading] = useState(false);
             const [uploadStatus, setUploadStatus] = useState('');
@@ -2144,6 +2149,26 @@
                 return deviceId;
             };
 
+            // Fetch next drawing information
+            const fetchNextDrawingInfo = async () => {
+                try {
+                    const response = await fetch('/api/selection-history?type=nextDrawing');
+                    const result = await response.json();
+
+                    if (result.success) {
+                        setNextDrawingInfo(result.data);
+                        console.log('✅ Next drawing info loaded:', result.data);
+                        return result.data;
+                    } else {
+                        console.warn('⚠️ Failed to load next drawing info:', result.error);
+                        return null;
+                    }
+                } catch (error) {
+                    console.error('❌ Error fetching next drawing info:', error);
+                    return null;
+                }
+            };
+
             // Initialize user session on component mount
             React.useEffect(() => {
                 const initializeApp = async () => {
@@ -2175,6 +2200,11 @@
                         await initializeUserSession();
                         console.log('✅ User session initialized');
 
+                        // Fetch next drawing info
+                        console.log('🎯 Loading next drawing info...');
+                        await fetchNextDrawingInfo();
+                        console.log('✅ Next drawing info loaded');
+
                         // Load latest Powerball data
                         console.log('🎯 Loading latest Powerball data...');
                         await fetchLatestPowerballData();
@@ -2197,12 +2227,37 @@
 
             // Enhanced selection saving with cross-device persistence
             const saveSelectionForTracking = async (selection, notes = '', saveType = 'history') => {
+                // Prepare drawing association data
+                let drawingAssociationData = {};
+                if (saveType === 'saved') {
+                    if (associateWithNextDrawing && nextDrawingInfo) {
+                        drawingAssociationData = {
+                            targetDrawingDate: nextDrawingInfo.dateOnly,
+                            targetDrawingTimestamp: nextDrawingInfo.timestamp,
+                            drawingDay: nextDrawingInfo.dayOfWeek,
+                            isForNextDrawing: true
+                        };
+                    } else if (!associateWithNextDrawing && customDrawingDate) {
+                        // Calculate day of week for custom date
+                        const customDate = new Date(customDrawingDate + 'T22:59:00.000Z');
+                        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                        drawingAssociationData = {
+                            targetDrawingDate: customDrawingDate,
+                            targetDrawingTimestamp: customDate.toISOString(),
+                            drawingDay: dayNames[customDate.getDay()],
+                            isForNextDrawing: false
+                        };
+                    }
+                }
+
                 const selectionData = {
                     ...selection,
                     notes: notes,
                     source: selection.claudeGenerated ? 'Claude Opus 4' : 'Algorithm',
+                    drawingInfo: saveType === 'saved' ? drawingAssociationData : null,
                     confidence: selection.confidence || 0,
-                    strategy: selection.strategy || 'Unknown'
+                    strategy: selection.strategy || 'Unknown',
+                    ...drawingAssociationData
                 };
 
                 if (userId) {
@@ -2236,7 +2291,7 @@
 
                                 setShowSaveDialog(false);
                                 setSelectedToSave(null);
-                                console.log('✅ Selection saved successfully');
+                                console.log('✅ Selection saved successfully with drawing association');
                                 return;
                             }
                         }
@@ -2261,6 +2316,8 @@
                 saveSelectionHistory(updatedHistory);
                 setShowSaveDialog(false);
                 setSelectedToSave(null);
+                setAssociateWithNextDrawing(true);
+                setCustomDrawingDate('');
             };
 
             // Enhanced manual selection with persistence
@@ -3121,10 +3178,22 @@
                                                 React.createElement('button', {
                                                     onClick: () => {
                                                         setSelectedToSave(selection);
+                                                        setAssociateWithNextDrawing(true);
                                                         setShowSaveDialog(true);
                                                     },
                                                     className: 'btn btn-sm bg-green-100 text-green-700 hover:bg-green-200 border border-green-300 text-xs px-2 py-1'
-                                                }, '💾 Save & Track'),
+                                                }, '💾 Save for Next Drawing'),
+                                                React.createElement('button', {
+                                                    onClick: async () => {
+                                                        // Quick save for next drawing without dialog
+                                                        if (nextDrawingInfo) {
+                                                            await saveSelectionForTracking(selection, `Auto-saved for ${nextDrawingInfo.date}`, 'saved');
+                                                        } else {
+                                                            await saveSelectionForTracking(selection, 'Auto-saved for next drawing', 'saved');
+                                                        }
+                                                    },
+                                                    className: 'btn btn-sm bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300 text-xs px-2 py-1'
+                                                }, '⚡ Quick Save'),
                                                 React.createElement('button', {
                                                     onClick: () => {
                                                         const numbersText = selection.numbers.join(', ');
@@ -3132,13 +3201,139 @@
                                                         navigator.clipboard.writeText(selectionText);
                                                         // Could add a toast notification here
                                                     },
-                                                    className: 'btn btn-sm bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300 text-xs px-2 py-1'
+                                                    className: 'btn btn-sm bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 text-xs px-2 py-1'
                                                 }, '📋 Copy')
                                             )
                                         );
                                     })
                                 ) : React.createElement('div', { className: 'text-center py-6 text-gray-500' },
                                     React.createElement('p', { className: 'text-sm' }, 'No selections generated yet.')
+                                )
+                            )
+                        );
+
+                    case 'next-drawing':
+                        return React.createElement('div', { className: 'space-y-6' },
+                            // Next Drawing Info Card
+                            React.createElement('div', { className: 'card' },
+                                React.createElement('h3', { className: 'text-lg font-semibold mb-4 text-gray-900' }, '🎯 Next PowerBall Drawing'),
+                                nextDrawingInfo ? React.createElement('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4' },
+                                    React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
+                                        React.createElement('div', { className: 'text-center' },
+                                            React.createElement('div', { className: 'text-2xl font-bold text-blue-600' }, nextDrawingInfo.date),
+                                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Date')
+                                        ),
+                                        React.createElement('div', { className: 'text-center' },
+                                            React.createElement('div', { className: 'text-2xl font-bold text-blue-600' }, nextDrawingInfo.time),
+                                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Time')
+                                        ),
+                                        React.createElement('div', { className: 'text-center' },
+                                            React.createElement('div', { className: 'text-2xl font-bold text-blue-600' }, nextDrawingInfo.dayOfWeek),
+                                            React.createElement('div', { className: 'text-sm text-gray-600' }, 'Day')
+                                        )
+                                    )
+                                ) : React.createElement('div', { className: 'text-center py-4' },
+                                    React.createElement('div', { className: 'loading-spinner mx-auto mb-2' }),
+                                    React.createElement('p', { className: 'text-sm text-gray-600' }, 'Loading next drawing information...')
+                                ),
+
+                                React.createElement('div', { className: 'flex gap-3' },
+                                    React.createElement('button', {
+                                        onClick: fetchNextDrawingInfo,
+                                        className: 'btn btn-secondary btn-sm'
+                                    }, '🔄 Refresh Drawing Info'),
+                                    React.createElement('button', {
+                                        onClick: () => setActiveTab('quick-selection'),
+                                        className: 'btn btn-primary btn-sm'
+                                    }, '🎲 Generate Selections')
+                                )
+                            ),
+
+                            // Saved Selections for Next Drawing
+                            React.createElement('div', { className: 'card' },
+                                React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                                    React.createElement('h3', { className: 'text-lg font-semibold text-gray-900' }, '💾 Your Selections for Next Drawing'),
+                                    React.createElement('button', {
+                                        onClick: async () => {
+                                            // Refresh saved selections for next drawing
+                                            if (userId && nextDrawingInfo) {
+                                                try {
+                                                    const response = await fetch(`/api/selection-history?type=saved&nextDrawing=true`);
+                                                    const result = await response.json();
+                                                    if (result.success) {
+                                                        setSavedSelections(result.data.savedSelections);
+                                                    }
+                                                } catch (error) {
+                                                    console.error('Error refreshing next drawing selections:', error);
+                                                }
+                                            }
+                                        },
+                                        className: 'btn btn-secondary btn-sm'
+                                    }, '🔄 Refresh')
+                                ),
+
+                                savedSelections.filter(selection =>
+                                    selection.drawingInfo?.isForNextDrawing === true ||
+                                    (nextDrawingInfo && selection.drawingInfo?.targetDrawingDate === nextDrawingInfo.dateOnly)
+                                ).length > 0 ? React.createElement('div', { className: 'space-y-3' },
+                                    savedSelections.filter(selection =>
+                                        selection.drawingInfo?.isForNextDrawing === true ||
+                                        (nextDrawingInfo && selection.drawingInfo?.targetDrawingDate === nextDrawingInfo.dateOnly)
+                                    ).map((selection, index) =>
+                                        React.createElement('div', {
+                                            key: selection.id || index,
+                                            className: 'p-4 bg-green-50 border border-green-200 rounded-lg'
+                                        },
+                                            React.createElement('div', { className: 'flex items-start justify-between mb-2' },
+                                                React.createElement('div', null,
+                                                    React.createElement('h4', { className: 'font-medium text-gray-900' },
+                                                        selection.name || selection.strategy || 'Saved Selection'
+                                                    ),
+                                                    selection.drawingInfo?.drawingDisplayDate ? React.createElement('p', { className: 'text-sm text-gray-600' },
+                                                        `Target: ${selection.drawingInfo.drawingDisplayDate}`
+                                                    ) : null
+                                                ),
+                                                React.createElement('span', {
+                                                    className: 'px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium'
+                                                }, selection.drawingInfo?.autoAssociated ? 'Auto-Associated' : 'Manual')
+                                            ),
+
+                                            React.createElement('div', { className: 'flex items-center gap-3 mb-2' },
+                                                React.createElement('div', { className: 'flex gap-1.5' },
+                                                    selection.numbers.map(num =>
+                                                        React.createElement('span', {
+                                                            key: num,
+                                                            className: 'number-display text-xs'
+                                                        }, num)
+                                                    )
+                                                ),
+                                                React.createElement('span', { className: 'powerball-display text-xs' },
+                                                    'PB: ' + selection.powerball
+                                                )
+                                            ),
+
+                                            selection.notes ? React.createElement('p', { className: 'text-sm text-gray-600 mb-2' },
+                                                selection.notes
+                                            ) : null,
+
+                                            React.createElement('div', { className: 'flex gap-2 text-xs' },
+                                                React.createElement('span', { className: 'text-gray-500' },
+                                                    `Saved: ${new Date(selection.timestamp || selection.dateSaved).toLocaleDateString()}`
+                                                ),
+                                                selection.confidence ? React.createElement('span', { className: 'text-blue-600' },
+                                                    `Confidence: ${selection.confidence}%`
+                                                ) : null
+                                            )
+                                        )
+                                    )
+                                ) : React.createElement('div', { className: 'text-center py-8 text-gray-500' },
+                                    React.createElement('div', { className: 'text-4xl mb-2' }, '🎯'),
+                                    React.createElement('p', { className: 'text-lg font-medium mb-1' }, 'No selections for next drawing'),
+                                    React.createElement('p', { className: 'text-sm' }, 'Generate and save selections to track them for the next drawing'),
+                                    React.createElement('button', {
+                                        onClick: () => setActiveTab('quick-selection'),
+                                        className: 'btn btn-primary mt-3'
+                                    }, '🎲 Generate Selections')
                                 )
                             )
                         );
@@ -3735,6 +3930,16 @@
                         userId && userAnalytics ? React.createElement('span', {
                             className: 'text-blue-600'
                         }, `• ${userAnalytics.totalSelections} tracked selections`) : null,
+                        // Show next drawing selections count
+                        nextDrawingInfo && savedSelections.filter(selection =>
+                            selection.drawingInfo?.isForNextDrawing === true ||
+                            selection.drawingInfo?.targetDrawingDate === nextDrawingInfo.dateOnly
+                        ).length > 0 ? React.createElement('span', {
+                            className: 'text-purple-600'
+                        }, `• ${savedSelections.filter(selection =>
+                            selection.drawingInfo?.isForNextDrawing === true ||
+                            selection.drawingInfo?.targetDrawingDate === nextDrawingInfo.dateOnly
+                        ).length} for next drawing`) : null,
                         isLoadingUserData ? React.createElement('span', {
                             className: 'text-yellow-600'
                         }, '⏳ Syncing...') : null
@@ -3751,7 +3956,8 @@
                     React.createElement('div', { className: 'flex border-b border-gray-200' },
                         [
                             { id: 'quick-selection', label: aiEnabled ? '🤖✨ AI Hybrid' : '🧮 Algorithms', icon: aiEnabled ? '🤖✨' : '🧮' },
-                            { id: 'calculator', label: '🎯 Calculator', icon: '🎯' },
+                            { id: 'next-drawing', label: '🎯 Next Drawing', icon: '🎯' },
+                            { id: 'calculator', label: '🧮 Calculator', icon: '🧮' },
                             { id: 'history', label: '📈 Selection History', icon: '📈' },
                             { id: 'tax-calculator', label: '💰 Tax Calculator', icon: '💰' },
                             { id: 'analysis', label: '📊 Analysis', icon: '📊' }
@@ -3819,6 +4025,60 @@
                         React.createElement('p', { className: 'text-sm text-gray-600' }, selectedToSave.description)
                     ),
 
+                    // Next Drawing Association Section
+                    React.createElement('div', { className: 'mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg' },
+                        React.createElement('h4', { className: 'font-medium text-blue-800 mb-3' }, '🎯 Drawing Association'),
+
+                        nextDrawingInfo ? React.createElement('div', { className: 'mb-3 p-2 bg-white rounded border' },
+                            React.createElement('div', { className: 'text-sm font-medium text-gray-700' }, 'Next PowerBall Drawing:'),
+                            React.createElement('div', { className: 'text-sm text-gray-600' },
+                                `${nextDrawingInfo.date} at ${nextDrawingInfo.time}`
+                            ),
+                            React.createElement('div', { className: 'text-xs text-gray-500' },
+                                `${nextDrawingInfo.dayOfWeek}`
+                            )
+                        ) : React.createElement('div', { className: 'text-sm text-gray-600 mb-3' }, 'Loading next drawing info...'),
+
+                        React.createElement('div', { className: 'space-y-2' },
+                            React.createElement('label', { className: 'flex items-center' },
+                                React.createElement('input', {
+                                    type: 'radio',
+                                    name: 'drawingAssociation',
+                                    checked: associateWithNextDrawing,
+                                    onChange: () => {
+                                        setAssociateWithNextDrawing(true);
+                                        setCustomDrawingDate('');
+                                    },
+                                    className: 'mr-2'
+                                }),
+                                React.createElement('span', { className: 'text-sm' },
+                                    nextDrawingInfo ?
+                                        `Associate with next drawing (${nextDrawingInfo.date})` :
+                                        'Associate with next drawing'
+                                )
+                            ),
+                            React.createElement('label', { className: 'flex items-center' },
+                                React.createElement('input', {
+                                    type: 'radio',
+                                    name: 'drawingAssociation',
+                                    checked: !associateWithNextDrawing,
+                                    onChange: () => setAssociateWithNextDrawing(false),
+                                    className: 'mr-2'
+                                }),
+                                React.createElement('span', { className: 'text-sm' }, 'Choose specific drawing date')
+                            ),
+                            !associateWithNextDrawing ? React.createElement('div', { className: 'ml-6 mt-2' },
+                                React.createElement('input', {
+                                    type: 'date',
+                                    value: customDrawingDate,
+                                    onChange: (e) => setCustomDrawingDate(e.target.value),
+                                    min: new Date().toISOString().split('T')[0],
+                                    className: 'w-full p-2 border rounded text-sm'
+                                })
+                            ) : null
+                        )
+                    ),
+
                     React.createElement('div', { className: 'mb-4' },
                         React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Notes (optional):'),
                         React.createElement('textarea', {
@@ -3833,7 +4093,7 @@
                         React.createElement('button', {
                             onClick: () => {
                                 const notes = document.getElementById('saveNotes').value;
-                                saveSelectionForTracking(selectedToSave, notes);
+                                saveSelectionForTracking(selectedToSave, notes, 'saved');
                             },
                             className: 'btn btn-primary flex-1'
                         }, '💾 Save & Track'),
