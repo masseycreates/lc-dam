@@ -2515,12 +2515,61 @@
 
                 // Add user analytics insights
                 const insights = {
-                    favoriteNumbers: userAnalytics?.patternInsights?.favoriteNumbers || [],
+                    favoriteNumbers: calculateFavoriteNumbers(),
                     preferredStrategies: userAnalytics?.preferredStrategies || {},
                     averageConfidence: userAnalytics?.averageConfidence || 0,
                     totalSavedSelections: savedSelections.length,
                     crossDeviceSync: userId ? true : false
                 };
+
+                function calculateFavoriteNumbers() {
+                    // First try to use server analytics if available
+                    if (userAnalytics?.patternInsights?.favoriteNumbers) {
+                        const serverFavorites = userAnalytics.patternInsights.favoriteNumbers;
+
+                        // Check if it's already in the correct format (array of objects)
+                        if (serverFavorites.length > 0 && typeof serverFavorites[0] === 'object' && serverFavorites[0].number) {
+                            return serverFavorites;
+                        }
+
+                        // If it's an array of numbers, convert to objects with counts
+                        if (serverFavorites.length > 0 && typeof serverFavorites[0] === 'number') {
+                            const numberCounts = {};
+
+                            // Count occurrences from all selections
+                            [...selectionHistory, ...savedSelections].forEach(selection => {
+                                if (selection.numbers && Array.isArray(selection.numbers)) {
+                                    selection.numbers.forEach(num => {
+                                        numberCounts[num] = (numberCounts[num] || 0) + 1;
+                                    });
+                                }
+                            });
+
+                            return serverFavorites.map(num => ({
+                                number: num,
+                                count: numberCounts[num] || 0
+                            }));
+                        }
+                    }
+
+                    // Fallback: calculate from local data
+                    const numberCounts = {};
+                    [...selectionHistory, ...savedSelections].forEach(selection => {
+                        if (selection.numbers && Array.isArray(selection.numbers)) {
+                            selection.numbers.forEach(num => {
+                                numberCounts[num] = (numberCounts[num] || 0) + 1;
+                            });
+                        }
+                    });
+
+                    return Object.entries(numberCounts)
+                        .sort(([,a], [,b]) => b - a)
+                        .slice(0, 10)
+                        .map(([num, count]) => ({
+                            number: parseInt(num),
+                            count: count
+                        }));
+                }
 
                 return {
                     totalPlayed,

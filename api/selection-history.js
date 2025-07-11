@@ -273,9 +273,13 @@ function analyzeUserPatterns(history) {
     // Find favorite and avoided numbers
     const sortedNumbers = Object.entries(numberCounts)
         .sort(([,a], [,b]) => b - a)
-        .map(([num]) => parseInt(num));
-    
-    analytics.patternInsights.favoriteNumbers = sortedNumbers.slice(0, 10);
+        .slice(0, 10)
+        .map(([num, count]) => ({
+            number: parseInt(num),
+            count: count
+        }));
+
+    analytics.patternInsights.favoriteNumbers = sortedNumbers;
     
     // Find avoided numbers (numbers 1-69 that appear less frequently)
     const allPossibleNumbers = Array.from({length: 69}, (_, i) => i + 1);
