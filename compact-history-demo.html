@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compact Selection History Demo</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .demo-controls {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        .demo-controls h2 {
+            margin: 0 0 12px 0;
+            font-size: 18px;
+        }
+        .demo-controls button {
+            margin-right: 8px;
+            margin-bottom: 8px;
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+        .demo-controls button:hover {
+            background: #f0f0f0;
+        }
+        .number-display {
+            background: #e5e7eb;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .powerball-display {
+            background: #fecaca;
+            border: 1px solid #f87171;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Compact Selection History Demo</h1>
+        <p>This demo shows how the compact selection history handles large datasets efficiently.</p>
+        
+        <div class="demo-controls">
+            <h2>Demo Controls</h2>
+            <button onclick="generateSampleData(10)">Generate 10 Selections</button>
+            <button onclick="generateSampleData(50)">Generate 50 Selections</button>
+            <button onclick="generateSampleData(100)">Generate 100 Selections</button>
+            <button onclick="generateSampleData(500)">Generate 500 Selections</button>
+            <button onclick="clearData()">Clear All Data</button>
+            <button onclick="toggleView()">Toggle View Mode</button>
+        </div>
+        
+        <div id="selection-history-container">
+            <!-- Selection history will be rendered here -->
+        </div>
+    </div>
+
+    <!-- Load the compact selection history component -->
+    <script src="compact-selection-history.js"></script>
+    <script src="enhanced-selection-history-section.js"></script>
+    
+    <script>
+        // Demo data and functions
+        let demoSelectionHistory = [];
+        let demoSavedSelections = [];
+        let forceCompactView = false;
+
+        // Generate random lottery numbers
+        function generateRandomNumbers() {
+            const numbers = [];
+            while (numbers.length < 5) {
+                const num = Math.floor(Math.random() * 69) + 1;
+                if (!numbers.includes(num)) {
+                    numbers.push(num);
+                }
+            }
+            numbers.sort((a, b) => a - b);
+            
+            const powerball = Math.floor(Math.random() * 26) + 1;
+            
+            return { numbers, powerball };
+        }
+
+        // Generate sample data
+        function generateSampleData(count) {
+            const strategies = ['Quick Pick', 'Hot Numbers', 'Cold Numbers', 'Balanced', 'Random', 'AI Generated', 'Lucky Numbers'];
+            const sources = ['Manual Entry', 'Auto Generator', 'AI Assistant', 'Quick Pick', 'Pattern Analysis'];
+            const results = ['pending', 'pending', 'pending', 'loss', 'loss', 'loss', 'win']; // Mostly pending/loss
+            
+            for (let i = 0; i < count; i++) {
+                const { numbers, powerball } = generateRandomNumbers();
+                const isWin = Math.random() < 0.05; // 5% chance of win
+                const result = isWin ? 'win' : (Math.random() < 0.3 ? 'loss' : 'pending');
+                const isSaved = Math.random() < 0.3; // 30% chance of being saved
+                
+                // Generate date within last 6 months
+                const date = new Date();
+                date.setDate(date.getDate() - Math.floor(Math.random() * 180));
+                
+                const selection = {
+                    id: `demo_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`,
+                    numbers,
+                    powerball,
+                    strategy: strategies[Math.floor(Math.random() * strategies.length)],
+                    source: sources[Math.floor(Math.random() * sources.length)],
+                    result,
+                    winAmount: isWin ? (Math.random() * 1000 + 4) : 0,
+                    confidence: Math.floor(Math.random() * 40) + 60, // 60-100%
+                    timestamp: date.toISOString(),
+                    dateSaved: date.toISOString(),
+                    claudeGenerated: Math.random() < 0.2,
+                    autoSaved: Math.random() < 0.15,
+                    notes: Math.random() < 0.3 ? 'Demo selection with random notes' : null,
+                    drawingInfo: isSaved ? {
+                        targetDrawingDate: date.toISOString().split('T')[0],
+                        drawingDisplayDate: date.toLocaleDateString(),
+                        isForNextDrawing: Math.random() < 0.5
+                    } : null
+                };
+                
+                if (isSaved) {
+                    demoSavedSelections.push(selection);
+                } else {
+                    demoSelectionHistory.push(selection);
+                }
+            }
+            
+            renderDemo();
+        }
+
+        // Clear all data
+        function clearData() {
+            demoSelectionHistory = [];
+            demoSavedSelections = [];
+            renderDemo();
+        }
+
+        // Toggle view mode
+        function toggleView() {
+            if (localStorage.getItem('forceDetailedView')) {
+                localStorage.removeItem('forceDetailedView');
+            } else {
+                localStorage.setItem('forceDetailedView', 'true');
+            }
+            renderDemo();
+        }
+
+        // Mock functions that the selection history expects
+        window.updateSelectionResult = function(id, result, winAmount) {
+            console.log('Update selection result:', id, result, winAmount);
+            
+            // Find and update the selection
+            let found = false;
+            demoSelectionHistory = demoSelectionHistory.map(sel => {
+                if (sel.id === id) {
+                    found = true;
+                    return { ...sel, result, winAmount: parseFloat(winAmount) || 0 };
+                }
+                return sel;
+            });
+            
+            if (!found) {
+                demoSavedSelections = demoSavedSelections.map(sel => {
+                    if (sel.id === id) {
+                        return { ...sel, result, winAmount: parseFloat(winAmount) || 0 };
+                    }
+                    return sel;
+                });
+            }
+            
+            renderDemo();
+        };
+
+        window.deleteSelectionEntry = function(id) {
+            if (confirm('Delete this selection?')) {
+                demoSelectionHistory = demoSelectionHistory.filter(sel => sel.id !== id);
+                demoSavedSelections = demoSavedSelections.filter(sel => sel.id !== id);
+                renderDemo();
+            }
+        };
+
+        window.refreshSelectionHistory = function() {
+            renderDemo();
+        };
+
+        // Render the demo
+        function renderDemo() {
+            const container = document.getElementById('selection-history-container');
+            
+            // Create the selection history element using the enhanced section
+            const shouldUseCompactView = (demoSelectionHistory.length + demoSavedSelections.length) > 10;
+            const forceDetailed = localStorage.getItem('forceDetailedView') === 'true';
+            
+            // Set up global variables that the enhanced section expects
+            window.selectionHistory = demoSelectionHistory;
+            window.savedSelections = demoSavedSelections;
+            
+            // Create a wrapper element
+            const wrapper = React.createElement('div', null,
+                React.createElement('div', {
+                    style: {
+                        marginBottom: '16px',
+                        padding: '12px',
+                        backgroundColor: '#e0f2fe',
+                        border: '1px solid #0891b2',
+                        borderRadius: '6px',
+                        fontSize: '14px'
+                    }
+                },
+                    React.createElement('strong', null, 'Current Status: '),
+                    `${demoSelectionHistory.length + demoSavedSelections.length} total selections `,
+                    `(${demoSelectionHistory.length} history, ${demoSavedSelections.length} saved) - `,
+                    React.createElement('span', {
+                        style: { 
+                            fontWeight: 'bold',
+                            color: shouldUseCompactView && !forceDetailed ? '#0369a1' : '#059669'
+                        }
+                    }, shouldUseCompactView && !forceDetailed ? 'Using Compact View' : 'Using Detailed View')
+                ),
+                
+                // Include the enhanced selection history section
+                eval(`(function() {
+                    const selectionHistory = window.selectionHistory;
+                    const savedSelections = window.savedSelections;
+                    return (${document.querySelector('script[src="enhanced-selection-history-section.js"]') ? 
+                        'window.enhancedSelectionHistorySection || ' : ''}
+                        function() { return React.createElement('div', null, 'Loading...'); })();
+                })()`)
+            );
+            
+            ReactDOM.render(wrapper, container);
+        }
+
+        // Load the enhanced section code
+        fetch('enhanced-selection-history-section.js')
+            .then(response => response.text())
+            .then(code => {
+                // Extract the main logic and make it available
+                const functionBody = code.replace(/^[^{]*{/, '').replace(/}[^}]*$/, '');
+                window.enhancedSelectionHistorySection = new Function('selectionHistory', 'savedSelections', 
+                    'return ' + functionBody
+                );
+                
+                // Initial render
+                renderDemo();
+            })
+            .catch(error => {
+                console.error('Error loading enhanced section:', error);
+                // Fallback render
+                renderDemo();
+            });
+
+        // Generate some initial demo data
+        generateSampleData(25);
+    </script>
+</body>
+</html>
