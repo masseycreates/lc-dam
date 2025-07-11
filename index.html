@@ -19,19 +19,28 @@
             const originalWarn = console.warn;
             console.warn = function(...args) {
                 const message = args[0];
-                    if (message && message.includes) {
-                // Suppress Tailwind CDN production warning
-                if (message.includes('cdn.tailwindcss.com should not be used in production')) {
-            return;
+                if (typeof message === 'string' &&
+                    (message.includes('cdn.tailwindcss.com') ||
+                     message.includes('should not be used in production'))) {
+                    return; // Suppress Tailwind CDN warning
+                }
+                originalWarn.apply(console, args);
+            };
         }
-    // Suppress Babel in-browser transformer warning
-    if (message.includes('You are using the in-browser Babel transformer')) {
-    return;
-    }
-    }
-    originalWarn.apply(console, args);
-    };
-    }
+
+        // Suppress Babel development warnings
+        if (typeof console !== 'undefined' && console.error) {
+            const originalError = console.error;
+            console.error = function(...args) {
+                const message = args[0];
+                if (typeof message === 'string' &&
+                    (message.includes('Babel') ||
+                     message.includes('transpilation'))) {
+                    return; // Suppress Babel warnings
+                }
+                originalError.apply(console, args);
+            };
+        }
     </script>
 
     <!-- Favicon -->
@@ -3985,46 +3994,48 @@
 
                                             entry.notes ? React.createElement('p', { className: 'text-xs text-gray-600 mt-2' }, entry.notes) : null
                                         );
-                                    })
+                                    })()
                                 )
-                                : React.createElement('div', { className: 'mb-4' },
-                                    React.createElement('button', {
-                                        onClick: async () => {
-                                            console.log('🔄 Manual refresh triggered');
-                                            setIsLoadingUserData(true);
-                                            await initializeUserSession();
-                                            setIsLoadingUserData(false);
-                                        },
-                                        className: 'btn btn-secondary text-sm'
-                                    }, '🔄 Refresh Data')
-                                ),
-
-                                // Manual drawing results check button (for testing)
-                                React.createElement('div', { className: 'mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg' },
-                                    React.createElement('h4', { className: 'font-medium text-blue-900 mb-2' }, '🎯 Drawing Results Check'),
-                                    React.createElement('p', { className: 'text-sm text-blue-700 mb-3' },
-                                        'Manually check drawing results to update pending selections. This happens automatically, but you can trigger it manually.'
+                                : React.createElement('div', null,
+                                    React.createElement('div', { className: 'mb-4' },
+                                        React.createElement('button', {
+                                            onClick: async () => {
+                                                console.log('🔄 Manual refresh triggered');
+                                                setIsLoadingUserData(true);
+                                                await initializeUserSession();
+                                                setIsLoadingUserData(false);
+                                            },
+                                            className: 'btn btn-secondary text-sm'
+                                        }, '🔄 Refresh Data')
                                     ),
-                                    React.createElement('button', {
-                                        onClick: async () => {
-                                            setDataStatus('🎯 Checking recent drawing results...');
-                                            if (window.autoCheckRecentDrawings) {
-                                                await window.autoCheckRecentDrawings();
-                                            } else {
-                                                console.error('autoCheckRecentDrawings function not available');
-                                                setDataStatus('❌ Drawing results check function not available');
-                                                return;
-                                            }
-                                            setDataStatus('✅ Drawing results check completed');
-                                        },
-                                        className: 'btn btn-secondary btn-sm'
-                                    }, '🔄 Check Recent Drawing Results')
-                                ),
 
-                                selectionHistory.length === 0 ? React.createElement('div', { className: 'text-center py-6 text-gray-500' },
-                                    React.createElement('p', null, 'No selections saved yet.'),
-                                    React.createElement('p', { className: 'text-sm mt-2' }, 'Save selections from the AI Hybrid tab or add previous selections manually.')
-                                ) : null
+                                    // Manual drawing results check button (for testing)
+                                    React.createElement('div', { className: 'mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg' },
+                                        React.createElement('h4', { className: 'font-medium text-blue-900 mb-2' }, '🎯 Drawing Results Check'),
+                                        React.createElement('p', { className: 'text-sm text-blue-700 mb-3' },
+                                            'Manually check drawing results to update pending selections. This happens automatically, but you can trigger it manually.'
+                                        ),
+                                        React.createElement('button', {
+                                            onClick: async () => {
+                                                setDataStatus('🎯 Checking recent drawing results...');
+                                                if (window.autoCheckRecentDrawings) {
+                                                    await window.autoCheckRecentDrawings();
+                                                } else {
+                                                    console.error('autoCheckRecentDrawings function not available');
+                                                    setDataStatus('❌ Drawing results check function not available');
+                                                    return;
+                                                }
+                                                setDataStatus('✅ Drawing results check completed');
+                                            },
+                                            className: 'btn btn-secondary btn-sm'
+                                        }, '🔄 Check Recent Drawing Results')
+                                    ),
+
+                                    selectionHistory.length === 0 ? React.createElement('div', { className: 'text-center py-6 text-gray-500' },
+                                        React.createElement('p', null, 'No selections saved yet.'),
+                                        React.createElement('p', { className: 'text-sm mt-2' }, 'Save selections from the AI Hybrid tab or add previous selections manually.')
+                                    ) : null
+                                )
                             )
                         )
                     );
