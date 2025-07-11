@@ -2178,22 +2178,37 @@
                     const response = await fetch('/api/powerball-history?limit=3');
                     if (response.ok) {
                         const data = await response.json();
-                        if (data.success && data.data.length > 0) {
+                        console.log('🔍 Drawing results API response:', data);
+
+                        // Check both possible response structures
+                        const drawings = data.drawings || data.data || [];
+                        if (data.success && drawings.length > 0) {
                             // Check the most recent drawing
-                            const recentDrawing = data.data[0];
+                            const recentDrawing = drawings[0];
+                            console.log('🎯 Most recent drawing:', recentDrawing);
+
                             if (recentDrawing.date && recentDrawing.numbers && recentDrawing.powerball) {
                                 await checkDrawingResults(
                                     recentDrawing.date,
                                     recentDrawing.numbers,
                                     recentDrawing.powerball
                                 );
+                            } else {
+                                console.log('⚠️ Recent drawing missing required data:', recentDrawing);
                             }
+                        } else {
+                            console.log('⚠️ No recent drawings found or API failed');
                         }
+                    } else {
+                        console.log('⚠️ Drawing results API request failed:', response.status);
                     }
                 } catch (error) {
                     console.error('Error auto-checking recent drawings:', error);
                 }
             };
+
+            // Make autoCheckRecentDrawings globally accessible for manual triggers
+            window.autoCheckRecentDrawings = autoCheckRecentDrawings;
 
             // Check and update selection results based on drawing outcomes
             const checkDrawingResults = async (drawingDate, winningNumbers, powerball) => {
@@ -2241,7 +2256,10 @@
                 }
             };
 
-                const initializeApp = async () => {
+            // Make checkDrawingResults globally accessible as well
+            window.checkDrawingResults = checkDrawingResults;
+
+            const initializeApp = async () => {
                     console.log('🚀 Starting app initialization...');
 
                     // Validate system state first
@@ -3976,7 +3994,13 @@
                                     React.createElement('button', {
                                         onClick: async () => {
                                             setDataStatus('🎯 Checking recent drawing results...');
-                                            await autoCheckRecentDrawings();
+                                            if (window.autoCheckRecentDrawings) {
+                                                await window.autoCheckRecentDrawings();
+                                            } else {
+                                                console.error('autoCheckRecentDrawings function not available');
+                                                setDataStatus('❌ Drawing results check function not available');
+                                                return;
+                                            }
                                             setDataStatus('✅ Drawing results check completed');
                                         },
                                         className: 'btn btn-secondary btn-sm'
