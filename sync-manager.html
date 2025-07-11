@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selection Sync Manager</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin: 0;
+            font-size: 2.5em;
+        }
+        
+        .header p {
+            color: #666;
+            margin: 10px 0 0 0;
+            font-size: 1.1em;
+        }
+        
+        .sync-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        
+        .sync-section h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .sync-files {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        
+        .sync-file {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .sync-file:last-child {
+            border-bottom: none;
+        }
+        
+        .sync-file:hover {
+            background: #f8f9fa;
+        }
+        
+        .file-info {
+            flex: 1;
+        }
+        
+        .file-info h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        
+        .file-info p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .auto-sync-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #ccc;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #007bff;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active::after {
+            transform: translateX(30px);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-card h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .stat-card .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .file-input {
+            margin: 10px 0;
+        }
+        
+        .file-input input[type="file"] {
+            display: none;
+        }
+        
+        .file-input label {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-input label:hover {
+            background: #e9ecef;
+            border-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Selection Sync Manager</h1>
+            <p>Manage your Powerball selections across devices with automatic file synchronization</p>
+        </div>
+        
+        <div id="status"></div>
+        
+        <!-- Auto Sync Section -->
+        <div class="sync-section">
+            <h3>⚡ Automatic Synchronization</h3>
+            <div class="auto-sync-toggle">
+                <span>Auto-sync selections:</span>
+                <div class="toggle-switch" id="autoSyncToggle" onclick="toggleAutoSync()"></div>
+                <span id="autoSyncStatus">Disabled</span>
+            </div>
+            <p>When enabled, your selections will be automatically saved to a sync file every time you make changes.</p>
+            <button class="btn" onclick="syncNow()">🔄 Sync Now</button>
+            <button class="btn btn-success" onclick="downloadLatestSync()">💾 Download Latest Sync File</button>
+        </div>
+        
+        <!-- Manual Sync Section -->
+        <div class="sync-section">
+            <h3>📁 Manual File Management</h3>
+            <div class="file-input">
+                <label for="syncFileInput">
+                    📂 Import Sync File
+                    <input type="file" id="syncFileInput" accept=".json" onchange="importSyncFile(event)">
+                </label>
+            </div>
+            <button class="btn btn-warning" onclick="exportCurrentData()">📤 Export Current Data</button>
+            <button class="btn" onclick="refreshSyncFiles()">🔄 Refresh File List</button>
+        </div>
+        
+        <!-- Statistics -->
+        <div class="sync-section">
+            <h3>📊 Sync Statistics</h3>
+            <div class="stats">
+                <div class="stat-card">
+                    <h4>Total Selections</h4>
+                    <div class="number" id="totalSelections">-</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Saved Selections</h4>
+                    <div class="number" id="savedSelections">-</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Sync Files</h4>
+                    <div class="number" id="syncFileCount">-</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Last Sync</h4>
+                    <div class="number" id="lastSync" style="font-size: 1em;">Never</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sync Files List -->
+        <div class="sync-section">
+            <h3>📋 Available Sync Files</h3>
+            <div id="syncFilesList" class="sync-files">
+                <div class="loading">Loading sync files...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sync Manager Class
+        class SelectionSyncManager {
+            constructor() {
+                this.autoSyncEnabled = localStorage.getItem('autoSyncEnabled') === 'true';
+                this.syncInterval = null;
+                this.lastSyncTime = localStorage.getItem('lastSyncTime');
+                
+                this.init();
+            }
+            
+            async init() {
+                this.updateUI();
+                await this.loadSyncFiles();
+                await this.updateStats();
+                
+                if (this.autoSyncEnabled) {
+                    this.startAutoSync();
+                }
+            }
+            
+            updateUI() {
+                const toggle = document.getElementById('autoSyncToggle');
+                const status = document.getElementById('autoSyncStatus');
+                
+                if (this.autoSyncEnabled) {
+                    toggle.classList.add('active');
+                    status.textContent = 'Enabled';
+                    status.style.color = '#28a745';
+                } else {
+                    toggle.classList.remove('active');
+                    status.textContent = 'Disabled';
+                    status.style.color = '#666';
+                }
+                
+                // Update last sync time
+                const lastSyncEl = document.getElementById('lastSync');
+                if (this.lastSyncTime) {
+                    const date = new Date(this.lastSyncTime);
+                    lastSyncEl.textContent = date.toLocaleString();
+                } else {
+                    lastSyncEl.textContent = 'Never';
+                }
+            }
+            
+            async syncNow() {
+                try {
+                    this.showStatus('⏳ Syncing selections...', 'info');
+                    
+                    // Get current selections from localStorage
+                    const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                    const savedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+                    
+                    const response = await fetch('/api/selection-sync', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            selections,
+                            savedSelections,
+                            metadata: {
+                                deviceId: this.getDeviceId(),
+                                source: 'manual_sync'
+                            }
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.lastSyncTime = result.timestamp;
+                        localStorage.setItem('lastSyncTime', this.lastSyncTime);
+                        
+                        this.showStatus(`✅ Sync successful! Saved ${result.dataCount} selections.`, 'success');
+                        await this.loadSyncFiles();
+                        await this.updateStats();
+                        this.updateUI();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    console.error('Sync error:', error);
+                    this.showStatus(`❌ Sync failed: ${error.message}`, 'error');
+                }
+            }
+            
+            async loadSyncFiles() {
+                try {
+                    const response = await fetch('/api/selection-sync?list=true');
+                    const result = await response.json();
+                    
+                    const container = document.getElementById('syncFilesList');
+                    
+                    if (result.success && result.files.length > 0) {
+                        container.innerHTML = result.files.map(file => `
+                            <div class="sync-file">
+                                <div class="file-info">
+                                    <h4>📄 ${new Date(file.timestamp).toLocaleString()}</h4>
+                                    <p>
+                                        ${file.dataCount} selections • 
+                                        ${(file.size / 1024).toFixed(1)} KB • 
+                                        Device: ${file.deviceId} • 
+                                        Source: ${file.source}
+                                    </p>
+                                </div>
+                                <div class="file-actions">
+                                    <button class="btn" onclick="syncManager.downloadSyncFile('${file.syncId}')">
+                                        💾 Download
+                                    </button>
+                                    <button class="btn btn-success" onclick="syncManager.loadSyncFile('${file.syncId}')">
+                                        📥 Load
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                        document.getElementById('syncFileCount').textContent = result.files.length;
+                    } else {
+                        container.innerHTML = '<div class="loading">No sync files found. Create your first sync by clicking "Sync Now".</div>';
+                        document.getElementById('syncFileCount').textContent = '0';
+                    }
+                } catch (error) {
+                    console.error('Error loading sync files:', error);
+                    document.getElementById('syncFilesList').innerHTML = '<div class="loading">Error loading sync files.</div>';
+                }
+            }
+            
+            async loadSyncFile(syncId) {
+                try {
+                    this.showStatus('⏳ Loading sync file...', 'info');
+                    
+                    const response = await fetch(`/api/selection-sync?syncId=${syncId}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const syncData = result.data;
+                        
+                        // Get current data
+                        const currentSelections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                        const currentSavedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+                        
+                        // Merge data
+                        const mergedData = this.mergeData(
+                            { selections: currentSelections, savedSelections: currentSavedSelections },
+                            syncData.data
+                        );
+                        
+                        // Save merged data
+                        localStorage.setItem('powerball_selection_history', JSON.stringify(mergedData.selections));
+                        localStorage.setItem('powerball_saved_selections', JSON.stringify(mergedData.savedSelections));
+                        
+                        this.showStatus(`✅ Sync file loaded! Merged ${mergedData.selections.length + mergedData.savedSelections.length} selections.`, 'success');
+                        await this.updateStats();
+                        
+                        // Trigger a new sync to save the merged data
+                        setTimeout(() => this.syncNow(), 1000);
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    console.error('Error loading sync file:', error);
+                    this.showStatus(`❌ Failed to load sync file: ${error.message}`, 'error');
+                }
+            }
+            
+            async downloadSyncFile(syncId) {
+                try {
+                    const response = await fetch(`/api/selection-sync?syncId=${syncId}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const dataStr = JSON.stringify(result.data, null, 2);
+                        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                        const url = URL.createObjectURL(dataBlob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `powerball_sync_${new Date(result.data.timestamp).toISOString().split('T')[0]}.json`;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        
+                        this.showStatus('✅ Sync file downloaded!', 'success');
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    console.error('Error downloading sync file:', error);
+                    this.showStatus(`❌ Failed to download sync file: ${error.message}`, 'error');
+                }
+            }
+            
+            async downloadLatestSync() {
+                try {
+                    const response = await fetch('/api/selection-sync');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const dataStr = JSON.stringify(result.data, null, 2);
+                        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                        const url = URL.createObjectURL(dataBlob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `powerball_sync_latest.json`;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        
+                        this.showStatus('✅ Latest sync file downloaded!', 'success');
+                    } else {
+                        throw new Error(result.error || 'No sync file available');
+                    }
+                } catch (error) {
+                    console.error('Error downloading latest sync:', error);
+                    this.showStatus(`❌ Failed to download latest sync: ${error.message}`, 'error');
+                }
+            }
+            
+            async importSyncFile(file) {
+                try {
+                    this.showStatus('⏳ Importing sync file...', 'info');
+                    
+                    const text = await file.text();
+                    const syncData = JSON.parse(text);
+                    
+                    // Validate sync file format
+                    if (!syncData.data || !syncData.version) {
+                        throw new Error('Invalid sync file format');
+                    }
+                    
+                    // Get current data
+                    const currentSelections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                    const currentSavedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+                    
+                    // Merge data
+                    const mergedData = this.mergeData(
+                        { selections: currentSelections, savedSelections: currentSavedSelections },
+                        syncData.data
+                    );
+                    
+                    // Save merged data
+                    localStorage.setItem('powerball_selection_history', JSON.stringify(mergedData.selections));
+                    localStorage.setItem('powerball_saved_selections', JSON.stringify(mergedData.savedSelections));
+                    
+                    this.showStatus(`✅ Sync file imported! Merged ${mergedData.selections.length + mergedData.savedSelections.length} selections.`, 'success');
+                    await this.updateStats();
+                    
+                    // Trigger a new sync to save the merged data
+                    setTimeout(() => this.syncNow(), 1000);
+                } catch (error) {
+                    console.error('Error importing sync file:', error);
+                    this.showStatus(`❌ Failed to import sync file: ${error.message}`, 'error');
+                }
+            }
+            
+            async exportCurrentData() {
+                try {
+                    const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                    const savedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+                    
+                    const exportData = {
+                        version: '1.0',
+                        timestamp: new Date().toISOString(),
+                        deviceId: this.getDeviceId(),
+                        data: {
+                            selections,
+                            savedSelections,
+                            totalCount: selections.length + savedSelections.length
+                        },
+                        metadata: {
+                            source: 'manual_export',
+                            userAgent: navigator.userAgent
+                        }
+                    };
+                    
+                    const dataStr = JSON.stringify(exportData, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `powerball_export_${new Date().toISOString().split('T')[0]}.json`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    
+                    this.showStatus('✅ Current data exported!', 'success');
+                } catch (error) {
+                    console.error('Error exporting data:', error);
+                    this.showStatus(`❌ Failed to export data: ${error.message}`, 'error');
+                }
+            }
+            
+            toggleAutoSync() {
+                this.autoSyncEnabled = !this.autoSyncEnabled;
+                localStorage.setItem('autoSyncEnabled', this.autoSyncEnabled.toString());
+                
+                if (this.autoSyncEnabled) {
+                    this.startAutoSync();
+                    this.showStatus('✅ Auto-sync enabled!', 'success');
+                } else {
+                    this.stopAutoSync();
+                    this.showStatus('⏸️ Auto-sync disabled.', 'info');
+                }
+                
+                this.updateUI();
+            }
+            
+            startAutoSync() {
+                if (this.syncInterval) {
+                    clearInterval(this.syncInterval);
+                }
+                
+                // Sync every 5 minutes
+                this.syncInterval = setInterval(() => {
+                    this.syncNow();
+                }, 5 * 60 * 1000);
+            }
+            
+            stopAutoSync() {
+                if (this.syncInterval) {
+                    clearInterval(this.syncInterval);
+                    this.syncInterval = null;
+                }
+            }
+            
+            async updateStats() {
+                const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                const savedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+                
+                document.getElementById('totalSelections').textContent = selections.length;
+                document.getElementById('savedSelections').textContent = savedSelections.length;
+            }
+            
+            mergeData(localData, remoteData) {
+                const merged = {
+                    selections: [],
+                    savedSelections: []
+                };
+                
+                // Create maps for deduplication
+                const selectionMap = new Map();
+                const savedSelectionMap = new Map();
+                
+                // Add local data
+                if (localData.selections) {
+                    localData.selections.forEach(item => {
+                        selectionMap.set(item.id, item);
+                    });
+                }
+                
+                if (localData.savedSelections) {
+                    localData.savedSelections.forEach(item => {
+                        savedSelectionMap.set(item.id, item);
+                    });
+                }
+                
+                // Add remote data (newer timestamps win)
+                if (remoteData.selections) {
+                    remoteData.selections.forEach(item => {
+                        const existing = selectionMap.get(item.id);
+                        if (!existing || new Date(item.dateSaved || item.timestamp) > new Date(existing.dateSaved || existing.timestamp)) {
+                            selectionMap.set(item.id, item);
+                        }
+                    });
+                }
+                
+                if (remoteData.savedSelections) {
+                    remoteData.savedSelections.forEach(item => {
+                        const existing = savedSelectionMap.get(item.id);
+                        if (!existing || new Date(item.dateSaved || item.timestamp) > new Date(existing.dateSaved || existing.timestamp)) {
+                            savedSelectionMap.set(item.id, item);
+                        }
+                    });
+                }
+                
+                // Convert maps back to arrays
+                merged.selections = Array.from(selectionMap.values());
+                merged.savedSelections = Array.from(savedSelectionMap.values());
+                
+                return merged;
+            }
+            
+            getDeviceId() {
+                let deviceId = localStorage.getItem('deviceId');
+                if (!deviceId) {
+                    deviceId = 'device_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
+                    localStorage.setItem('deviceId', deviceId);
+                }
+                return deviceId;
+            }
+            
+            showStatus(message, type) {
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    statusEl.innerHTML = '';
+                }, 5000);
+            }
+        }
+        
+        // Global functions
+        let syncManager;
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            syncManager = new SelectionSyncManager();
+        });
+        
+        function toggleAutoSync() {
+            syncManager.toggleAutoSync();
+        }
+        
+        function syncNow() {
+            syncManager.syncNow();
+        }
+        
+        function downloadLatestSync() {
+            syncManager.downloadLatestSync();
+        }
+        
+        function exportCurrentData() {
+            syncManager.exportCurrentData();
+        }
+        
+        function refreshSyncFiles() {
+            syncManager.loadSyncFiles();
+        }
+        
+        function importSyncFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                syncManager.importSyncFile(file);
+            }
+        }
+    </script>
+</body>
+</html>

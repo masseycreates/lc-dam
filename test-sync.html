@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Selection Sync API</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .test-section {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .test-section h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Selection Sync API Test</h1>
+        <p>Test the selection synchronization functionality</p>
+        
+        <div id="status"></div>
+        
+        <div class="test-section">
+            <h3>📤 Test Save Sync</h3>
+            <p>Save test selection data to sync file</p>
+            <button class="btn" onclick="testSaveSync()">Save Test Data</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📥 Test Load Sync</h3>
+            <p>Load the latest sync file</p>
+            <button class="btn" onclick="testLoadSync()">Load Latest Sync</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📋 Test List Files</h3>
+            <p>List all available sync files</p>
+            <button class="btn" onclick="testListFiles()">List Sync Files</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔄 Test Merge</h3>
+            <p>Test data merging functionality</p>
+            <button class="btn btn-success" onclick="testMerge()">Test Merge</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Results</h3>
+            <pre id="results">No tests run yet...</pre>
+        </div>
+    </div>
+
+    <script>
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                statusEl.innerHTML = '';
+            }, 5000);
+        }
+        
+        function showResults(data) {
+            const resultsEl = document.getElementById('results');
+            resultsEl.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        // Generate test data
+        function generateTestData() {
+            return {
+                selections: [
+                    {
+                        id: 'test_' + Date.now() + '_1',
+                        numbers: [5, 12, 23, 34, 45],
+                        powerball: 8,
+                        name: 'Test Selection 1',
+                        source: 'Test',
+                        dateSaved: new Date().toISOString(),
+                        confidence: 75,
+                        strategy: 'Test Strategy'
+                    },
+                    {
+                        id: 'test_' + Date.now() + '_2',
+                        numbers: [7, 14, 28, 35, 49],
+                        powerball: 12,
+                        name: 'Test Selection 2',
+                        source: 'Test',
+                        dateSaved: new Date().toISOString(),
+                        confidence: 80,
+                        strategy: 'Test Strategy'
+                    }
+                ],
+                savedSelections: [
+                    {
+                        id: 'saved_test_' + Date.now(),
+                        numbers: [1, 11, 21, 31, 41],
+                        powerball: 5,
+                        name: 'Saved Test Selection',
+                        source: 'Test',
+                        dateSaved: new Date().toISOString(),
+                        confidence: 85,
+                        strategy: 'Test Strategy'
+                    }
+                ]
+            };
+        }
+        
+        async function testSaveSync() {
+            try {
+                showStatus('⏳ Testing save sync...', 'info');
+                
+                const testData = generateTestData();
+                
+                const response = await fetch('/api/selection-sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        selections: testData.selections,
+                        savedSelections: testData.savedSelections,
+                        metadata: {
+                            deviceId: 'test_device_' + Date.now(),
+                            source: 'api_test'
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus(`✅ Save sync successful! Sync ID: ${result.syncId}`, 'success');
+                    showResults({
+                        test: 'Save Sync',
+                        success: true,
+                        result: result
+                    });
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Save sync test error:', error);
+                showStatus(`❌ Save sync failed: ${error.message}`, 'error');
+                showResults({
+                    test: 'Save Sync',
+                    success: false,
+                    error: error.message
+                });
+            }
+        }
+        
+        async function testLoadSync() {
+            try {
+                showStatus('⏳ Testing load sync...', 'info');
+                
+                const response = await fetch('/api/selection-sync');
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('✅ Load sync successful!', 'success');
+                    showResults({
+                        test: 'Load Sync',
+                        success: true,
+                        result: result
+                    });
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Load sync test error:', error);
+                showStatus(`❌ Load sync failed: ${error.message}`, 'error');
+                showResults({
+                    test: 'Load Sync',
+                    success: false,
+                    error: error.message
+                });
+            }
+        }
+        
+        async function testListFiles() {
+            try {
+                showStatus('⏳ Testing list files...', 'info');
+                
+                const response = await fetch('/api/selection-sync?list=true');
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus(`✅ List files successful! Found ${result.files.length} files`, 'success');
+                    showResults({
+                        test: 'List Files',
+                        success: true,
+                        result: result
+                    });
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('List files test error:', error);
+                showStatus(`❌ List files failed: ${error.message}`, 'error');
+                showResults({
+                    test: 'List Files',
+                    success: false,
+                    error: error.message
+                });
+            }
+        }
+        
+        async function testMerge() {
+            try {
+                showStatus('⏳ Testing merge functionality...', 'info');
+                
+                const localData = generateTestData();
+                const remoteData = generateTestData();
+                
+                // Modify remote data to test merging
+                remoteData.selections[0].id = localData.selections[0].id; // Same ID, different timestamp
+                remoteData.selections[0].dateSaved = new Date(Date.now() + 1000).toISOString(); // Newer
+                
+                const response = await fetch('/api/selection-sync', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        localData: localData,
+                        remoteData: remoteData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('✅ Merge test successful!', 'success');
+                    showResults({
+                        test: 'Merge Data',
+                        success: true,
+                        result: result
+                    });
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Merge test error:', error);
+                showStatus(`❌ Merge test failed: ${error.message}`, 'error');
+                showResults({
+                    test: 'Merge Data',
+                    success: false,
+                    error: error.message
+                });
+            }
+        }
+        
+        // Run initial test on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            showStatus('🧪 Sync API Test Ready', 'info');
+        });
+    </script>
+</body>
+</html>

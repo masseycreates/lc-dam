@@ -2071,6 +2071,9 @@
                 try {
                     localStorage.setItem('powerball_selection_history', JSON.stringify(history));
                     setSelectionHistory(history);
+
+                    // Trigger auto-sync if enabled
+                    triggerAutoSync();
                 } catch (error) {
                     console.error('Error saving selection history:', error);
                 }
@@ -2080,9 +2083,65 @@
                 try {
                     localStorage.setItem('powerball_saved_selections', JSON.stringify(selections));
                     setSavedSelections(selections);
+
+                    // Trigger auto-sync if enabled
+                    triggerAutoSync();
                 } catch (error) {
                     console.error('Error saving selections:', error);
                 }
+            };
+
+            // Auto-sync functionality
+            const isAutoSyncEnabled = () => {
+                return localStorage.getItem('autoSyncEnabled') === 'true';
+            };
+
+            const triggerAutoSync = async () => {
+                if (!isAutoSyncEnabled()) {
+                    return;
+                }
+
+                try {
+                    console.log('🔄 Auto-sync triggered...');
+
+                    const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                    const savedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+
+                    const response = await fetch('/api/selection-sync', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            selections,
+                            savedSelections,
+                            metadata: {
+                                deviceId: getDeviceId(),
+                                source: 'auto_sync'
+                            }
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        localStorage.setItem('lastSyncTime', result.timestamp);
+                        console.log('✅ Auto-sync successful:', result.dataCount, 'selections synced');
+                    } else {
+                        console.warn('⚠️ Auto-sync failed:', result.error);
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Auto-sync error:', error.message);
+                }
+            };
+
+            const getDeviceId = () => {
+                let deviceId = localStorage.getItem('deviceId');
+                if (!deviceId) {
+                    deviceId = 'device_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
+                    localStorage.setItem('deviceId', deviceId);
+                }
+                return deviceId;
             };
 
             // Initialize user session on component mount
@@ -3252,7 +3311,79 @@
                                             link.click();
                                         },
                                         className: 'btn btn-secondary'
-                                    }, '💾 Export Data')
+                                    }, '💾 Export Data'),
+                                    React.createElement('button', {
+                                        onClick: () => {
+                                            window.open('sync-manager.html', '_blank');
+                                        },
+                                        className: 'btn btn-primary'
+                                    }, '🔄 Sync Manager'),
+                                    React.createElement('button', {
+                                        onClick: async () => {
+                                            try {
+                                                const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+                                                const savedSelections = JSON.parse(localStorage.getItem('powerball_saved_selections') || '[]');
+
+                                                const response = await fetch('/api/selection-sync', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json'
+                                                    },
+                                                    body: JSON.stringify({
+                                                        selections,
+                                                        savedSelections,
+                                                        metadata: {
+                                                            deviceId: getDeviceId(),
+                                                            source: 'manual_sync'
+                                                        }
+                                                    })
+                                                });
+
+                                                const result = await response.json();
+
+                                                if (result.success) {
+                                                    localStorage.setItem('lastSyncTime', result.timestamp);
+                                                    alert(`✅ Sync successful! Saved ${result.dataCount} selections.`);
+                                                } else {
+                                                    alert(`❌ Sync failed: ${result.error}`);
+                                                }
+                                            } catch (error) {
+                                                console.error('Sync error:', error);
+                                                alert(`❌ Sync failed: ${error.message}`);
+                                            }
+                                        },
+                                        className: 'btn btn-success'
+                                    }, '⚡ Quick Sync')
+                                )
+                            ),
+
+                            // Sync Status Indicator
+                            React.createElement('div', { className: 'card bg-blue-50 border-blue-200' },
+                                React.createElement('div', { className: 'flex items-center justify-between' },
+                                    React.createElement('div', null,
+                                        React.createElement('h4', { className: 'text-sm font-semibold text-blue-800 mb-1' }, '🔄 Sync Status'),
+                                        React.createElement('p', { className: 'text-xs text-blue-600' },
+                                            localStorage.getItem('autoSyncEnabled') === 'true' ?
+                                                '✅ Auto-sync enabled' :
+                                                '⏸️ Auto-sync disabled'
+                                        ),
+                                        localStorage.getItem('lastSyncTime') ?
+                                            React.createElement('p', { className: 'text-xs text-blue-500 mt-1' },
+                                                `Last sync: ${new Date(localStorage.getItem('lastSyncTime')).toLocaleString()}`
+                                            ) :
+                                            React.createElement('p', { className: 'text-xs text-blue-500 mt-1' }, 'Never synced')
+                                    ),
+                                    React.createElement('div', { className: 'text-right' },
+                                        React.createElement('button', {
+                                            onClick: () => {
+                                                const enabled = localStorage.getItem('autoSyncEnabled') !== 'true';
+                                                localStorage.setItem('autoSyncEnabled', enabled.toString());
+                                                // Force re-render by updating a state
+                                                setSelectionHistory([...selectionHistory]);
+                                            },
+                                            className: `btn text-xs px-2 py-1 ${localStorage.getItem('autoSyncEnabled') === 'true' ? 'btn-secondary' : 'btn-primary'}`
+                                        }, localStorage.getItem('autoSyncEnabled') === 'true' ? 'Disable' : 'Enable')
+                                    )
                                 )
                             ),
 
