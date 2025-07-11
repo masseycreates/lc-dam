@@ -2171,6 +2171,76 @@
 
             // Initialize user session on component mount
             React.useEffect(() => {
+            // Auto-check for recent drawing results
+            const autoCheckRecentDrawings = async () => {
+                try {
+                    // Get recent PowerBall results
+                    const response = await fetch('/api/powerball-history?limit=3');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.data.length > 0) {
+                            // Check the most recent drawing
+                            const recentDrawing = data.data[0];
+                            if (recentDrawing.date && recentDrawing.numbers && recentDrawing.powerball) {
+                                await checkDrawingResults(
+                                    recentDrawing.date,
+                                    recentDrawing.numbers,
+                                    recentDrawing.powerball
+                                );
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error auto-checking recent drawings:', error);
+                }
+            };
+
+            // Check and update selection results based on drawing outcomes
+            const checkDrawingResults = async (drawingDate, winningNumbers, powerball) => {
+                if (!drawingDate || !winningNumbers || !powerball) {
+                    console.error('Missing drawing result data');
+                    return;
+                }
+
+                try {
+                    console.log(`🎯 Checking drawing results for ${drawingDate}...`);
+
+                    const response = await fetch('/api/check-drawing-results', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            drawingDate,
+                            winningNumbers,
+                            powerball
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            console.log(`✅ Updated ${result.data.selectionsUpdated} selections for drawing ${drawingDate}`);
+
+                            // Refresh local data to show updated results
+                            if (userId) {
+                                await loadUserData();
+                            } else {
+                                loadSelectionHistoryLocal();
+                                loadSavedSelectionsLocal();
+                            }
+
+                            // Show notification if any selections were updated
+                            if (result.data.selectionsUpdated > 0) {
+                                setDataStatus(`🎯 Updated ${result.data.selectionsUpdated} selections with drawing results for ${drawingDate}`);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking drawing results:', error);
+                }
+            };
+
                 const initializeApp = async () => {
                     console.log('🚀 Starting app initialization...');
 
@@ -2282,6 +2352,7 @@
                         if (response.ok) {
                             const data = await response.json();
                             if (data.success) {
+                                console.log(`✅ Successfully saved selection (${saveType}):`, data.data);
                                 // Update local state
                                 if (saveType === 'saved') {
                                     setSavedSelections(prev => [...prev, data.data]);
@@ -2404,29 +2475,6 @@
                 }
             };
 
-            // Auto-check for recent drawing results
-            const autoCheckRecentDrawings = async () => {
-                try {
-                    // Get recent PowerBall results
-                    const response = await fetch('/api/powerball-history?limit=3');
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.success && data.data.length > 0) {
-                            // Check the most recent drawing
-                            const recentDrawing = data.data[0];
-                            if (recentDrawing.date && recentDrawing.numbers && recentDrawing.powerball) {
-                                await checkDrawingResults(
-                                    recentDrawing.date,
-                                    recentDrawing.numbers,
-                                    recentDrawing.powerball
-                                );
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error auto-checking recent drawings:', error);
-                }
-            };
             };
 
             // Enhanced manual selection with persistence
