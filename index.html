@@ -3874,34 +3874,46 @@
                                      `isLoadingUserData = ${isLoadingUserData}`
                                  ),
 
-                                 selectionHistory.length > 0 || savedSelections.length > 0 ? React.createElement('div', { className: 'space-y-3' },
-                                     (() => {
-                                         // Combine both selectionHistory and savedSelections for display
-                                         const allSelections = [
-                                             ...selectionHistory.map(entry => ({ ...entry, source: entry.source || 'Manual Entry', type: 'history' })),
-                                             ...savedSelections.map(entry => ({ ...entry, source: entry.source || 'Saved Selection', type: 'saved' }))
-                                         ];
+                                 selectionHistory.length > 0 || savedSelections.length > 0 ?
+                                      React.createElement('div', { className: 'space-y-3' },
+                                          (() => {
+                                              // Combine both selectionHistory and savedSelections for display
+                                              const allSelections = [
+                                                  ...selectionHistory.map(entry => ({ ...entry, source: entry.source || 'Manual Entry', type: 'history' })),
+                                                  ...savedSelections.map(entry => ({ ...entry, source: entry.source || 'Saved Selection', type: 'saved' }))
+                                              ];
 
-                                         // Sort by timestamp/dateSaved (newest first)
-                                         allSelections.sort((a, b) => {
-                                             const dateA = new Date(a.dateSaved || a.timestamp || 0);
-                                             const dateB = new Date(b.dateSaved || b.timestamp || 0);
-                                             return dateB - dateA;
-                                         });
+                                              // Sort by timestamp/dateSaved (newest first)
+                                              allSelections.sort((a, b) => {
+                                                  const dateA = new Date(a.dateSaved || a.timestamp || 0);
+                                                  const dateB = new Date(b.dateSaved || b.timestamp || 0);
+                                                  return dateB - dateA;
+                                              });
 
-                                         return allSelections.map(entry => {
-                                        const isWin = entry.result === 'win';
-                                        const isLoss = entry.result === 'loss';
-                                        const isPending = entry.result === 'pending';
+                                      if (allSelections.length > 0) {
+                                          return React.createElement('div', { className: 'space-y-3' },
+                                              React.createElement(React.Fragment, null,
+                                                  allSelections.map(entry => {
+                                                      const entryIsWin = entry.result === 'win';
+                                                      const entryIsLoss = entry.result === 'loss';
+                                                      const entryIsPending = entry.result === 'pending';
 
-                                        return React.createElement('div', {
-                                            key: entry.id,
-                                            className: 'p-4 border rounded-lg ' + (
-                                                isWin ? 'border-green-200 bg-green-50' :
-                                                isLoss ? 'border-red-200 bg-red-50' :
-                                                'border-gray-200 bg-gray-50'
-                                            )
-                                        },
+                                                      return React.createElement('div', {
+                                                          key: entry.id,
+                                                          className: 'p-4 border rounded-lg ' + (
+                                                              entryIsWin ? 'border-green-200 bg-green-50' :
+                                                              entryIsLoss ? 'border-red-200 bg-red-50' :
+                                                              'border-gray-200 bg-gray-50'
+                                                          )
+                                                      },
+                                                          React.createElement('div', {
+                                                              key: entry.id,
+                                                              className: 'p-4 border rounded-lg ' + (
+                                                                  entryIsWin ? 'border-green-200 bg-green-50' :
+                                                                  entryIsLoss ? 'border-red-200 bg-red-50' :
+                                                                  'border-gray-200 bg-gray-50'
+                                                              )
+                                                          },
                                             React.createElement('div', { className: 'flex items-start justify-between mb-2' },
                                                 React.createElement('div', null,
                                                     React.createElement('div', { className: 'flex items-center gap-2 mb-1' },
@@ -3993,15 +4005,15 @@
                                             ),
 
                                             entry.notes ? React.createElement('p', { className: 'text-xs text-gray-600 mt-2' }, entry.notes) : null
-                                        );
+                                        });
                                     })()
-                                )
-                                : React.createElement('div', null,
-                                    React.createElement('div', { className: 'mb-4' },
-                                        React.createElement('button', {
-                                            onClick: async () => {
-                                                console.log('🔄 Manual refresh triggered');
-                                                setIsLoadingUserData(true);
+                                } else {
+                                    return React.createElement('div', null,
+                                        React.createElement('div', { className: 'mb-4' },
+                                            React.createElement('button', {
+                                                onClick: async () => {
+                                                    console.log('🔄 Manual refresh triggered');
+                                                    setIsLoadingUserData(true);
                                                 await initializeUserSession();
                                                 setIsLoadingUserData(false);
                                             },

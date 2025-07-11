@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Working React Test</title>
+    
+    <!-- React Libraries -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Suppress Tailwind development warnings
+        if (typeof console !== 'undefined' && console.warn) {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                const message = args[0];
+                if (typeof message === 'string' && 
+                    (message.includes('cdn.tailwindcss.com') || 
+                     message.includes('should not be used in production'))) {
+                    return; // Suppress Tailwind CDN warning
+                }
+                originalWarn.apply(console, args);
+            };
+        }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function TestApp() {
+            const [selectionHistory, setSelectionHistory] = useState([
+                { id: 1, numbers: [1, 2, 3, 4, 5], powerball: 10, result: 'win', source: 'Test Entry', dateSaved: new Date() },
+                { id: 2, numbers: [6, 7, 8, 9, 10], powerball: 15, result: 'pending', source: 'Another Test', dateSaved: new Date() }
+            ]);
+            const [savedSelections, setSavedSelections] = useState([]);
+
+            // Helper function to render selections
+            const renderSelections = () => {
+                // Combine both arrays
+                const allSelections = [
+                    ...selectionHistory.map(entry => ({ ...entry, source: entry.source || 'Manual Entry', type: 'history' })),
+                    ...savedSelections.map(entry => ({ ...entry, source: entry.source || 'Saved Selection', type: 'saved' }))
+                ];
+
+                // Sort by timestamp/dateSaved (newest first)
+                allSelections.sort((a, b) => {
+                    const dateA = new Date(a.dateSaved || a.timestamp || 0);
+                    const dateB = new Date(b.dateSaved || b.timestamp || 0);
+                    return dateB - dateA;
+                });
+
+                return allSelections.map(entry => {
+                    const isWin = entry.result === 'win';
+                    const isLoss = entry.result === 'loss';
+                    const isPending = entry.result === 'pending';
+
+                    return React.createElement('div', {
+                        key: entry.id,
+                        className: 'p-4 border rounded-lg ' + (
+                            isWin ? 'border-green-200 bg-green-50' :
+                            isLoss ? 'border-red-200 bg-red-50' :
+                            'border-gray-200 bg-gray-50'
+                        )
+                    },
+                        React.createElement('div', { className: 'flex items-start justify-between mb-2' },
+                            React.createElement('div', null,
+                                React.createElement('h4', { className: 'font-medium' }, entry.name || entry.strategy || 'Selection'),
+                                React.createElement('p', { className: 'text-sm text-gray-600' }, entry.source)
+                            ),
+                            React.createElement('div', {
+                                className: 'px-2 py-1 rounded text-xs font-medium ' + (
+                                    isWin ? 'bg-green-100 text-green-800' :
+                                    isLoss ? 'bg-red-100 text-red-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                                )
+                            },
+                                isWin ? '🏆 WIN' :
+                                isLoss ? '❌ LOSS' :
+                                '⏳ PENDING'
+                            )
+                        ),
+                        React.createElement('div', { className: 'flex items-center gap-3 mb-2' },
+                            React.createElement('div', { className: 'flex gap-1.5' },
+                                entry.numbers.map(num =>
+                                    React.createElement('span', {
+                                        key: num,
+                                        className: 'w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold'
+                                    }, num)
+                                )
+                            ),
+                            React.createElement('span', { className: 'w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold' }, entry.powerball)
+                        )
+                    );
+                });
+            };
+
+            return React.createElement('div', { className: 'p-4' },
+                React.createElement('h1', { className: 'text-2xl font-bold mb-4' }, 'Working React Structure Test'),
+                
+                selectionHistory.length > 0 || savedSelections.length > 0 ? 
+                    React.createElement('div', { className: 'space-y-3' }, ...renderSelections())
+                    : React.createElement('div', { className: 'text-center py-6 text-gray-500' },
+                        React.createElement('p', null, 'No selections available.')
+                    )
+            );
+        }
+
+        ReactDOM.render(React.createElement(TestApp), document.getElementById('root'));
+    </script>
+</body>
+</html>
