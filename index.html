@@ -3316,7 +3316,8 @@
                                         onClick: () => {
                                             window.open('sync-manager.html', '_blank');
                                         },
-                                        className: 'btn btn-primary'
+                                        className: 'btn btn-primary',
+                                        title: 'Open the full sync manager to manage your selection files across devices'
                                     }, '🔄 Sync Manager'),
                                     React.createElement('button', {
                                         onClick: async () => {
@@ -3383,6 +3384,18 @@
                                             },
                                             className: `btn text-xs px-2 py-1 ${localStorage.getItem('autoSyncEnabled') === 'true' ? 'btn-secondary' : 'btn-primary'}`
                                         }, localStorage.getItem('autoSyncEnabled') === 'true' ? 'Disable' : 'Enable')
+                                    )
+                                ),
+
+                            // Sync Help Text
+                            React.createElement('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4' },
+                                React.createElement('div', { className: 'flex items-start gap-2' },
+                                    React.createElement('span', { className: 'text-blue-600 text-lg' }, '💡'),
+                                    React.createElement('div', { className: 'text-sm text-blue-800' },
+                                        React.createElement('p', { className: 'font-medium mb-1' }, 'Sync Your Selections Across Devices'),
+                                        React.createElement('p', { className: 'text-blue-600' },
+                                            'Enable auto-sync to automatically save your selections to downloadable files. Use the Sync Manager to share files between your phone, tablet, and computer.'
+                                        )
                                     )
                                 )
                             ),
@@ -3488,7 +3501,8 @@
                                     React.createElement('p', { className: 'text-sm mt-2' }, 'Save selections from the AI Hybrid tab or add previous selections manually.')
                                 ) : null
                             )
-                        );
+                        )
+                    );
 
                     case 'calculator':
                         return React.createElement('div', { className: 'space-y-6' },

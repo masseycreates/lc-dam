@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Selection Sync Manager</title>
+    <title>Powerball Sync Manager - Advanced Lottery Intelligence System</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -263,10 +263,32 @@
             background: #e9ecef;
             border-color: #007bff;
         }
+
+        /* Navigation button hover effects */
+        .nav-header button:hover {
+            background: rgba(255,255,255,0.3) !important;
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Navigation Header -->
+        <div class="nav-header" style="background: #007bff; color: white; margin: -30px -30px 30px -30px; padding: 15px 30px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 style="margin: 0; font-size: 1.5em;">🔄 Selection Sync Manager</h2>
+                <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9em;">Manage your Powerball selections across devices</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="window.open('index.html', '_self')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.3s ease;">
+                    🏠 Back to App
+                </button>
+                <button onclick="window.open('test-sync.html', '_blank')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.3s ease;">
+                    🧪 Test API
+                </button>
+            </div>
+        </div>
+
         <div class="header">
             <h1>🔄 Selection Sync Manager</h1>
             <p>Manage your Powerball selections across devices with automatic file synchronization</p>
