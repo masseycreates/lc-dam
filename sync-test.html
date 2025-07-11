@@ -58,6 +58,7 @@
             <button class="btn" onclick="testSync()">🔄 Test Sync</button>
             <button class="btn" onclick="testLoad()">📥 Test Load</button>
             <button class="btn" onclick="toggleAutoSync()">⚡ Toggle Auto-Sync</button>
+            <button class="btn" onclick="testDelete()">🗑️ Test Delete</button>
             <button class="btn" onclick="clearData()">🗑️ Clear Test Data</button>
         </div>
         
@@ -223,6 +224,30 @@
                 const filtered = selections.filter(s => !s.name || !s.name.includes('Test'));
                 localStorage.setItem('powerball_selection_history', JSON.stringify(filtered));
                 showMessage('🗑️ Test data cleared', 'success');
+                updateStatus();
+            }
+        }
+
+        function testDelete() {
+            const selections = JSON.parse(localStorage.getItem('powerball_selection_history') || '[]');
+            const testSelections = selections.filter(s => s.name && s.name.includes('Test'));
+
+            if (testSelections.length === 0) {
+                showMessage('❌ No test selections to delete', 'error');
+                return;
+            }
+
+            const toDelete = testSelections[0];
+            if (confirm(`Delete test selection: ${toDelete.name}?`)) {
+                if (window.deleteSelectionEntry) {
+                    window.deleteSelectionEntry(toDelete.id, 'history');
+                    showMessage('✅ Test selection deleted via sync system', 'success');
+                } else {
+                    // Fallback manual deletion
+                    const filtered = selections.filter(s => s.id !== toDelete.id);
+                    localStorage.setItem('powerball_selection_history', JSON.stringify(filtered));
+                    showMessage('✅ Test selection deleted manually', 'success');
+                }
                 updateStatus();
             }
         }

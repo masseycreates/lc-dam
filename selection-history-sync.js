@@ -90,6 +90,9 @@
                     // Mark selections as synced
                     this.markSelectionsSynced();
                     
+                    // Trigger React state update
+                    this.triggerReactRefresh();
+                    
                     return true;
                 } else {
                     throw new Error(result.error || 'Sync failed');
@@ -131,17 +134,12 @@
                     localStorage.setItem('powerball_saved_selections', JSON.stringify(mergedSavedSelections));
                     
                     const totalLoaded = mergedSelections.length + mergedSavedSelections.length;
-                    this.showStatus(`✅ Loaded ${totalLoaded} selections from sync`, 'success');
+                    const newItems = (mergedSelections.length - currentSelections.length) + (mergedSavedSelections.length - currentSavedSelections.length);
                     
-                    // Trigger UI refresh
-                    if (window.refreshSelectionHistory) {
-                        window.refreshSelectionHistory();
-                    } else {
-                        // Fallback: reload page after a short delay
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1500);
-                    }
+                    this.showStatus(`✅ Loaded ${totalLoaded} total selections (${newItems} new)`, 'success');
+                    
+                    // Trigger React state update
+                    this.triggerReactRefresh();
                     
                     return true;
                 } else {
@@ -155,6 +153,59 @@
             } finally {
                 this.syncInProgress = false;
             }
+        }
+        
+        // New method to trigger React refresh
+        triggerReactRefresh() {
+            // Method 1: Dispatch custom event
+            window.dispatchEvent(new CustomEvent('selectionHistoryUpdate', {
+                detail: { source: 'sync', timestamp: Date.now() }
+            }));
+            
+            // Method 2: Try to call React refresh functions if they exist
+            if (window.refreshSelectionHistory) {
+                window.refreshSelectionHistory();
+            }
+            
+            // Method 3: Trigger storage event to force React to re-read localStorage
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'powerball_selection_history',
+                newValue: localStorage.getItem('powerball_selection_history'),
+                url: window.location.href
+            }));
+            
+            // Method 4: Force a small delay then trigger another storage event
+            setTimeout(() => {
+                window.dispatchEvent(new StorageEvent('storage', {
+                    key: 'powerball_saved_selections',
+                    newValue: localStorage.getItem('powerball_saved_selections'),
+                    url: window.location.href
+                }));
+            }, 100);
+        }
+        
+        // New method to delete individual selection
+        deleteSelection(selectionId, type = 'history') {
+            const storageKey = type === 'saved' ? 'powerball_saved_selections' : 'powerball_selection_history';
+            const selections = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const filteredSelections = selections.filter(s => s.id !== selectionId);
+            
+            if (filteredSelections.length < selections.length) {
+                localStorage.setItem(storageKey, JSON.stringify(filteredSelections));
+                this.showStatus(`✅ Selection deleted`, 'success');
+                
+                // Trigger React refresh
+                this.triggerReactRefresh();
+                
+                // Auto-sync if enabled
+                if (this.autoSyncEnabled && this.isOnline && !this.syncInProgress) {
+                    setTimeout(() => this.syncNow(), 1000);
+                }
+                
+                return true;
+            }
+            
+            return false;
         }
         
         mergeSelections(current, incoming) {
@@ -307,6 +358,7 @@
         window.syncSelectionHistory = () => window.selectionHistorySync.syncNow();
         window.loadFromSyncHistory = () => window.selectionHistorySync.loadFromSync();
         window.toggleAutoSyncHistory = () => window.selectionHistorySync.toggleAutoSync();
+        window.deleteSelectionEntry = (id, type) => window.selectionHistorySync.deleteSelection(id, type);
         window.getSyncStats = () => window.selectionHistorySync.getSyncStats();
         
         console.log('✅ Selection History Sync initialized');
