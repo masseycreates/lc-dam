@@ -153,7 +153,7 @@
             background-color: #7c3aed;
         }
 
-        .btn-opus4 {
+        .btn-opus41 {
             background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
             color: white;
             border: 1px solid #7c3aed;
@@ -163,7 +163,7 @@
     		border-radius: 9999px;
         }
 
-        .btn-opus4:hover {
+        .btn-opus41:hover {
             background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
             transform: translateY(-1px);
             box-shadow: 0 4px 6px rgba(139, 92, 246, 0.4);
@@ -317,7 +317,7 @@
             font-weight: 600;
         }
 
-        .opus4-warning-banner {
+        .opus41-warning-banner {
             background: #faf5ff;
             border: 2px solid #c084fc;
             color: #7c3aed;
@@ -326,7 +326,7 @@
             font-weight: 600;
         }
 
-        .opus4-success-banner {
+        .opus41-success-banner {
             background: #f0fdf4;
             border: 2px solid #22c55e;
             color: #166534;
@@ -336,7 +336,7 @@
         }
 
         /* Enhanced Card Types */
-        .enhanced-prediction-card-opus4 {
+        .enhanced-prediction-card-opus41 {
             background: white;
             border: 3px solid transparent;
             background-image: linear-gradient(white, white), linear-gradient(135deg, #8b5cf6, #3b82f6, #10b981);
@@ -346,7 +346,7 @@
             box-shadow: 0 8px 25px -5px rgba(139, 92, 246, 0.25);
         }
 
-        .opus4-selection-card {
+        .opus41-selection-card {
             background: white;
             border: 2px solid #a855f7;
             border-radius: 8px;
@@ -354,7 +354,7 @@
             position: relative;
         }
 
-        .opus4-selection-card::after {
+        .opus41-selection-card::after {
             content: '✨';
             position: absolute;
             top: 0.5rem;
@@ -375,7 +375,7 @@
             border: 1px solid #d1d5db;
         }
 
-        .opus4-number {
+        .opus41-number {
             background: #f3f4f6;
             color: #1f2937;
             border: 1px solid #a855f7;
@@ -393,7 +393,7 @@
             border: 1px solid #b91c1c;
         }
 
-        .opus4-powerball {
+        .opus41-powerball {
             background: #dc2626;
             color: white;
             border: 1px solid #b91c1c;
@@ -401,7 +401,7 @@
         }
 
         /* Badges with Better Readability */
-        .claude-badge, .opus4-badge {
+        .claude-badge, .opus41-badge {
             background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
             color: white;
             padding: 0.25rem 0.5rem;
@@ -413,11 +413,11 @@
         }
 
         /* Confidence Indicators */
-        .confidence-high, .confidence-opus4-high { 
+        .confidence-high, .confidence-opus41-high { 
             border-left: 4px solid #22c55e;
         }
 
-        .confidence-medium, .confidence-opus4-medium { 
+        .confidence-medium, .confidence-opus41-medium { 
             border-left: 4px solid #3b82f6;
         }
 
@@ -745,7 +745,7 @@
             }
         }
 
-        // Claude Opus 4 Integration
+        // Claude Opus 4.1 Integration
         class HybridClaudeLotteryAnalyzer {
             constructor() {
                 this.apiKey = null;
@@ -764,11 +764,11 @@
 
             async generateHybridQuickSelection(historicalData, currentJackpot, requestedSets, strategy) {
                 if (!this.apiKey || !this.isEnabled) {
-                    throw new Error('Claude AI not properly initialized');
+                    throw new Error('Claude Opus 4.1 AI not properly initialized');
                 }
 
                 try {
-                    console.log('🤖🧮 Generating HYBRID Claude + Algorithms selections...');
+                    console.log('🤖🧮 Generating HYBRID Claude Opus 4.1 + Algorithms selections...');
                     
                     const localResults = await this.generateLocalAlgorithmResults(historicalData, requestedSets);
                     const sanitizedData = this.sanitizeHistoricalData(historicalData);
@@ -797,14 +797,14 @@
                     const data = await response.json();
                     
                     if (data.success && data.claudeSelections) {
-                        console.log('✅ Claude hybrid analysis generated ' + data.claudeSelections.length + ' selections');
+                        console.log('✅ Claude Opus 4.1 hybrid analysis generated ' + data.claudeSelections.length + ' selections');
                         return data.claudeSelections;
                     } else {
-                        throw new Error(data.error || 'Invalid response from Claude hybrid API');
+                        throw new Error(data.error || 'Invalid response from Claude Opus 4.1 hybrid API');
                     }
 
                 } catch (error) {
-                    console.error('Claude hybrid selection failed:', error);
+                    console.error('Claude Opus 4.1 hybrid selection failed:', error);
                     
                     const localResults = await this.generateLocalAlgorithmResults(historicalData, requestedSets);
                     return this.enhanceLocalResultsForFallback(localResults);
@@ -906,7 +906,7 @@
                 return localResults.map((result, index) => ({
                     id: index + 1,
                     name: '🧮 ' + result.strategy + ' (Algorithm)',
-                    description: 'LOCAL ALGORITHM: ' + result.analysis + ' Note: Claude AI enhancement temporarily unavailable.',
+                    description: 'LOCAL ALGORITHM: ' + result.analysis + ' Note: Claude Opus 4.1 AI enhancement temporarily unavailable.',
                     algorithmDetail: result.algorithmDetail,
                     numbers: result.numbers,
                     powerball: result.powerball,
@@ -945,7 +945,7 @@
                     const data = await response.json();
                     
                     if (data.success) {
-                        console.log('✅ Claude AI connection successful');
+                        console.log('✅ Claude Opus 4.1 AI connection successful');
                         return { success: true, error: null, usage: data.usage };
                     } else {
                         throw new Error(data.error || 'Unknown API error');
@@ -1151,7 +1151,7 @@
         window.generateAdvancedQuickSelection = async function(historicalStats) {
             try {
                 if (window.claudeAnalyzer && window.claudeAnalyzer.isEnabled) {
-                    console.log('🤖🧮 Generating HYBRID Claude + 6 Algorithms selections...');
+                    console.log('🤖🧮 Generating HYBRID Claude Opus 4.1 + 6 Algorithms selections...');
                     
                     try {
                         const hybridSelections = await window.claudeAnalyzer.generateHybridQuickSelection(
@@ -1167,7 +1167,7 @@
                         }
                         
                     } catch (claudeError) {
-                        console.warn('Claude hybrid analysis failed, using local algorithms:', claudeError.message);
+                        console.warn('Claude Opus 4.1 hybrid analysis failed, using local algorithms:', claudeError.message);
                     }
                 }
                 
