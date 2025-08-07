@@ -153,7 +153,7 @@
             background-color: #7c3aed;
         }
 
-        .btn-opus41 {
+        .btn-opus4 {
             background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
             color: white;
             border: 1px solid #7c3aed;
@@ -163,7 +163,7 @@
     		border-radius: 9999px;
         }
 
-        .btn-opus41:hover {
+        .btn-opus4:hover {
             background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
             transform: translateY(-1px);
             box-shadow: 0 4px 6px rgba(139, 92, 246, 0.4);
@@ -317,7 +317,7 @@
             font-weight: 600;
         }
 
-        .opus41-warning-banner {
+        .opus4-warning-banner {
             background: #faf5ff;
             border: 2px solid #c084fc;
             color: #7c3aed;
@@ -326,7 +326,7 @@
             font-weight: 600;
         }
 
-        .opus41-success-banner {
+        .opus4-success-banner {
             background: #f0fdf4;
             border: 2px solid #22c55e;
             color: #166534;
@@ -336,7 +336,7 @@
         }
 
         /* Enhanced Card Types */
-        .enhanced-prediction-card-opus41 {
+        .enhanced-prediction-card-opus4 {
             background: white;
             border: 3px solid transparent;
             background-image: linear-gradient(white, white), linear-gradient(135deg, #8b5cf6, #3b82f6, #10b981);
@@ -346,7 +346,7 @@
             box-shadow: 0 8px 25px -5px rgba(139, 92, 246, 0.25);
         }
 
-        .opus41-selection-card {
+        .opus4-selection-card {
             background: white;
             border: 2px solid #a855f7;
             border-radius: 8px;
@@ -354,7 +354,7 @@
             position: relative;
         }
 
-        .opus41-selection-card::after {
+        .opus4-selection-card::after {
             content: '✨';
             position: absolute;
             top: 0.5rem;
@@ -375,7 +375,7 @@
             border: 1px solid #d1d5db;
         }
 
-        .opus41-number {
+        .opus4-number {
             background: #f3f4f6;
             color: #1f2937;
             border: 1px solid #a855f7;
@@ -393,7 +393,7 @@
             border: 1px solid #b91c1c;
         }
 
-        .opus41-powerball {
+        .opus4-powerball {
             background: #dc2626;
             color: white;
             border: 1px solid #b91c1c;
@@ -401,7 +401,7 @@
         }
 
         /* Badges with Better Readability */
-        .claude-badge, .opus41-badge {
+        .claude-badge, .opus4-badge {
             background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
             color: white;
             padding: 0.25rem 0.5rem;
@@ -413,11 +413,11 @@
         }
 
         /* Confidence Indicators */
-        .confidence-high, .confidence-opus41-high { 
+        .confidence-high, .confidence-opus4-high { 
             border-left: 4px solid #22c55e;
         }
 
-        .confidence-medium, .confidence-opus41-medium { 
+        .confidence-medium, .confidence-opus4-medium { 
             border-left: 4px solid #3b82f6;
         }
 
@@ -2292,7 +2292,7 @@
                 const selectionData = {
                     ...selection,
                     notes: notes,
-                    source: selection.claudeGenerated ? 'Claude Opus 4' : 'Algorithm',
+                    source: selection.claudeGenerated ? 'Claude Opus 4.1' : 'Algorithm',
                     confidence: selection.confidence || 0,
                     strategy: selection.strategy || 'Unknown'
                 };
@@ -2346,7 +2346,7 @@
                     result: 'pending',
                     winAmount: 0,
                     notes: notes,
-                    source: selection.claudeGenerated ? 'Claude Opus 4' : 'Algorithm'
+                    source: selection.claudeGenerated ? 'Claude Opus 4.1' : 'Algorithm'
                 };
 
                 const updatedHistory = [...selectionHistory, newEntry];
@@ -2757,23 +2757,23 @@
                 try {
                     window.claudeAnalyzer.initialize(trimmedKey);
 
-                    setDataStatus('🔄 Testing Claude Opus 4 hybrid connection...');
+                    setDataStatus('🔄 Testing Claude Opus 4.1 hybrid connection...');
                     setIsLoadingAI(true);
 
                     const connectionTest = await window.claudeAnalyzer.testConnection();
                     
                     if (connectionTest.success) {
                         setAiEnabled(true);
-                        setDataStatus('✅ Claude Opus 4 hybrid system enabled and connected successfully');
+                        setDataStatus('✅ Claude Opus 4.1 hybrid system enabled and connected successfully');
                     } else {
                         throw new Error(connectionTest.error || 'Connection test failed');
                     }
                     
                 } catch (error) {
-                    console.error('Claude Opus 4 initialization failed:', error);
+                    console.error('Claude Opus 4.1 initialization failed:', error);
                     setAiEnabled(false);
-                    alert('Failed to connect to Claude Opus 4: ' + error.message);
-                    setDataStatus('❌ Claude Opus 4 connection failed');
+                    alert('Failed to connect to Claude Opus 4.1: ' + error.message);
+                    setDataStatus('❌ Claude Opus 4.1 connection failed');
                 } finally {
                     setIsLoadingAI(false);
                 }
@@ -2838,7 +2838,7 @@
                             'hybrid'
                         );
                         setQuickSelectionSets(hybridSelections);
-                        setDataStatus('🤖🧮 Claude Opus 4 + 6 Algorithms hybrid selections generated!');
+                        setDataStatus('🤖🧮 Claude Opus 4.1 + 6 Algorithms hybrid selections generated!');
                         return;
                     }
 
@@ -2862,7 +2862,7 @@
                                 'hybrid'
                             );
                             setQuickSelectionSets(hybridSelections);
-                            setDataStatus('🤖🧮 Claude Opus 4 hybrid selections generated (enhanced mode failed)');
+                            setDataStatus('🤖🧮 Claude Opus 4.1 hybrid selections generated (enhanced mode failed)');
                         } catch (claudeError) {
                             console.error('Claude hybrid also failed:', claudeError);
                             if (window.generateAdvancedQuickSelection) {
@@ -2890,7 +2890,7 @@
 
                 // Original Claude hybrid generation
                 if (!aiEnabled || !aiApiKey) {
-                    alert('Please enable Claude Opus 4 first by entering your API key.');
+                    alert('Please enable Claude Opus 4.1 first by entering your API key.');
                     return;
                 }
 
@@ -2905,7 +2905,7 @@
                     );
 
                     setQuickSelectionSets(hybridSelections);
-                    setDataStatus('🤖🧮 Claude Opus 4 + 6 Algorithms hybrid selections generated successfully!');
+                    setDataStatus('🤖🧮 Claude Opus 4.1 + 6 Algorithms hybrid selections generated successfully!');
 
                 } catch (error) {
                     console.error('Claude hybrid selection failed:', error);
@@ -3102,16 +3102,16 @@
                                     React.createElement('div', { className: 'flex items-center gap-2' },
                                         React.createElement('div', { style: { fontSize: '1.25rem' } }, '🤖✨'),
                                         React.createElement('div', null,
-                                            React.createElement('h3', { className: 'text-base font-semibold text-gray-900' }, 'Claude Opus 4 + 6 Algorithms'),
+                                            React.createElement('h3', { className: 'text-base font-semibold text-gray-900' }, 'Claude Opus 4.1 + 6 Algorithms'),
                                             React.createElement('p', { className: 'text-xs text-gray-600' }, 'Advanced AI hybrid intelligence system')
                                         )
                                     ),
-                                    aiEnabled ? React.createElement('span', { className: 'opus4-badge' }, '✨ OPUS 4 ACTIVE') : null
+                                    aiEnabled ? React.createElement('span', { className: 'opus4-badge' }, '✨ OPUS 4.1 ACTIVE') : null
                                 ),
                                 
                                 !aiEnabled ? React.createElement('div', { className: 'space-y-2' },
                                     React.createElement('div', { className: 'opus4-warning-banner' },
-                                        React.createElement('p', { className: 'text-sm font-medium' }, '⚠️ Using local algorithms only. Enable Claude Opus 4 for advanced AI analysis.')
+                                        React.createElement('p', { className: 'text-sm font-medium' }, '⚠️ Using local algorithms only. Enable Claude Opus 4.1 for advanced AI analysis.')
                                     ),
                                     React.createElement('div', { className: 'flex flex-col sm:flex-row gap-2' },
                                         React.createElement('input', {
@@ -3127,7 +3127,7 @@
                                             className: 'btn-opus4 ' + (isLoadingAI ? 'opacity-50' : '')
                                         },
                                             isLoadingAI ? React.createElement('span', { className: 'loading-spinner' }) : null,
-                                            ' ✨ Enable Opus 4'
+                                            ' ✨ Enable Opus 4.1'
                                         )
                                     ),
                                     React.createElement('p', { className: 'text-xs text-gray-500' }, 
@@ -3140,7 +3140,7 @@
                                     )
                                 ) : React.createElement('div', { className: 'flex items-center justify-between' },
                                     React.createElement('div', { className: 'opus4-success-banner flex-1 mr-3' },
-                                        React.createElement('p', { className: 'text-sm font-medium' }, '✅ Claude Opus 4 analyzing with 6 algorithms for optimal predictions')
+                                        React.createElement('p', { className: 'text-sm font-medium' }, '✅ Claude Opus 4.1 analyzing with 6 algorithms for optimal predictions')
                                     ),
                                     React.createElement('button', {
                                         onClick: generateClaudeHybridSelection,
@@ -3157,10 +3157,10 @@
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement('div', null,
                                         React.createElement('h3', { className: 'text-base font-semibold text-gray-900' }, 
-                                            aiEnabled ? '🤖✨ Opus 4 Hybrid Selections' : '🧮 Algorithm Selections'
+                                            aiEnabled ? '🤖✨ Opus 4.1 Hybrid Selections' : '🧮 Algorithm Selections'
                                         ),
                                         React.createElement('p', { className: 'text-xs text-gray-600' }, 
-                                            aiEnabled ? 'Claude Opus 4 + 6 algorithms working together' : 'Local mathematical ensemble'
+                                            aiEnabled ? 'Claude Opus 4.1 + 6 algorithms working together' : 'Local mathematical ensemble'
                                         )
                                     ),
                                     !isLoadingHistory ? React.createElement('button', {
@@ -3193,7 +3193,7 @@
                                             React.createElement('div', { className: 'flex items-start justify-between mb-2' },
                                                 React.createElement('div', null,
                                                     React.createElement('h4', { className: 'font-semibold text-sm text-gray-900' }, selection.name),
-                                                    isOpus4 ? React.createElement('span', { className: 'opus4-badge mt-1' }, '✨ OPUS 4') : null
+                                                    isOpus4 ? React.createElement('span', { className: 'opus4-badge mt-1' }, '✨ OPUS 4.1') : null
                                                 ),
                                                 React.createElement('span', { 
                                                     className: 'px-2 py-1 rounded text-xs font-medium ' + (
@@ -3486,7 +3486,7 @@
                                                                     // AI/Algorithm indicators
                                                                     entry.claudeGenerated ? React.createElement('span', {
                                                                         className: 'px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium'
-                                                                    }, '🤖 Claude Opus 4') : null,
+                                                                    }, '🤖 Claude Opus 4.1') : null,
                                                                     entry.userEnhanced ? React.createElement('span', {
                                                                         className: 'px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium'
                                                                     }, '🧠 Enhanced AI') : null,
@@ -3770,7 +3770,7 @@
                                         React.createElement('div', { className: 'text-xs text-gray-600' }, 'Predictions')
                                     ),
                                     React.createElement('div', { className: 'text-center' },
-                                        React.createElement('div', { className: 'text-2xl font-bold text-purple-600' }, aiEnabled ? 'OPUS 4' : 'LOCAL'),
+                                        React.createElement('div', { className: 'text-2xl font-bold text-purple-600' }, aiEnabled ? 'OPUS 4.1' : 'LOCAL'),
                                         React.createElement('div', { className: 'text-xs text-gray-600' }, 'Mode')
                                     ),
                                     React.createElement('div', { className: 'text-center' },
@@ -3804,7 +3804,7 @@
                             ),
                             React.createElement('div', null,
                                 React.createElement('div', { style: { opacity: 0.8, fontSize: '0.75rem', fontWeight: 500 } },
-                                    aiEnabled ? 'Claude Opus 4 + 6 Algorithms Hybrid' : 'Enhanced Powerball System'
+                                    aiEnabled ? 'Claude Opus 4.1 + 6 Algorithms Hybrid' : 'Enhanced Powerball System'
                                 ),
                                 React.createElement('div', { style: { fontSize: '1.5rem', fontWeight: 700 } },
                                     liveDataAvailable && currentJackpot ? currentJackpot.formatted : 'Visit powerball.com'
@@ -3898,7 +3898,7 @@
 
                 React.createElement('div', { className: 'mt-6 text-center text-xs text-gray-500' },
                     React.createElement('p', null, 
-                        '🎰 Claude Opus 4 + 6 Algorithms Hybrid Lottery System • Educational purposes only'
+                        '🎰 Claude Opus 4.1 + 6 Algorithms Hybrid Lottery System • Educational purposes only'
                     ),
                     React.createElement('p', { className: 'mt-1' },
                         'Data: ',
@@ -3908,7 +3908,7 @@
                         ' • AI: ',
                         React.createElement('span', { 
                             className: aiEnabled ? 'text-purple-600' : 'text-gray-600'
-                        }, aiEnabled ? 'Opus 4 Active' : 'Local Only'),
+                        }, aiEnabled ? 'Opus 4.1 Active' : 'Local Only'),
                         historicalStats ? ' • Using ' + (historicalStats.meta?.totalDrawings || historicalStats.drawings?.length || 0) + ' drawings' : ''
                     )
                 ),
